@@ -136,7 +136,22 @@
 
                 marker.bindPopup(popupContent);
                 markersCluster.addLayer(marker);
-                markers.push({ lat, lon, name, marker });
+                markers.push({
+                    lat,
+                    lon,
+                    name,
+                    marker,
+                    searchText: [
+                        name,
+                        row[0],
+                        row[4],
+                        loaitru,
+                        tudieukhien,
+                        loaiden,
+                        lat,
+                        lon
+                    ].filter(Boolean).join(' ').toLowerCase()
+                });
             });
 
             if (markers.length > 0) map.fitBounds(markersCluster.getBounds().pad(0.1));
@@ -228,29 +243,35 @@
 
         function searchMarkers() {
             const input = document.getElementById('searchInput').value.trim().toLowerCase();
-            if (!input) return;
-
-            let found = false;
-
-            for (const item of markers) {
-                if (item.name && item.name.toLowerCase().includes(input)) {
-                    map.setView([item.lat, item.lon], 20);
-                    item.marker.openPopup();
-                    found = true;
-                    break;
-                }
+            if (!input) {
+                displayError('Vui lòng nhập tên trụ, mã hoặc tọa độ để tìm kiếm.');
+                return;
             }
 
-            // Try coordinate search
+            let found = false;
+            const matches = markers.filter(item => item.searchText && item.searchText.includes(input));
+
+            if (matches.length > 0) {
+                const item = matches[0];
+                map.setView([item.lat, item.lon], 20);
+                item.marker.openPopup();
+                displayError(`Tìm thấy ${matches.length} điểm phù hợp. Mở kết quả đầu tiên.`);
+                found = true;
+            }
+
+            // Try coordinate search if no text match
             if (!found && input.includes(',')) {
                 const coords = input.split(',').map(c => parseFloat(c.trim()));
                 if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
                     map.setView([coords[0], coords[1]], 20);
+                    displayError('Hiển thị tọa độ tìm kiếm.');
                     found = true;
                 }
             }
 
-            displayError(found ? '' : 'Không tìm thấy điểm nào phù hợp.');
+            if (!found) {
+                displayError('Không tìm thấy điểm nào phù hợp.');
+            }
         }
         function displayError(msg) {
             const el = document.getElementById('error');
@@ -283,6 +304,16 @@
         window.onload = () => {
             map = initializeMap();
             loadDefaultFile();   // hàm load file Excel của bạn
+
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        searchMarkers();
+                    }
+                });
+            }
         };
     </script>
 </body>

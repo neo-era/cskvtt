@@ -127,6 +127,9 @@
         let map;
         let markersCluster = L.markerClusterGroup();
         let markers = [];
+        let currentLocation = null;
+        let currentLocationMarker = null;
+        let routeLine = null;
 
         // Custom Icons
         const customIcons = {
@@ -185,6 +188,7 @@
                 if (isNaN(lat) || isNaN(lon)) return;
 
                 const icon = customIcons[type] || customIcons.default;
+                const markerIndex = markers.length;
 
                 const marker = L.marker([lat, lon], { icon: icon });
 
@@ -195,7 +199,8 @@
                         Lon: ${lon.toFixed(6)}<br>
                         Trụ: ${loaitru || ''}<br>
                         Tủ điều khiển: ${tudieukhien || ''}<br>
-                        Đèn: ${loaiden || ''}
+                        Đèn: ${loaiden || ''}<br>
+                        <button onclick="routeToMarker(${markerIndex})" style="margin-top:8px;padding:6px 10px;font-size:14px;cursor:pointer;">Dẫn đường xe máy</button>
                     </div>`;
 
                 marker.bindPopup(popupContent);
@@ -293,6 +298,103 @@
             errorDiv.style.display = message ? 'block' : 'none';
         }
 
+        function updateCurrentLocationMarker(lat, lon) {
+            currentLocation = [lat, lon];
+
+            if (currentLocationMarker) {
+                currentLocationMarker.setLatLng(currentLocation);
+            } else {
+                currentLocationMarker = L.marker(currentLocation, { icon: customIcons.default })
+                    .addTo(map)
+                    .bindPopup('Vị trí hiện tại của bạn');
+            }
+        }
+
+        function clearRoute() {
+            if (routeLine) {
+                map.removeLayer(routeLine);
+                routeLine = null;
+            }
+        }
+
+        function fetchMotorbikeRoute(origin, destination) {
+            const url = `https://router.project-osrm.org/route/v1/driving/${origin[1]},${origin[0]};${destination[1]},${destination[0]}?overview=full&geometries=geojson`;
+            return fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error('Không thể tải lộ trình.');
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data.routes || data.routes.length === 0 || data.code !== 'Ok') {
+                        throw new Error('Không tìm thấy lộ trình xe máy.');
+                    }
+                    return data.routes[0];
+                });
+        }
+
+        function drawRoute(route) {
+            clearRoute();
+
+            routeLine = L.geoJSON(route.geometry, {
+                style: {
+                    color: 'red',
+                    weight: 5,
+                    opacity: 0.8
+                }
+            }).addTo(map);
+
+            if (routeLine && routeLine.getBounds) {
+                map.fitBounds(routeLine.getBounds().pad(0.15));
+            }
+
+            if (route.distance != null && route.duration != null) {
+                const distanceKm = (route.distance / 1000).toFixed(1);
+                const durationMin = Math.round(route.duration / 60);
+                displayError(`Lộ trình xe máy: ${distanceKm} km, khoảng ${durationMin} phút.`);
+            }
+        }
+
+        function routeToMarker(index) {
+            const target = markers[index];
+            if (!target) {
+                displayError('Marker không tồn tại.');
+                return;
+            }
+
+            function routeFromCurrentLocation() {
+                fetchMotorbikeRoute(currentLocation, [target.lat, target.lon])
+                    .then(route => {
+                        drawRoute(route);
+                        target.marker.openPopup();
+                    })
+                    .catch(error => {
+                        displayError(error.message);
+                    });
+            }
+
+            if (currentLocation) {
+                routeFromCurrentLocation();
+                return;
+            }
+
+            if (!navigator.geolocation) {
+                displayError('Trình duyệt không hỗ trợ định vị.');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    updateCurrentLocationMarker(lat, lon);
+                    routeFromCurrentLocation();
+                },
+                function(error) {
+                    displayError('Không thể lấy vị trí: ' + error.message);
+                }
+            );
+        }
+
         function centerOnUserLocation() {
             if (!navigator.geolocation) {
                 displayError('Trình duyệt không hỗ trợ định vị.');
@@ -303,12 +405,8 @@
                 function(position) {
                     const lat = position.coords.latitude;
                     const lon = position.coords.longitude;
+                    updateCurrentLocationMarker(lat, lon);
                     map.setView([lat, lon], 19);
-
-                    L.marker([lat, lon], { icon: customIcons.default })
-                        .addTo(map)
-                        .bindPopup('Vị trí hiện tại của bạn')
-                        .openPopup();
                 },
                 function(error) {
                     displayError('Không thể lấy vị trí: ' + error.message);

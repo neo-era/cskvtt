@@ -103,6 +103,8 @@
         <input type="text" id="searchInput" placeholder="Nhập tên trụ hoặc tọa độ (lat, lon)" />
         <button onclick="searchMarkers()">Tìm kiếm</button>
         <button onclick="centerOnUserLocation()">Vị trí của tôi</button>
+        <button onclick="startAddMarker()">Thêm marker</button>
+        <button onclick="saveMarkerData()">Lưu dữ liệu</button>
     </div>
 
     <div id="error"></div>
@@ -126,10 +128,14 @@
     <script>
         let map;
         let markersCluster = L.markerClusterGroup();
+        let labelLayerGroup = L.layerGroup();
         let markers = [];
+        let loadedData = [];
         let currentLocation = null;
         let currentLocationMarker = null;
         let routeLine = null;
+        let pendingNewMarker = false;
+        let pendingMarkerLocation = null;
 
         // Custom Icons
         const customIcons = {
@@ -168,11 +174,31 @@
             }).addTo(map);
 
             map.addLayer(markersCluster);
+            map.addLayer(labelLayerGroup);
+
+            map.on('click', function(e) {
+                if (!pendingNewMarker) return;
+                pendingNewMarker = false;
+                pendingMarkerLocation = [e.latlng.lat, e.latlng.lng];
+                const name = prompt('Nhập tên trụ mới:');
+                if (!name) {
+                    displayError('Đã hủy thêm marker.');
+                    return;
+                }
+                const note = prompt('Nhập ghi chú (có thể để trống):') || '';
+                const type = 7;
+                const newRow = ['', name, pendingMarkerLocation[0], pendingMarkerLocation[1], note, '', type, '', '', '', ''];
+                loadedData.push(newRow);
+                addMarkersToMap(loadedData);
+                displayError('Đã thêm marker mới. Nhấn Lưu dữ liệu để tải file XLSX.');
+            });
+
             return map;
         }
 
         function addMarkersToMap(data) {
             markersCluster.clearLayers();
+            labelLayerGroup.clearLayers();
             markers = [];
 
             data.forEach(row => {
@@ -180,6 +206,7 @@
                 const lat = parseFloat(row[2]);
                 const lon = parseFloat(row[3]);
                 const type = parseInt(row[6]);
+                const note = row[4] || '';
                 const tudieukhien = row[7];
                 const loaitru = row[8];
                 const loaican = row[9];
@@ -197,6 +224,7 @@
                         <strong>Tên trụ: ${name || 'Không có tên'}</strong><br>
                         Lat: ${lat.toFixed(6)}<br>
                         Lon: ${lon.toFixed(6)}<br>
+                        Ghi chú: ${note || 'Không có'}<br>
                         Trụ: ${loaitru || ''}<br>
                         Tủ điều khiển: ${tudieukhien || ''}<br>
                         Đèn: ${loaiden || ''}<br>
@@ -234,12 +262,41 @@
                     const workbook = XLSX.read(data, { type: 'array' });
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    loadedData = jsonData;
                     addMarkersToMap(jsonData);
                 } catch (error) {
                     displayError('Lỗi xử lý file Excel: ' + error.message);
                 }
             };
             reader.readAsArrayBuffer(file);
+        }
+
+        function startAddMarker() {
+            pendingNewMarker = true;
+            pendingMarkerLocation = null;
+            displayError('Nhấp vào bản đồ để chọn vị trí trụ mới, sau đó nhập tên và ghi chú.');
+        }
+
+        function saveMarkerData() {
+            if (!loadedData || loadedData.length === 0) {
+                displayError('Không có dữ liệu để lưu.');
+                return;
+            }
+
+            const worksheet = XLSX.utils.aoa_to_sheet(loadedData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+            const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([wbout], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'khaosat-updated.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            displayError('File dữ liệu đã được tạo và tải xuống.');
         }
 
         function loadDefaultFile() {

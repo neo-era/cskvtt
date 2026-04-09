@@ -77,6 +77,8 @@
             font-size: 15px;
             max-width: 1200px;
             text-align: left;
+            max-height: 150px;
+            overflow-y: auto;
         }
 
         #searchResults ul {
@@ -446,6 +448,9 @@
         function searchMarkers() {
             const rawInput = document.getElementById('searchInput').value.trim();
             clearSearchResults();
+            console.log('Searching for:', rawInput);
+            console.log('Total markers:', markers.length);
+            console.log('First few markers:', markers.slice(0, 3));
             if (!rawInput) {
                 displayError('Vui lòng nhập tên trụ hoặc tọa độ để tìm kiếm.');
                 return;
@@ -478,6 +483,7 @@
 
                 const results = document.getElementById('searchResults');
                 const list = document.createElement('ul');
+                // Hiển thị toàn bộ kết quả
                 matches.forEach(match => {
                     const listItem = document.createElement('li');
                     const link = document.createElement('a');

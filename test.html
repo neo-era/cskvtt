@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test</title>
+</head>
+<body>
+    <h1>Test Page</h1>
+    <input type="text" id="testInput" placeholder="Enter text" />
+    <button onclick="testFunction()">Test</button>
+    <div id="output"></div>
+
+    <script>
+        function testFunction() {
+            const input = document.getElementById('testInput').value;
+            console.log('Input:', input);
+            document.getElementById('output').textContent = 'You entered: ' + input;
+        }
+
+        // Test fetch
+        fetch('data/khaosat.xlsx')
+            .then(response => {
+                console.log('Fetch response status:', response.status);
+                return response.blob();
+            })
+            .then(blob => {
+                console.log('Blob size:', blob.size);
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+            });
+    </script>
+</body>
+</html>

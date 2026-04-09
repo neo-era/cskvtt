@@ -27,6 +27,10 @@
     <!-- Favicon -->
     <link rel="icon" href="images/fevicon.png" type="image/gif" />
 
+    <!-- Bootstrap JS and jQuery -->
+    <script src="js/jquery-3.0.0.min.js"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
+
     <style>
         html, body {
             height: 100%;
@@ -36,23 +40,44 @@
         }
 
         h1 {
-            font-size: 24px;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 18px;
             color: #2510c6;
-            margin: 15px 0;
-            text-align: center;
+            margin: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 4px;
         }
 
-        #pageSelector {
-            text-align: center;
-            margin: 10px 0;
+        #controlsBtn {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
         }
 
         .controls-container {
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .controls-container .form-group {
+            margin-bottom: 15px;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 10px;
-            align-items: center;
+        }
+
+        .button-group .btn {
+            margin: 0;
         }
 
         #pages, #searchInput {
@@ -76,9 +101,12 @@
         }
 
         #map {
-            height: calc(100vh - 200px);
+            height: 100vh;
             width: 100%;
             touch-action: none; /* Improve touch handling on mobile */
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
         #error {
@@ -134,75 +162,67 @@
             text-shadow: 1px 1px 2px white;
         }
 
-        .marker-highlight {
-            filter: brightness(1.5) drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
-            z-index: 1000 !important;
+        .modal {
+            z-index: 1050;
+        }
+
+        .modal-backdrop {
+            z-index: 1040;
+        }
+
+        .modal.show {
+            display: block;
         }
 
         /* Responsive Design */
         @media only screen and (max-width: 768px) {
             h1 {
-                font-size: 20px;
-                margin: 10px 0;
+                font-size: 16px;
+                top: 5px;
+                left: 5px;
+                padding: 3px 8px;
             }
 
-            .controls-container {
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            #pages, #searchInput {
-                width: 100%;
-                max-width: 300px;
-                padding: 12px;
-                font-size: 16px; /* Prevent zoom on iOS */
-            }
-
-            button {
-                width: 100%;
-                max-width: 300px;
-                padding: 12px;
-                font-size: 16px; /* Prevent zoom on iOS */
-            }
-
-            #map {
-                height: calc(100vh - 350px);
-            }
-
-            #searchResults {
-                max-height: 120px;
+            #controlsBtn {
+                top: 5px;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 8px 12px;
                 font-size: 14px;
             }
 
-            .footer_section {
-                margin-top: 20px;
-                padding-bottom: 20px;
+            .controls-container {
+                gap: 10px;
             }
 
-            .newsletter_text {
-                font-size: 16px;
-                padding: 10px 0;
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+
+            #searchResults {
+                max-height: 150px;
+                font-size: 14px;
+            }
+
+            .modal-dialog {
+                margin: 10px;
             }
         }
 
         @media only screen and (max-width: 480px) {
             h1 {
-                font-size: 18px;
-                margin: 8px 0;
+                font-size: 14px;
+                padding: 2px 6px;
             }
 
-            #map {
-                height: calc(100vh - 380px);
-            }
-
-            #searchResults {
-                max-height: 100px;
+            #controlsBtn {
+                padding: 6px 10px;
                 font-size: 12px;
             }
 
-            .newsletter_text {
-                font-size: 14px;
-                padding: 8px 0;
+            #searchResults {
+                max-height: 120px;
+                font-size: 12px;
             }
         }
     </style>
@@ -210,23 +230,51 @@
 <body>
     <h1>BẢN ĐỒ KHẢO SÁT HỆ THỐNG CHIẾU SÁNG CÔNG CỘNG</h1>
 
-    <div id="pageSelector" class="controls-container">
-        <label for="pages">Chọn Quận:</label>
-        <select id="pages" onchange="navigateToPage()">
-            <option value="index.html">Trang khảo sát</option>
-            <option value="index.html">Quận 1</option>
-            <option value="index.html">Kế hoạch</option>
-        </select>
+    <!-- Controls Button -->
+    <button id="controlsBtn" class="btn btn-primary">
+        <i class="fa fa-cog"></i> Điều khiển
+    </button>
 
-        <input type="text" id="searchInput" placeholder="Nhập tên trụ hoặc tọa độ (lat, lon)" />
-        <button onclick="searchMarkers()">Tìm kiếm</button>
-        <button onclick="centerOnUserLocation()">Vị trí của tôi</button>
-        <button onclick="startAddMarker()">Thêm marker</button>
-        <button onclick="saveMarkerData()">Lưu dữ liệu</button>
+    <!-- Controls Modal -->
+    <div class="modal fade" id="controlsModal" tabindex="-1" role="dialog" aria-labelledby="controlsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="controlsModalLabel">Điều khiển bản đồ</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="pageSelector" class="controls-container">
+                        <div class="form-group">
+                            <label for="pages">Chọn Quận:</label>
+                            <select id="pages" class="form-control" onchange="navigateToPage()">
+                                <option value="index.html">Trang khảo sát</option>
+                                <option value="index.html">Quận 1</option>
+                                <option value="index.html">Kế hoạch</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="searchInput">Tìm kiếm:</label>
+                            <input type="text" id="searchInput" class="form-control" placeholder="Nhập tên trụ hoặc tọa độ (lat, lon)" />
+                        </div>
+
+                        <div class="button-group">
+                            <button onclick="searchMarkers()" class="btn btn-success btn-block">Tìm kiếm</button>
+                            <button onclick="centerOnUserLocation()" class="btn btn-info btn-block">Vị trí của tôi</button>
+                            <button onclick="startAddMarker()" class="btn btn-warning btn-block">Thêm marker</button>
+                            <button onclick="saveMarkerData()" class="btn btn-secondary btn-block">Lưu dữ liệu</button>
+                        </div>
+                    </div>
+
+                    <div id="error" class="alert alert-danger" style="display: none;"></div>
+                    <div id="searchResults" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <div id="error"></div>
-    <div id="searchResults"></div>
     <div id="map"></div>
 
       <!-- Scripts -->
@@ -730,6 +778,54 @@
         window.onload = function() {
             map = initializeMap();
             loadDefaultFile();
+
+            // Setup modal controls
+            console.log('Setting up modal controls...');
+            const controlsBtn = document.getElementById('controlsBtn');
+            console.log('Controls button:', controlsBtn);
+            if (controlsBtn) {
+                controlsBtn.addEventListener('click', function() {
+                    console.log('Controls button clicked');
+                    // Try jQuery first, fallback to vanilla JS
+                    if (typeof $ !== 'undefined' && $.fn.modal) {
+                        $('#controlsModal').modal('show');
+                    } else {
+                        console.log('jQuery not available, using vanilla JS');
+                        const modal = document.getElementById('controlsModal');
+                        if (modal) {
+                            modal.style.display = 'block';
+                            modal.classList.add('show');
+                            document.body.classList.add('modal-open');
+
+                            // Add backdrop
+                            const backdrop = document.createElement('div');
+                            backdrop.className = 'modal-backdrop show';
+                            document.body.appendChild(backdrop);
+
+                            // Close modal when clicking backdrop or close button
+                            backdrop.onclick = function() {
+                                modal.style.display = 'none';
+                                modal.classList.remove('show');
+                                document.body.classList.remove('modal-open');
+                                document.body.removeChild(backdrop);
+                            };
+
+                            const closeBtn = modal.querySelector('.close');
+                            if (closeBtn) {
+                                closeBtn.onclick = function() {
+                                    modal.style.display = 'none';
+                                    modal.classList.remove('show');
+                                    document.body.classList.remove('modal-open');
+                                    document.body.removeChild(backdrop);
+                                };
+                            }
+                        }
+                    }
+                });
+                console.log('Event listener attached');
+            } else {
+                console.error('Controls button not found');
+            }
         };
     </script>
 </body>

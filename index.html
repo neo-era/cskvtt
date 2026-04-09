@@ -1,320 +1,400 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html>
 <head>
-    <title>Lighting System V1.0 - Có Dẫn Đường</title>
-    <meta charset="utf-8">
+    <title>Lighting System V1.0</title>
+    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   
+    <!-- mobile metas -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+    <!-- site metas -->
+    
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+    <meta name="author" content="Mai Vũ Lâm">
+    <!-- bootstrap css -->
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+    <!-- style css -->
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <!-- Responsive-->
+    <link rel="stylesheet" href="css/responsive.css">
+    <!-- fevicon -->
+    <link rel="icon" href="images/fevicon.png" type="image/gif" />
+    <!-- Scrollbar Custom CSS -->
+    <link rel="stylesheet" href="css/jquery.mCustomScrollbar.min.css">
+    <!-- Tweaks for older IEs-->
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
+    <!-- owl stylesheets --> 
+    <link rel="stylesheet" href="css/owl.carousel.min.css">
+    <link rel="stylesheet" href="css/owl.theme.default.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.min.css" media="screen">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+ <!-- cluster --> 
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 
     <style>
-        h1 { font-size: 24px; color: #2510c6; text-align: center; margin: 15px 0; }
-        #pageSelector { text-align: center; margin: 10px 0; }
-        #pages, #searchInput { padding: 8px; margin: 5px; font-size: 16px; }
-        button { background: #007bff; color: #fff; border: none; padding: 8px 16px; margin: 5px; cursor: pointer; }
-        button:hover { background: #0056b3; }
-        #map { height: 750px; width: 100%; }
-        #error { color: red; text-align: center; margin: 10px 0; font-weight: bold; }
-        .routing-btn { background: #28a745; margin-top: 8px; }
-        .routing-btn:hover { background: #218838; }
+
+h1 {
+            font-size: 24px; /* Font size for heading */
+            color: #2510c6; /* Heading color */
+            margin-bottom: 0px; /* Bottom margin for heading */
+            text-align: center; /* Center-align heading */
+        }
+        
+        button {
+            background-color: #007bff; /* Button background color */
+            color: #fff; /* Button text color */
+            border: none; /* Remove button border */
+            padding: 5px 20px; /* Button padding */
+            cursor: pointer; /* Pointer cursor */
+            margin-right: 5px; /* Right margin for buttons */
+            font-size: 16px; /* Font size for buttons */
+        }
+
+        button:hover {
+            background-color: #0056b3; /* Button background color on hover */
+        }
+
+        #searchInput {
+            width: 230px; /* Width of page selector */
+            padding: 4px; /* Padding for page selector */
+            margin-top: 10px; /* Top margin for page selector */
+            text-align: center; /* Center-align elements in page selector */
+        }
+
+        #pages {
+            width: 150px; /* Width of page selector */
+            padding: 8px; /* Padding for page selector */
+            margin-top: 10px; /* Top margin for page selector */
+            text-align: center; /* Center-align elements in page selector */
+        }
+        #map {
+            height: 750px; /* Height of the map container */
+        }
+
+        #error {
+            color: red; /* Color of error messages */
+            display: none; /* Hide error messages by default */
+        }
     </style>
 </head>
 <body>
-    <h1>BẢN ĐỒ KHẢO SÁT HỆ THỐNG CHIẾU SÁNG CÔNG CỘNG</h1>
-
+   
+    <h1>BẢN ĐỒ KHẢO SÁT HỆ THỐNG CHIẾU SÁNG CÔNG CỘNG</h1> 
     <div id="pageSelector">
         <label for="pages">Chọn Quận:</label>
         <select id="pages" onchange="navigateToPage()">
             <option value="bamgis.html">Trang khảo sát</option>
+           
             <option value="quan1.html">Quận 1</option>
             <option value="quan3.html">Quận 3</option>
             <option value="quan5.html">Quận 5</option>
             <option value="quan8.html">Quận 8</option>
-            <option value="quan10.html">Quận 10</option>
+            <option value="quận 10">Quận 10</option>
             <option value="quan11.html">Quận 11</option>
             <option value="quanbt.html">Quận Bình Thạnh</option>
             <option value="quanpn.html">Quận Phú Nhuận</option>
-            <option value="kehoach.html">Kế hoạch</option>
+            <option value="kehoach.html">Ke hoach</option>
         </select>
-
-        <input type="text" id="searchInput" placeholder="Nhập tên trụ hoặc tọa độ (lat, lon)" />
+        <id="searchContainer">
+        <input type="text" id="searchInput" placeholder="Nhập tên hoặc tọa độ (lat, lon)" />
         <button onclick="searchMarkers()">Tìm kiếm</button>
-        <button onclick="centerOnUserLocation()">Vị trí của tôi</button>
-        <button onclick="clearRoute()" style="background:#dc3545;">Xóa đường dẫn đường</button>
+        <button onclick="centerOnUserLocation()">My Location</button>
     </div>
-
     <div id="error"></div>
     <div id="map"></div>
+ <!-- copyright section start -->
+ <div class="copyright_section">
+    <p class="copyright_text">Copyright 8/2024 All Right Reserved By.<a href ="wwww.lavipco.tech" target="_blank"> CSKVTT  </a>    <img src="images/email-icon.png"><span class="map_icon">chieusangkhuvuctrungtam@gmail.com</span></p>
+</div>  <a href="https://www.example.com" target="_blank">Visit Example.com</a>
 
-    <!-- Copyright -->
-    <div style="text-align:center; padding:10px; background:#f8f9fa; margin-top:10px;">
-        <p>Copyright 8/2024 All Right Reserved By 
-            <a href="https://lavipco.tech" target="_blank">CSKVTT</a> 
-            — chieusangkhuvuctrungtam@gmail.com
-        </p>
-    </div>
+<!-- copyright section end -->
+  
 
-    <!-- Scripts -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+   <script>
+      
 
-    <script>
-        let map;
-        let markersCluster = L.markerClusterGroup();
-        let markers = [];
-        let routingControl = null;
-        let userPosition = null;
+       var map;// = initializeMap();
+        var markersCluster = L.markerClusterGroup();
+        var markers = [];
 
-        const customIcons = {
-            1: L.icon({ iconUrl: 'images/1.png', iconSize: [10, 10], iconAnchor: [5, 5] }),
-            2: L.icon({ iconUrl: 'images/2.png', iconSize: [10, 10], iconAnchor: [5, 5] }),
-            3: L.icon({ iconUrl: 'images/3.png', iconSize: [10, 10], iconAnchor: [5, 5] }),
-            4: L.icon({ iconUrl: 'images/4.png', iconSize: [10, 10], iconAnchor: [5, 5] }),
-            5: L.icon({ iconUrl: 'images/5.png', iconSize: [10, 10], iconAnchor: [5, 5] }),
-            6: L.icon({ iconUrl: 'images/9.png', iconSize: [16, 20], iconAnchor: [8, 10] }),
-            7: L.icon({ iconUrl: 'images/7.png', iconSize: [10, 10], iconAnchor: [5, 5] }),
-            default: L.icon({ iconUrl: 'images/8.png', iconSize: [10, 10], iconAnchor: [5, 5] })
-        };
+        var customIcon1 = L.icon({
+            iconUrl: 'images/1.png', // Ensure this path is correct
+            iconSize: [10, 10],
+            iconAnchor: [5, 5],
+            popupAnchor: [0, -10]
+            
+        });
+        var customIcon2 = L.icon({
+            iconUrl: 'images/2.png', // Ensure this path is correct
+            iconSize: [10, 10],
+            iconAnchor: [5, 5],
+            popupAnchor: [0, -10]
+            
+        }); 
+        var customIcon3 = L.icon({
+            iconUrl: 'images/3.png', // Ensure this path is correct
+            iconSize: [10, 10],
+            iconAnchor: [5, 5],
+            popupAnchor: [0, -10]
+            
+        });
+        var customIcon4 = L.icon({
+            iconUrl: 'images/4.png', // Ensure this path is correct
+            iconSize: [10, 10],
+            iconAnchor: [5, 5],
+            popupAnchor: [0, -10]
+            
+        });
+        var customIcon5 = L.icon({
+            iconUrl: 'images/5.png', // Ensure this path is correct
+            iconSize: [10, 10],
+            iconAnchor: [5, 5],
+            popupAnchor: [0, -10]
+            
+        });
+        var customIcon6 = L.icon({
+            iconUrl: 'images/9.png', // tu dieu khien
+            iconSize: [16, 20],
+            iconAnchor: [8, 10],
+            popupAnchor: [0, -10]
+            
+        });
+        var customIcon7 = L.icon({
+            iconUrl: 'images/7.png', // Ensure this path is correct
+            iconSize: [10, 10],
+            iconAnchor: [5, 5],
+            popupAnchor: [0, -10]
+            
+        });
+        var customIcon8 = L.icon({
+            iconUrl: 'images/8.png', // vi tri hien tai
+            iconSize: [10, 10],
+            iconAnchor: [5, 5],
+            popupAnchor: [0, -10]
+            
+        });
 
-        function initializeMap() {
-            map = L.map('map', { center: [10.762622, 106.660172], zoom: 13 });
+      
+       
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 33,
-                attribution: '© OpenStreetMap'
-            }).addTo(map);
-
-            const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-                maxZoom: 33, subdomains: ['mt0','mt1','mt2','mt3']
-            });
-
-            L.control.layers({
-                "OpenStreetMap": map.getLayers()[0],
-                "Satellite": satellite
-            }).addTo(map);
-
-            map.addLayer(markersCluster);
-            return map;
-        }
-
-        function addMarkersToMap(data) {
-            markersCluster.clearLayers();
-            markers = [];
-
-            data.forEach(row => {
-                const name = row[1];
-                const lat = parseFloat(row[2]);
-                const lon = parseFloat(row[3]);
-                const type = parseInt(row[6]) || 8;
-                const tudieukhien = row[7];
-                const loaitru = row[8];
-                const loaiden = row[10];
-
-                if (isNaN(lat) || isNaN(lon)) return;
-
-                const icon = customIcons[type] || customIcons.default;
-
-                const marker = L.marker([lat, lon], { icon });
-
-                const popupContent = `
-                    <strong>Tên trụ: ${name || 'Không có tên'}</strong><br>
-                    Lat: ${lat.toFixed(6)}<br>
-                    Lon: ${lon.toFixed(6)}<br>
-                    Trụ: ${loaitru || ''}<br>
-                    Tủ: ${tudieukhien || ''}<br>
-                    Đèn: ${loaiden || ''}<br><br>
-                    <button class="routing-btn" onclick="startNavigation(${lat}, ${lon}, '${name || ''}')">
-                        Dẫn đường từ vị trí hiện tại
-                    </button>
-                `;
-
-                marker.bindPopup(popupContent);
-                markersCluster.addLayer(marker);
-                markers.push({
-                    lat,
-                    lon,
-                    name,
-                    marker,
-                    searchText: [
-                        name,
-                        row[0],
-                        row[4],
-                        loaitru,
-                        tudieukhien,
-                        loaiden,
-                        lat,
-                        lon
-                    ].filter(Boolean).join(' ').toLowerCase()
-                });
-            });
-
-            if (markers.length > 0) map.fitBounds(markersCluster.getBounds().pad(0.1));
-        }
-
-        // ==================== TÍNH NĂNG DẪN ĐƯỜNG ====================
-        function startNavigation(destLat, destLon, name = '') {
-            if (!userPosition) {
-                displayError("Đang lấy vị trí hiện tại...");
-                navigator.geolocation.getCurrentPosition(
-                    pos => {
-                        userPosition = [pos.coords.latitude, pos.coords.longitude];
-                        createRoute(userPosition, [destLat, destLon], name);
-                    },
-                    err => displayError("Không lấy được vị trí hiện tại: " + err.message)
-                );
-            } else {
-                createRoute(userPosition, [destLat, destLon], name);
-            }
-        }
-
-        function createRoute(start, end, name) {
-            clearRoute(); // Xóa route cũ nếu có
-
-            routingControl = L.Routing.control({
-                waypoints: [
-                    L.latLng(start[0], start[1]),
-                    L.latLng(end[0], end[1])
-                ],
-                routeWhileDragging: true,
-                language: 'vi',                    // Hiển thị tiếng Việt nếu có
-                show: true,
-                lineOptions: { styles: [{ color: '#3388ff', weight: 6 }] }
-            }).addTo(map);
-
-            // Thông báo
-            routingControl.on('routesfound', function(e) {
-                const route = e.routes[0];
-                displayError(`Đường đi đến ${name || 'trụ đèn'}: ${Math.round(route.summary.totalDistance / 100) / 10} km — ${Math.round(route.summary.totalTime / 60)} phút`);
-            });
-        }
-
-        function clearRoute() {
-            if (routingControl) {
-                map.removeControl(routingControl);
-                routingControl = null;
-            }
-            displayError('');
-        }
-
-        // Các hàm cũ giữ nguyên
-       function processFile(file) {
-            const reader = new FileReader();
+        function processFile(file, map) {
+            var reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-                    addMarkersToMap(jsonData);
+                    var data = new Uint8Array(e.target.result);
+                    var workbook = XLSX.read(data, {type: 'array'});
+                    var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    var jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+                    addMarkersToMap(jsonData, map);
                 } catch (error) {
-                    displayError('Lỗi xử lý file Excel: ' + error.message);
+                    displayError('Error processing file: ' + error.message);
                 }
             };
             reader.readAsArrayBuffer(file);
         }
-       function loadDefaultFile() {
-            fetch('data/khaosat.xlsx')
-                .then(response => {
-                    if (!response.ok) throw new Error('File không tồn tại');
-                    return response.blob();
-                })
-                .then(blob => {
-                    const file = new File([blob], 'khaosat.xlsx');
-                    processFile(file);
-                })
-                .catch(error => {
-                    displayError('Không thể tải file dữ liệu mặc định: ' + error.message);
-                    console.error(error);
-                });
+        function initializeMap() {
+            var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 33,
+        attribution: '© OpenStreetMap contributors'
+    });
+
+    var satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+        maxZoom: 33,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '© Google Maps'
+    });
+
+    var terrain = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 33,
+        attribution: '© OpenTopoMap contributors'
+    });
+
+            map = L.map('map', {
+                center: [10.762622, 106.660172],
+                zoom: 13,
+                maxZoom: 33,
+                layers: [osm]
+            });
+
+            L.control.layers({
+                "OpenStreetMap": osm,
+        "Satellite": satellite,
+        "Terrain": terrain
+            }).addTo(map);
+
+           // markersCluster = L.markerClusterGroup().addTo(map);
+           // L.control.layers(baseLayers).addTo(map);
+            return map;
+        }
+
+    function addMarkersToMap(data, map) {
+            var lastLat, lastLon;
+            data.forEach(function(row) {
+               
+
+                var name = row[1];
+                var lat = row[2];
+                var lon = row[3];
+                var type= row[6];
+                var tudieukhien = row[7]; // Assuming the URL is in the fifth column
+                var loaitru = row[8];
+                var loaican = row[9];
+                var loaiden = row[10];
+                var icon;
+
+              //  displayError('Info: ' + name + 'lat: '+ lastLat + ' lon: '+lastLon + ' type: ' + type +' tu dk: '+tudieukhien+' Loại trụ: '+loaitru+' Loại cần: ' + loaican);
+                var icon;
+                    switch (type) {
+                    case 1:
+                        icon = customIcon1;
+                        break;
+                    case 2:
+                        icon = customIcon2;
+                        break;
+                    case 3:
+                        icon = customIcon3;
+                        break;
+                    case 4:
+                        icon = customIcon4;
+                        break;
+                    case 5:
+                        icon = customIcon5;
+                        break;
+                    case 6:
+                        icon = customIcon6;
+                        break;
+                    case 7:
+                        icon = customIcon7;
+                        break;
+                    default:
+                        icon = customIcon8; // Fallback icon
+                }
+
+
+            if (!isNaN(lat) && !isNaN(lon)) {
+                    
+
+                    lastLat = lat;
+                    lastLon = lon;
+                    var marker = L.marker([lat, lon], {icon: icon}).addTo(map);
+                    
+                    var popupContent = 
+                    `<div>
+                    <strong>Tên trụ: ${name}</strong>
+                    </div>
+                    <div>Lat: ${lat}</div>
+                    <div>Lon: ${lon}</div>
+                    <div>Trụ: ${loaitru}</div>
+                    <div>Tủ: ${tudieukhien}</div>
+                    <div>Đèn: ${loaiden}</div>`;
+                    marker.bindPopup(popupContent);
+                    markersCluster.addLayer(marker)
+                    markers.push({lat: lat, lon: lon, name: name, marker: marker});
+
+                    if (name) {
+                        var label = L.divIcon({
+                            className: 'custom-label',
+                            html: `<div>${name}</div>`,
+                            iconSize: [100, 20],
+                            iconAnchor: [15, 25]
+                        });
+                        L.marker([lat, lon], {icon: label}).addTo(map);
+                    }
+                                }
+
+            });
+           
+            
+            if (lastLat !== undefined && lastLon !== undefined) {
+               map.setView([lastLat, lastLon], 19);
+            }
+          //  map.addLayer(markersCluster);
         }
 
         function navigateToPage() {
-            const select = document.getElementById("pages");
-            if (select.value) {
-                window.location.href = select.value;
-            }
-        }
-
+                var select = document.getElementById("pages");
+                var selectedPage = select.value;
+                 window.location.href = selectedPage;
+                                    }
         function searchMarkers() {
-            const input = document.getElementById('searchInput').value.trim().toLowerCase();
-            if (!input) {
-                displayError('Vui lòng nhập tên trụ, mã hoặc tọa độ để tìm kiếm.');
-                return;
-            }
-
-            let found = false;
-            const matches = markers.filter(item => item.searchText && item.searchText.includes(input));
-
-            if (matches.length > 0) {
-                const item = matches[0];
-                map.setView([item.lat, item.lon], 20);
-                item.marker.openPopup();
-                displayError(`Tìm thấy ${matches.length} điểm phù hợp. Mở kết quả đầu tiên.`);
-                found = true;
-            }
-
-            // Try coordinate search if no text match
-            if (!found && input.includes(',')) {
-                const coords = input.split(',').map(c => parseFloat(c.trim()));
-                if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
-                    map.setView([coords[0], coords[1]], 20);
-                    displayError('Hiển thị tọa độ tìm kiếm.');
+            var input = document.getElementById('searchInput').value.toLowerCase();
+            var found = false;
+            markers.forEach(function(item) {
+                if (item.name && item.name.toLowerCase().includes(input)) {
+                    map.setView([item.lat, item.lon], 20);
                     found = true;
-                }
-            }
-
-            if (!found) {
-                displayError('Không tìm thấy điểm nào phù hợp.');
-            }
-        }
-        function displayError(msg) {
-            const el = document.getElementById('error');
-            el.textContent = msg;
-            el.style.display = msg ? 'block' : 'none';
-        }
-       function centerOnUserLocation() {
-            if (!navigator.geolocation) {
-                displayError('Trình duyệt không hỗ trợ định vị.');
-                return;
-            }
-
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    map.setView([lat, lon], 19);
-
-                    L.marker([lat, lon], { icon: customIcons.default })
-                        .addTo(map)
-                        .bindPopup('Vị trí hiện tại của bạn')
-                        .openPopup();
-                },
-                function(error) {
-                    displayError('Không thể lấy vị trí: ' + error.message);
-                }
-            );
-        }
-        // Khởi tạo
-        window.onload = () => {
-            map = initializeMap();
-            loadDefaultFile();   // hàm load file Excel của bạn
-
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.addEventListener('keydown', function (event) {
-                    if (event.key === 'Enter') {
-                        event.preventDefault();
-                        searchMarkers();
+                } else if (input.includes(',')) {
+                    var coords = input.split(',');
+                    var lat = parseFloat(coords[0].trim());
+                    var lon = parseFloat(coords[1].trim());
+                    if (item.lat === lat && item.lon === lon) {
+                        map.setView([item.lat, item.lon], 20);
+                        found = true;
                     }
-                });
+                }
+            });
+            if (!found) {
+                displayError('Không tìm thấy điểm đánh dấu nào.');
+            } else {
+                displayError('');
             }
+        }
+
+        function displayError(message) {
+            var errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            if (message) {
+                errorDiv.style.display = 'block';
+            } else {
+                errorDiv.style.display = 'none';
+            }
+        }
+// Dịnh vị
+function centerOnUserLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var lat = position.coords.latitude;
+                    var lon = position.coords.longitude;
+                    map.setView([lat, lon], 20);
+                    L.marker([lat, lon], {icon: customIcon8}).addTo(map)
+                        .bindPopup('You are here!')
+                        .openPopup();
+                }, function(error) {
+                    displayError('Unable to retrieve your location: ' + error.message);
+                });
+            } else {
+                displayError('Geolocation is not supported by your browser.');
+            }
+        }
+        function loadDefaultFile(map) {
+            fetch('data/khaosat.xlsx')
+                .then(response => response.blob())
+                .then(blob => {
+                    var file = new File([blob], 'data/khaosat.xlsx');
+                    processFile(file, map);
+                })
+                .catch(error => displayError('Error loading default file: ' + error.message));
+        }
+
+        // Load the default file when the page loads
+        window.onload = function() {
+         initializeMap();
+            loadDefaultFile(map);
+            
         };
-    </script>
+   
+   </script>
 </body>
 </html>

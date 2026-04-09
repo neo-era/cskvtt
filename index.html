@@ -1,26 +1,85 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <title>Lighting System V1.0 - Có Dẫn Đường</title>
+    <title>Lighting System V1.1</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <!-- Site metas -->
+    <meta name="author" content="Mai Vũ Lâm">
 
     <!-- CSS -->
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/jquery.mCustomScrollbar.min.css">
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
+    <link rel="stylesheet" href="css/owl.carousel.min.css">
+    <link rel="stylesheet" href="css/owl.theme.default.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.min.css" media="screen">
+
+    <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+
+    <!-- Favicon -->
+    <link rel="icon" href="images/fevicon.png" type="image/gif" />
 
     <style>
-        h1 { font-size: 24px; color: #2510c6; text-align: center; margin: 15px 0; }
-        #pageSelector { text-align: center; margin: 10px 0; }
-        #pages, #searchInput { padding: 8px; margin: 5px; font-size: 16px; }
-        button { background: #007bff; color: #fff; border: none; padding: 8px 16px; margin: 5px; cursor: pointer; }
-        button:hover { background: #0056b3; }
-        #map { height: 750px; width: 100%; }
-        #error { color: red; text-align: center; margin: 10px 0; font-weight: bold; }
-        .routing-btn { background: #28a745; margin-top: 8px; }
-        .routing-btn:hover { background: #218838; }
+        h1 {
+            font-size: 24px;
+            color: #2510c6;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        #pageSelector {
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        #pages, #searchInput {
+            padding: 8px;
+            margin: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #map {
+            height: 750px;
+            width: 100%;
+        }
+
+        #error {
+            color: red;
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        .custom-label {
+            background: none;
+            border: none;
+            box-shadow: none;
+            font-weight: bold;
+            color: #000;
+            text-shadow: 1px 1px 2px white;
+        }
     </style>
 </head>
 <body>
@@ -44,58 +103,64 @@
         <input type="text" id="searchInput" placeholder="Nhập tên trụ hoặc tọa độ (lat, lon)" />
         <button onclick="searchMarkers()">Tìm kiếm</button>
         <button onclick="centerOnUserLocation()">Vị trí của tôi</button>
-        <button onclick="clearRoute()" style="background:#dc3545;">Xóa đường dẫn đường</button>
     </div>
 
     <div id="error"></div>
     <div id="map"></div>
 
     <!-- Copyright -->
-    <div style="text-align:center; padding:10px; background:#f8f9fa; margin-top:10px;">
-        <p>Copyright 8/2024 All Right Reserved By 
+    <div class="copyright_section" style="text-align:center; padding:10px; background:#f8f9fa; margin-top:10px;">
+        <p class="copyright_text">
+            Copyright 8/2024 All Right Reserved By 
             <a href="https://lavipco.tech" target="_blank">CSKVTT</a> 
-            — chieusangkhuvuctrungtam@gmail.com
+            <img src="images/email-icon.png" alt="email" style="vertical-align:middle; margin:0 5px;">
+            <span>chieusangkhuvuctrungtam@gmail.com</span>
         </p>
     </div>
 
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script>
         let map;
         let markersCluster = L.markerClusterGroup();
         let markers = [];
-        let routingControl = null;
-        let userPosition = null;
 
+        // Custom Icons
         const customIcons = {
-            1: L.icon({ iconUrl: 'images/1.png', iconSize: [10, 10], iconAnchor: [5, 5] }),
-            2: L.icon({ iconUrl: 'images/2.png', iconSize: [10, 10], iconAnchor: [5, 5] }),
-            3: L.icon({ iconUrl: 'images/3.png', iconSize: [10, 10], iconAnchor: [5, 5] }),
-            4: L.icon({ iconUrl: 'images/4.png', iconSize: [10, 10], iconAnchor: [5, 5] }),
-            5: L.icon({ iconUrl: 'images/5.png', iconSize: [10, 10], iconAnchor: [5, 5] }),
-            6: L.icon({ iconUrl: 'images/9.png', iconSize: [16, 20], iconAnchor: [8, 10] }),
-            7: L.icon({ iconUrl: 'images/7.png', iconSize: [10, 10], iconAnchor: [5, 5] }),
-            default: L.icon({ iconUrl: 'images/8.png', iconSize: [10, 10], iconAnchor: [5, 5] })
+            1: L.icon({ iconUrl: 'images/1.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
+            2: L.icon({ iconUrl: 'images/2.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
+            3: L.icon({ iconUrl: 'images/3.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
+            4: L.icon({ iconUrl: 'images/4.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
+            5: L.icon({ iconUrl: 'images/5.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
+            6: L.icon({ iconUrl: 'images/9.png', iconSize: [16, 20], iconAnchor: [8, 10], popupAnchor: [0, -10] }),
+            7: L.icon({ iconUrl: 'images/7.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
+            default: L.icon({ iconUrl: 'images/8.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] })
         };
 
         function initializeMap() {
-            map = L.map('map', { center: [10.762622, 106.660172], zoom: 13 });
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 33,
-                attribution: '© OpenStreetMap'
-            }).addTo(map);
+                attribution: '© OpenStreetMap contributors'
+            });
 
             const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-                maxZoom: 33, subdomains: ['mt0','mt1','mt2','mt3']
+                maxZoom: 33,
+                subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+                attribution: '© Google Maps'
+            });
+
+            map = L.map('map', {
+                center: [10.762622, 106.660172],
+                zoom: 13,
+                maxZoom: 33,
+                layers: [osm]
             });
 
             L.control.layers({
-                "OpenStreetMap": map.getLayers()[0],
+                "OpenStreetMap": osm,
                 "Satellite": satellite
             }).addTo(map);
 
@@ -111,98 +176,150 @@
                 const name = row[1];
                 const lat = parseFloat(row[2]);
                 const lon = parseFloat(row[3]);
-                const type = parseInt(row[6]) || 8;
+                const type = parseInt(row[6]);
                 const tudieukhien = row[7];
                 const loaitru = row[8];
+                const loaican = row[9];
                 const loaiden = row[10];
 
                 if (isNaN(lat) || isNaN(lon)) return;
 
                 const icon = customIcons[type] || customIcons.default;
 
-                const marker = L.marker([lat, lon], { icon });
+                const marker = L.marker([lat, lon], { icon: icon });
 
                 const popupContent = `
-                    <strong>Tên trụ: ${name || 'Không có tên'}</strong><br>
-                    Lat: ${lat.toFixed(6)}<br>
-                    Lon: ${lon.toFixed(6)}<br>
-                    Trụ: ${loaitru || ''}<br>
-                    Tủ: ${tudieukhien || ''}<br>
-                    Đèn: ${loaiden || ''}<br><br>
-                    <button class="routing-btn" onclick="startNavigation(${lat}, ${lon}, '${name || ''}')">
-                        Dẫn đường từ vị trí hiện tại
-                    </button>
-                `;
+                    <div>
+                        <strong>Tên trụ: ${name || 'Không có tên'}</strong><br>
+                        Lat: ${lat.toFixed(6)}<br>
+                        Lon: ${lon.toFixed(6)}<br>
+                        Trụ: ${loaitru || ''}<br>
+                        Tủ điều khiển: ${tudieukhien || ''}<br>
+                        Đèn: ${loaiden || ''}
+                    </div>`;
 
                 marker.bindPopup(popupContent);
                 markersCluster.addLayer(marker);
+
                 markers.push({ lat, lon, name, marker });
+
+                // Optional: Add text label
+                if (name) {
+                    const label = L.marker([lat, lon], {
+                        icon: L.divIcon({
+                            className: 'custom-label',
+                            html: `<div style="font-size:12px; font-weight:bold;">${name}</div>`,
+                            iconSize: [80, 20],
+                            iconAnchor: [40, 30]
+                        })
+                    }).addTo(map);
+                }
             });
 
-            if (markers.length > 0) map.fitBounds(markersCluster.getBounds().pad(0.1));
-        }
-
-        // ==================== TÍNH NĂNG DẪN ĐƯỜNG ====================
-        function startNavigation(destLat, destLon, name = '') {
-            if (!userPosition) {
-                displayError("Đang lấy vị trí hiện tại...");
-                navigator.geolocation.getCurrentPosition(
-                    pos => {
-                        userPosition = [pos.coords.latitude, pos.coords.longitude];
-                        createRoute(userPosition, [destLat, destLon], name);
-                    },
-                    err => displayError("Không lấy được vị trí hiện tại: " + err.message)
-                );
-            } else {
-                createRoute(userPosition, [destLat, destLon], name);
+            if (markers.length > 0) {
+                map.fitBounds(markersCluster.getBounds().pad(0.1));
             }
         }
 
-        function createRoute(start, end, name) {
-            clearRoute(); // Xóa route cũ nếu có
-
-            routingControl = L.Routing.control({
-                waypoints: [
-                    L.latLng(start[0], start[1]),
-                    L.latLng(end[0], end[1])
-                ],
-                routeWhileDragging: true,
-                language: 'vi',                    // Hiển thị tiếng Việt nếu có
-                show: true,
-                lineOptions: { styles: [{ color: '#3388ff', weight: 6 }] }
-            }).addTo(map);
-
-            // Thông báo
-            routingControl.on('routesfound', function(e) {
-                const route = e.routes[0];
-                displayError(`Đường đi đến ${name || 'trụ đèn'}: ${Math.round(route.summary.totalDistance / 100) / 10} km — ${Math.round(route.summary.totalTime / 60)} phút`);
-            });
+        function processFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    addMarkersToMap(jsonData);
+                } catch (error) {
+                    displayError('Lỗi xử lý file Excel: ' + error.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
         }
 
-        function clearRoute() {
-            if (routingControl) {
-                map.removeControl(routingControl);
-                routingControl = null;
+        function loadDefaultFile() {
+            fetch('data/khaosat.xlsx')
+                .then(response => {
+                    if (!response.ok) throw new Error('File không tồn tại');
+                    return response.blob();
+                })
+                .then(blob => {
+                    const file = new File([blob], 'khaosat.xlsx');
+                    processFile(file);
+                })
+                .catch(error => {
+                    displayError('Không thể tải file dữ liệu mặc định: ' + error.message);
+                    console.error(error);
+                });
+        }
+
+        function navigateToPage() {
+            const select = document.getElementById("pages");
+            if (select.value) {
+                window.location.href = select.value;
             }
-            displayError('');
         }
 
-        // Các hàm cũ giữ nguyên
-        function processFile(file) { /* ... giữ nguyên như trước ... */ }
-        function loadDefaultFile() { /* ... giữ nguyên ... */ }
-        function navigateToPage() { /* ... giữ nguyên ... */ }
-        function searchMarkers() { /* ... giữ nguyên ... */ }
-        function displayError(msg) {
-            const el = document.getElementById('error');
-            el.textContent = msg;
-            el.style.display = msg ? 'block' : 'none';
-        }
-        function centerOnUserLocation() { /* ... giữ nguyên ... */ }
+        function searchMarkers() {
+            const input = document.getElementById('searchInput').value.trim().toLowerCase();
+            if (!input) return;
 
-        // Khởi tạo
-        window.onload = () => {
+            let found = false;
+
+            for (const item of markers) {
+                if (item.name && item.name.toLowerCase().includes(input)) {
+                    map.setView([item.lat, item.lon], 20);
+                    item.marker.openPopup();
+                    found = true;
+                    break;
+                }
+            }
+
+            // Try coordinate search
+            if (!found && input.includes(',')) {
+                const coords = input.split(',').map(c => parseFloat(c.trim()));
+                if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+                    map.setView([coords[0], coords[1]], 20);
+                    found = true;
+                }
+            }
+
+            displayError(found ? '' : 'Không tìm thấy điểm nào phù hợp.');
+        }
+
+        function displayError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = message ? 'block' : 'none';
+        }
+
+        function centerOnUserLocation() {
+            if (!navigator.geolocation) {
+                displayError('Trình duyệt không hỗ trợ định vị.');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    map.setView([lat, lon], 19);
+
+                    L.marker([lat, lon], { icon: customIcons.default })
+                        .addTo(map)
+                        .bindPopup('Vị trí hiện tại của bạn')
+                        .openPopup();
+                },
+                function(error) {
+                    displayError('Không thể lấy vị trí: ' + error.message);
+                }
+            );
+        }
+
+        // Initialize when page loads
+        window.onload = function() {
             map = initializeMap();
-            loadDefaultFile();   // hàm load file Excel của bạn
+            loadDefaultFile();
         };
     </script>
 </body>

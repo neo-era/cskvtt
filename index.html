@@ -297,7 +297,10 @@ h1 {
                     lastLat = lat;
                     lastLon = lon;
                     var marker = L.marker([lat, lon], {icon: icon});
-                    var safeName = (name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                    var safeName = name
+                                  .replace(/\\/g, '\\\\')   // escape backslash trước
+                                     .replace(/'/g, "\\'")     // escape dấu nháy đơn
+                                     .replace(/"/g, '\\"');    // escape dấu nháy kép (phòng trường hợp)
                     var popupContent = 
                     `<div>
                     <strong>Tên trụ: ${name}</strong>

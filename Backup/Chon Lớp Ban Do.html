@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Map with Points from Excel</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <style>
+        #map { height: 600px; }
+        #error { color: red; }
+        #loading { display: none; color: blue; }
+    </style>
+</head>
+<body>
+    <h1>Map with Points from Excel</h1>
+    <input type="file" id="fileInput" />
+    <div id="error"></div>
+    <div id="loading">Processing file, please wait...</div>
+    <div id="map"></div>
+    <script>
+        // Function to initialize the map
+        function initializeMap() {
+            var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            });
+
+            var satelliteLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}@2x?lang=en&label=mapbox.satellite', {
+                attribution: '© Mapbox, © OpenStreetMap'
+            });
+
+            var terrainLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors, SRTM | © OpenTopoMap'
+            });
+
+            var map = L.map('map', {
+                center: [0, 0],
+                zoom: 2,
+                layers: [osmLayer] // Default layer
+            });
+
+            var baseLayers = {
+                "OpenStreetMap": osmLayer,
+                "Satellite": satelliteLayer,
+                "Terrain": terrainLayer
+            };
+
+            L.control.layers(baseLayers).addTo(map);
+
+            return map;
+        }
+
+        // Function to create a custom icon
+        function createIcon(iconUrl) {
+            return L.icon({
+                iconUrl: iconUrl,
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34]
+            });
+        }
+
+        // Function to handle file input
+        function handleFileInput(e, map) {
+            var file = e.target.files[0];
+            if (!file || !file.name.endsWith('.xlsx')) {
+                document.getElementById('error').textContent = 'Please upload a valid Excel file.';
+                return;
+            }
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').textContent = '';
+
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    var data = new Uint8Array(e.target.result);
+                    var workbook = XLSX.read(data, {type: 'array'});
+                    var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    var jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+
+                    if (!Array.isArray(jsonData) || jsonData.length === 0) {
+                        throw new Error('Invalid data format.');
+                    }
+
+                    var lastLat, lastLon;
+                    jsonData.forEach(function(row) {
+                        var lat = parseFloat(row[2]);
+                        var lon = parseFloat(row[3]);
+                        var name = row[1];
+                        var type = row[4];
+                        var icon = (type === 'type1') ? createIcon('icon1.png') : createIcon('icon2.png');
+
+                        if (!isNaN(lat) && !isNaN(lon)) {
+                            L.marker([lat, lon], {icon: icon}).addTo(map);
+                            if (name) {
+                                L.divIcon({
+                                    className: 'custom-label',
+                                    html: `<div>${name}</div>`,
+                                    iconSize: [100, 20],
+                                    iconAnchor: [50, 10]
+                                });
+                            }
+                            lastLat = lat;
+                            lastLon = lon;
+                        }
+                    });
+
+                    if (lastLat !== undefined && lastLon !== undefined) {
+                        map.setView([lastLat, lastLon], 10); // Adjust zoom level as needed
+                    }
+                    document.getElementById('loading').style.display = 'none';
+                } catch (error) {
+                    document.getElementById('error').textContent = 'Error processing file: ' + error.message;
+                    document.getElementById('loading').style.display = 'none';
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Initialize map and set up event listener
+        var map = initializeMap();
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            handleFileInput(e, map);
+        });
+    </script>
+</body>
+</html>

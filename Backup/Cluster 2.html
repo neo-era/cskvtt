@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Chiếu Sáng V1.0</title>
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="icon" href="images/fevicon.png" type="image/gif" />
+    <link rel="stylesheet" href="css/jquery.mCustomScrollbar.min.css">
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
+    <link rel="stylesheet" href="css/owl.carousel.min.css">
+    <link rel="stylesheet" href="css/owl.theme.default.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.min.css" media="screen">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <style>
+        #map { height: 700px; }
+        #error { color: red; display: none; }
+        #searchContainer { margin: 10px 0; }
+        .custom-label { /* Thêm CSS cho label tùy chỉnh của bạn ở đây */ }
+    </style>
+</head>
+<body>
+    <h1>Bản Đồ Khảo Sát Hệ Thống Chiếu Sáng Khu Vực Trung Tâm</h1>
+    <div id="pageSelector">
+        <label for="pages">Chọn Quận:</label>
+        <select id="pages" onchange="navigateToPage()">
+            <option value="quan1.html">Quận 1</option>
+            <option value="quan3.html">Quận 3</option>
+            <option value="quan5.html">Quận 5</option>
+            <option value="quan8.html">Quận 8</option>
+            <option value="quan10.html">Quận 10</option>
+            <option value="quan11.html">Quận 11</option>
+            <option value="quanpn.html">Quận Phú Nhuận</option>
+            <option value="quanbt.html">Quận Bình Thạnh</option>
+            <option value="index.html">Trang khảo sát</option>
+        </select>
+        <div id="searchContainer">
+            <input type="text" id="searchInput" placeholder="Nhập tên hoặc tọa độ (lat, lon)" />
+            <button onclick="searchMarkers()">Tìm kiếm</button>
+            <button onclick="centerOnUserLocation()">Center on My Location</button>
+        </div>
+    </div>
+    <div id="error"></div>
+    <div id="map"></div>
+    <div class="copyright_section">
+        <p class="copyright_text">
+            Copyright 8/2024 All Right Reserved By.
+            <a href="http://www.lavipco.tech" target="_blank">CSKVTT</a>
+            <img src="images/email-icon.png">
+            <span class="map_icon">chieusangkhuvuctrungtam@gmail.com</span>
+        </p>
+    </div>
+    <a href="https://www.example.com" target="_blank">Visit Example.com</a>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script>
+        // Khởi tạo bản đồ và các biến toàn cục
+        var map = L.map('map').setView([10.7694693, 106.6928983], 10);
+        var markersCluster = L.markerClusterGroup();
+        var markers = [];
+
+        // Các biến và hàm khởi tạo icon của bạn ở đây...
+
+        function addMarkersToMap(data, map) {
+            var lastLat, lastLon;
+            data.forEach(function(row) {
+                // ... (phần xử lý dữ liệu của bạn ở đây)
+                var lat = row[2];
+                var lon = row[3];
+                var name = row[1];
+                var type = row[4];
+                var icon = getIconByType(type); // Hàm này cần được định nghĩa để lấy icon phù hợp
+
+                if (!isNaN(lat) && !isNaN(lon)) {
+                    var marker = L.marker([lat, lon], {icon: icon});
+                    var popupContent = createPopupContent(row); // Hàm này cần được định nghĩa để tạo nội dung popup
+                    marker.bindPopup(popupContent);
+                    markersCluster.addLayer(marker);
+                    markers.push({lat: lat, lon: lon, name: name, marker: marker});
+                }
+            });
+
+            map.addLayer(markersCluster);
+        }
+
+        // Các hàm khác của bạn ở đây...
+
+        // Tìm kiếm marker
+        function searchMarkers() {
+            // ... (phần mã tìm kiếm của bạn ở đây)
+        }
+
+        // Hiển thị thông báo lỗi
+        function displayError(message) {
+            // ... (phần mã hiển thị lỗi của bạn ở đây)
+        }
+
+        // Định vị người dùng
+        function centerOnUserLocation() {
+            // ... (phần mã định vị người dùng của bạn ở đây)
+        }
+
+        // Tải dữ liệu mặc định
+        function loadDefaultFile(map) {
+            // ... (phần mã tải dữ liệu mặc định của bạn ở đây)
+        }
+
+        // Tải tệp mặc định khi trang web được tải
+        window.onload = function() {
+            loadDefaultFile(map);
+        };
+
+        // Hàm để lấy icon dựa trên loại
+        function getIconByType(type) {
+            // ... (phần mã lấy icon dựa trên loại của bạn ở đây)
+        }
+
+        // Hàm để tạo nội dung popup
+        function createPopupContent(row) {
+            // ... (phần mã tạo nội dung popup của bạn ở đây)
+        }
+    </script>
+</body>
+</html>

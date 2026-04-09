@@ -89,11 +89,20 @@
 
         #searchResults li {
             margin: 4px 0;
+            padding: 5px 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+
+        #searchResults li:hover {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
         }
 
         #searchResults a {
             color: #007bff;
             text-decoration: none;
+            display: block;
         }
 
         #searchResults a:hover {
@@ -107,6 +116,11 @@
             font-weight: bold;
             color: #000;
             text-shadow: 1px 1px 2px white;
+        }
+
+        .marker-highlight {
+            filter: brightness(1.5) drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
+            z-index: 1000 !important;
         }
     </style>
 </head>
@@ -492,6 +506,17 @@
                     link.onclick = function(event) {
                         event.preventDefault();
                         goToMarker(match.index);
+                    };
+                    // Thêm event listeners cho hover effect
+                    link.onmouseover = function() {
+                        if (match.item.marker._icon) {
+                            match.item.marker._icon.classList.add('marker-highlight');
+                        }
+                    };
+                    link.onmouseout = function() {
+                        if (match.item.marker._icon) {
+                            match.item.marker._icon.classList.remove('marker-highlight');
+                        }
                     };
                     listItem.appendChild(link);
                     list.appendChild(listItem);

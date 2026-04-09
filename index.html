@@ -39,8 +39,10 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 
     <style>
@@ -110,6 +112,7 @@ h1 {
         <id="searchContainer">
         <input type="text" id="searchInput" placeholder="Nhập tên hoặc tọa độ (lat, lon)" />
         <button onclick="searchMarkers()">Tìm kiếm</button>
+        <button onclick="routeToSelectedMarker()">Dẫn đường đến marker</button>
         <button onclick="centerOnUserLocation()">My Location</button>
     </div>
     <div id="error"></div>
@@ -128,6 +131,9 @@ h1 {
        var map;// = initializeMap();
         var markersCluster = L.markerClusterGroup();
         var markers = [];
+        var routingControl = null;
+        var selectedMarker = null;
+        var currentLocationMarker = null;
 
         var customIcon1 = L.icon({
             iconUrl: 'images/1.png', // Ensure this path is correct
@@ -228,6 +234,8 @@ h1 {
                 layers: [osm]
             });
 
+            markersCluster.addTo(map);
+
             L.control.layers({
                 "OpenStreetMap": osm,
         "Satellite": satellite,
@@ -288,8 +296,8 @@ h1 {
 
                     lastLat = lat;
                     lastLon = lon;
-                    var marker = L.marker([lat, lon], {icon: icon}).addTo(map);
-                    
+                    var marker = L.marker([lat, lon], {icon: icon});
+                    var safeName = (name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                     var popupContent = 
                     `<div>
                     <strong>Tên trụ: ${name}</strong>
@@ -298,9 +306,15 @@ h1 {
                     <div>Lon: ${lon}</div>
                     <div>Trụ: ${loaitru}</div>
                     <div>Tủ: ${tudieukhien}</div>
-                    <div>Đèn: ${loaiden}</div>`;
+                    <div>Đèn: ${loaiden}</div>
+                    <div style="margin-top:8px;">
+                        <button onclick="startRoutingToMarker(${lat}, ${lon}, '${safeName}')">Dẫn đường từ vị trí hiện tại</button>
+                    </div>`;
                     marker.bindPopup(popupContent);
-                    markersCluster.addLayer(marker)
+                    marker.on('click', function() {
+                        selectedMarker = {lat: lat, lon: lon, name: name};
+                    });
+                    markersCluster.addLayer(marker);
                     markers.push({lat: lat, lon: lon, name: name, marker: marker});
 
                     if (name) {
@@ -333,14 +347,22 @@ h1 {
             var found = false;
             markers.forEach(function(item) {
                 if (item.name && item.name.toLowerCase().includes(input)) {
+                    selectedMarker = {lat: item.lat, lon: item.lon, name: item.name};
                     map.setView([item.lat, item.lon], 20);
+                    if (item.marker) {
+                        item.marker.openPopup();
+                    }
                     found = true;
                 } else if (input.includes(',')) {
                     var coords = input.split(',');
                     var lat = parseFloat(coords[0].trim());
                     var lon = parseFloat(coords[1].trim());
                     if (item.lat === lat && item.lon === lon) {
+                        selectedMarker = {lat: item.lat, lon: item.lon, name: item.name};
                         map.setView([item.lat, item.lon], 20);
+                        if (item.marker) {
+                            item.marker.openPopup();
+                        }
                         found = true;
                     }
                 }
@@ -361,6 +383,47 @@ h1 {
                 errorDiv.style.display = 'none';
             }
         }
+
+        function clearRoute() {
+            if (routingControl) {
+                map.removeControl(routingControl);
+                routingControl = null;
+            }
+        }
+
+        function startRoutingToMarker(destLat, destLon, name) {
+            if (!navigator.geolocation) {
+                displayError('Trình duyệt không hỗ trợ định vị.');
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(function(position) {
+                var userLat = position.coords.latitude;
+                var userLon = position.coords.longitude;
+                selectedMarker = {lat: destLat, lon: destLon, name: name};
+                clearRoute();
+                routingControl = L.Routing.control({
+                    waypoints: [
+                        L.latLng(userLat, userLon),
+                        L.latLng(destLat, destLon)
+                    ],
+                    routeWhileDragging: true,
+                    showAlternatives: false
+                }).addTo(map);
+                map.setView([userLat, userLon], 13);
+                L.marker([userLat, userLon], {icon: customIcon8}).addTo(map).bindPopup('Vị trí hiện tại của bạn').openPopup();
+            }, function(error) {
+                displayError('Không thể lấy vị trí hiện tại: ' + error.message);
+            });
+        }
+
+        function routeToSelectedMarker() {
+            if (!selectedMarker) {
+                displayError('Vui lòng chọn một marker trên bản đồ trước khi dẫn đường.');
+                return;
+            }
+            startRoutingToMarker(selectedMarker.lat, selectedMarker.lon, selectedMarker.name);
+        }
+
 // Dịnh vị
 function centerOnUserLocation() {
             if (navigator.geolocation) {

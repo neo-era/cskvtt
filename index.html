@@ -72,6 +72,32 @@
             font-weight: bold;
         }
 
+        #searchResults {
+            margin: 10px auto;
+            font-size: 15px;
+            max-width: 1200px;
+            text-align: left;
+        }
+
+        #searchResults ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #searchResults li {
+            margin: 4px 0;
+        }
+
+        #searchResults a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        #searchResults a:hover {
+            text-decoration: underline;
+        }
+
         .custom-label {
             background: none;
             border: none;
@@ -108,6 +134,7 @@
     </div>
 
     <div id="error"></div>
+    <div id="searchResults"></div>
     <div id="map"></div>
 
     <!-- Copyright -->
@@ -173,24 +200,53 @@
                 "Satellite": satellite
             }).addTo(map);
 
+            // Add zoom display control
+            L.control.zoomDisplay = function(opts) {
+                return new L.Control.ZoomDisplay(opts);
+            };
+
+            L.Control.ZoomDisplay = L.Control.extend({
+                options: {
+                    position: 'topright'
+                },
+
+                onAdd: function(map) {
+                    this._container = L.DomUtil.create('div', 'leaflet-control-zoom-display');
+                    this._container.style.backgroundColor = 'white';
+                    this._container.style.padding = '5px 10px';
+                    this._container.style.border = '2px solid rgba(0,0,0,0.2)';
+                    this._container.style.borderRadius = '4px';
+                    this._container.style.fontSize = '14px';
+                    this._container.style.fontWeight = 'bold';
+                    this._container.style.color = '#333';
+                    this._container.style.boxShadow = '0 1px 5px rgba(0,0,0,0.4)';
+
+                    this._updateZoom();
+                    map.on('zoomend', this._updateZoom, this);
+
+                    return this._container;
+                },
+
+                onRemove: function(map) {
+                    map.off('zoomend', this._updateZoom, this);
+                },
+
+                _updateZoom: function() {
+                    if (this._container) {
+                        this._container.innerHTML = 'Zoom: ' + this._map.getZoom();
+                    }
+                }
+            });
+
+            L.control.zoomDisplay().addTo(map);
+
             map.addLayer(markersCluster);
             map.addLayer(labelLayerGroup);
 
             map.on('click', function(e) {
                 if (!pendingNewMarker) return;
-                pendingNewMarker = false;
                 pendingMarkerLocation = [e.latlng.lat, e.latlng.lng];
-                const name = prompt('Nhập tên trụ mới:');
-                if (!name) {
-                    displayError('Đã hủy thêm marker.');
-                    return;
-                }
-                const note = prompt('Nhập ghi chú (có thể để trống):') || '';
-                const type = 7;
-                const newRow = ['', name, pendingMarkerLocation[0], pendingMarkerLocation[1], note, '', type, '', '', '', ''];
-                loadedData.push(newRow);
-                addMarkersToMap(loadedData);
-                displayError('Đã thêm marker mới. Nhấn Lưu dữ liệu để tải file XLSX.');
+                promptMarkerDetails();
             });
 
             return map;
@@ -202,7 +258,7 @@
             markers = [];
 
             data.forEach(row => {
-                const name = row[1];
+                const name = row[1] || row[0] || '';
                 const lat = parseFloat(row[2]);
                 const lon = parseFloat(row[3]);
                 const type = parseInt(row[6]);
@@ -234,7 +290,7 @@
                 marker.bindPopup(popupContent);
                 markersCluster.addLayer(marker);
 
-                markers.push({ lat, lon, name, marker });
+                markers.push({ lat, lon, name, note, marker });
 
                 // Optional: Add text label
                 if (name) {
@@ -272,9 +328,56 @@
         }
 
         function startAddMarker() {
-            pendingNewMarker = true;
+            const useCurrentLocation = confirm('Sử dụng vị trí hiện tại?\n\nNhấn OK để dùng vị trí hiện tại, nhấn Cancel để chọn trên bản đồ.');
+            
+            if (useCurrentLocation) {
+                if (!navigator.geolocation) {
+                    displayError('Trình duyệt không hỗ trợ định vị.');
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        pendingMarkerLocation = [lat, lon];
+                        promptMarkerDetails();
+                    },
+                    function(error) {
+                        displayError('Không thể lấy vị trí: ' + error.message);
+                    }
+                );
+            } else {
+                pendingNewMarker = true;
+                pendingMarkerLocation = null;
+                displayError('Nhấp vào bản đồ để chọn vị trí trụ mới.');
+            }
+        }
+
+        function promptMarkerDetails() {
+            const name = prompt('Nhập tên trụ mới:');
+            if (!name) {
+                displayError('Đã hủy thêm marker.');
+                pendingNewMarker = false;
+                pendingMarkerLocation = null;
+                return;
+            }
+            const note = prompt('Nhập ghi chú (có thể để trống):') || '';
+            const type = 7;
+            const newRow = ['', name, pendingMarkerLocation[0], pendingMarkerLocation[1], note, '', type, '', '', '', ''];
+            loadedData.push(newRow);
+            addMarkersToMap(loadedData);
+            
+            // Nhảy tới marker vừa tạo
+            const newMarker = markers[markers.length - 1];
+            if (newMarker) {
+                map.setView([newMarker.lat, newMarker.lon], 19);
+                newMarker.marker.openPopup();
+            }
+            
+            displayError('Đã thêm marker mới. Nhấn Lưu dữ liệu để tải file XLSX.');
+            pendingNewMarker = false;
             pendingMarkerLocation = null;
-            displayError('Nhấp vào bản đồ để chọn vị trí trụ mới, sau đó nhập tên và ghi chú.');
         }
 
         function saveMarkerData() {
@@ -322,31 +425,86 @@
             }
         }
 
+        function normalizeText(text) {
+            return (text || '').toString().normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+        }
+
+        function clearSearchResults() {
+            const results = document.getElementById('searchResults');
+            if (results) {
+                results.innerHTML = '';
+            }
+        }
+
+        function goToMarker(index) {
+            const item = markers[index];
+            if (!item) return;
+            map.setView([item.lat, item.lon], 18);
+            item.marker.openPopup();
+        }
+
         function searchMarkers() {
-            const input = document.getElementById('searchInput').value.trim().toLowerCase();
-            if (!input) return;
+            const rawInput = document.getElementById('searchInput').value.trim();
+            clearSearchResults();
+            if (!rawInput) {
+                displayError('Vui lòng nhập tên trụ hoặc tọa độ để tìm kiếm.');
+                return;
+            }
 
-            let found = false;
+            const input = normalizeText(rawInput);
+            const matches = [];
 
-            for (const item of markers) {
-                if (item.name && item.name.toLowerCase().includes(input)) {
-                    map.setView([item.lat, item.lon], 20);
-                    item.marker.openPopup();
-                    found = true;
-                    break;
+            for (let i = 0; i < markers.length; i++) {
+                const item = markers[i];
+                const itemName = normalizeText(item.name || item.label || '');
+                const itemNote = normalizeText(item.note || '');
+                if (itemName.includes(input) || itemNote.includes(input)) {
+                    matches.push({ index: i, item });
                 }
             }
 
-            // Try coordinate search
-            if (!found && input.includes(',')) {
-                const coords = input.split(',').map(c => parseFloat(c.trim()));
+            if (matches.length === 1) {
+                const match = matches[0];
+                map.setView([match.item.lat, match.item.lon], 18);
+                match.item.marker.openPopup();
+                displayError(`Tìm thấy 1 kết quả: ${match.item.name || 'Không có tên'}`);
+                return;
+            }
+
+            if (matches.length > 1) {
+                const firstMatch = matches[0];
+                map.setView([firstMatch.item.lat, firstMatch.item.lon], 18);
+                firstMatch.item.marker.openPopup();
+
+                const results = document.getElementById('searchResults');
+                const list = document.createElement('ul');
+                matches.forEach(match => {
+                    const listItem = document.createElement('li');
+                    const link = document.createElement('a');
+                    link.href = '#';
+                    link.textContent = `${match.item.name || 'Không có tên'} (${match.item.lat.toFixed(6)}, ${match.item.lon.toFixed(6)})`;
+                    link.onclick = function(event) {
+                        event.preventDefault();
+                        goToMarker(match.index);
+                    };
+                    listItem.appendChild(link);
+                    list.appendChild(listItem);
+                });
+                results.appendChild(list);
+                displayError(`Tìm thấy ${matches.length} kết quả. Nhấp vào danh sách để tới marker tương ứng.`);
+                return;
+            }
+
+            if (rawInput.includes(',')) {
+                const coords = rawInput.split(',').map(c => parseFloat(c.trim()));
                 if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
-                    map.setView([coords[0], coords[1]], 20);
-                    found = true;
+                    map.setView([coords[0], coords[1]], 18);
+                    displayError(`Đã nhảy tới tọa độ: ${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`);
+                    return;
                 }
             }
 
-            displayError(found ? '' : 'Không tìm thấy điểm nào phù hợp.');
+            displayError('Không tìm thấy điểm nào phù hợp.');
         }
 
         function displayError(message) {

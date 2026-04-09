@@ -28,6 +28,13 @@
     <link rel="icon" href="images/fevicon.png" type="image/gif" />
 
     <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden; /* Prevent horizontal scroll on mobile */
+        }
+
         h1 {
             font-size: 24px;
             color: #2510c6;
@@ -38,6 +45,14 @@
         #pageSelector {
             text-align: center;
             margin: 10px 0;
+        }
+
+        .controls-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            align-items: center;
         }
 
         #pages, #searchInput {
@@ -61,8 +76,9 @@
         }
 
         #map {
-            height: 750px;
+            height: calc(100vh - 200px);
             width: 100%;
+            touch-action: none; /* Improve touch handling on mobile */
         }
 
         #error {
@@ -122,24 +138,84 @@
             filter: brightness(1.5) drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
             z-index: 1000 !important;
         }
+
+        /* Responsive Design */
+        @media only screen and (max-width: 768px) {
+            h1 {
+                font-size: 20px;
+                margin: 10px 0;
+            }
+
+            .controls-container {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            #pages, #searchInput {
+                width: 100%;
+                max-width: 300px;
+                padding: 12px;
+                font-size: 16px; /* Prevent zoom on iOS */
+            }
+
+            button {
+                width: 100%;
+                max-width: 300px;
+                padding: 12px;
+                font-size: 16px; /* Prevent zoom on iOS */
+            }
+
+            #map {
+                height: calc(100vh - 350px);
+            }
+
+            #searchResults {
+                max-height: 120px;
+                font-size: 14px;
+            }
+
+            .footer_section {
+                margin-top: 20px;
+                padding-bottom: 20px;
+            }
+
+            .newsletter_text {
+                font-size: 16px;
+                padding: 10px 0;
+            }
+        }
+
+        @media only screen and (max-width: 480px) {
+            h1 {
+                font-size: 18px;
+                margin: 8px 0;
+            }
+
+            #map {
+                height: calc(100vh - 380px);
+            }
+
+            #searchResults {
+                max-height: 100px;
+                font-size: 12px;
+            }
+
+            .newsletter_text {
+                font-size: 14px;
+                padding: 8px 0;
+            }
+        }
     </style>
 </head>
 <body>
     <h1>BẢN ĐỒ KHẢO SÁT HỆ THỐNG CHIẾU SÁNG CÔNG CỘNG</h1>
 
-    <div id="pageSelector">
+    <div id="pageSelector" class="controls-container">
         <label for="pages">Chọn Quận:</label>
         <select id="pages" onchange="navigateToPage()">
-            <option value="bamgis.html">Trang khảo sát</option>
-            <option value="quan1.html">Quận 1</option>
-            <option value="quan3.html">Quận 3</option>
-            <option value="quan5.html">Quận 5</option>
-            <option value="quan8.html">Quận 8</option>
-            <option value="quan10.html">Quận 10</option>
-            <option value="quan11.html">Quận 11</option>
-            <option value="quanbt.html">Quận Bình Thạnh</option>
-            <option value="quanpn.html">Quận Phú Nhuận</option>
-            <option value="kehoach.html">Kế hoạch</option>
+            <option value="index.html">Trang khảo sát</option>
+            <option value="index.html">Quận 1</option>
+            <option value="index.html">Kế hoạch</option>
         </select>
 
         <input type="text" id="searchInput" placeholder="Nhập tên trụ hoặc tọa độ (lat, lon)" />
@@ -153,17 +229,7 @@
     <div id="searchResults"></div>
     <div id="map"></div>
 
-    <!-- Copyright -->
-    <div class="copyright_section" style="text-align:center; padding:10px; background:#f8f9fa; margin-top:10px;">
-        <p class="copyright_text">
-            Copyright 8/2024 All Right Reserved By 
-            <a href="https://lavipco.tech" target="_blank">CSKVTT</a> 
-            <img src="images/email-icon.png" alt="email" style="vertical-align:middle; margin:0 5px;">
-            <span>chieusangkhuvuctrungtam@gmail.com</span>
-        </p>
-    </div>
-
-    <!-- Scripts -->
+      <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>

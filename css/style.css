@@ -790,7 +790,8 @@ textarea#comment.massage-bt::placeholder {
     float: left;
     font-size: 20px;
     color: #ffffff;
-    padding-left: 175px;
+    text-align: center;
+    padding: 20px 0;
 }
 
 .addres_text {

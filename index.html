@@ -310,7 +310,7 @@
                         <div class="button-group">
                             <button onclick="searchMarkers()" class="btn btn-success btn-block">Tìm kiếm</button>
                             <button onclick="centerOnUserLocation()" class="btn btn-info btn-block">Vị trí của tôi</button>
-                            <button onclick="startAddMarker()" class="btn btn-warning btn-block">Thêm marker</button>
+                            <button id="addMarkerBtn" onclick="startAddMarker()" class="btn btn-warning btn-block">Thêm marker</button>
                             <button onclick="saveMarkerData()" class="btn btn-secondary btn-block">Lưu dữ liệu</button>
                         </div>
                     </div>
@@ -339,6 +339,31 @@
         let routeLine = null;
         let pendingNewMarker = false;
         let pendingMarkerLocation = null;
+        let addMarkerMode = false;
+
+        function updateAddMarkerButton() {
+            const btn = document.getElementById('addMarkerBtn');
+            if (!btn) return;
+            btn.textContent = addMarkerMode ? 'Dừng thêm marker' : 'Thêm marker';
+            btn.classList.toggle('btn-danger', addMarkerMode);
+            btn.classList.toggle('btn-warning', !addMarkerMode);
+        }
+
+        function enableAddMarkerMode() {
+            addMarkerMode = true;
+            pendingNewMarker = true;
+            pendingMarkerLocation = null;
+            updateAddMarkerButton();
+            displayError('Chế độ thêm marker bật. Nhấn lại nút để kết thúc. Nhấp vào bản đồ để chọn vị trí trụ mới.');
+        }
+
+        function disableAddMarkerMode() {
+            addMarkerMode = false;
+            pendingNewMarker = false;
+            pendingMarkerLocation = null;
+            updateAddMarkerButton();
+            displayError('Chế độ thêm marker đã tắt.');
+        }
 
         // Custom Icons
         const customIcons = {
@@ -504,11 +529,17 @@
         }
 
         function startAddMarker() {
+            if (addMarkerMode) {
+                disableAddMarkerMode();
+                return;
+            }
+
             const useCurrentLocation = confirm('Sử dụng vị trí hiện tại?\n\nNhấn OK để dùng vị trí hiện tại, nhấn Cancel để chọn trên bản đồ.');
-            
+            enableAddMarkerMode();
             if (useCurrentLocation) {
                 if (!navigator.geolocation) {
                     displayError('Trình duyệt không hỗ trợ định vị.');
+                    disableAddMarkerMode();
                     return;
                 }
 
@@ -517,25 +548,22 @@
                         const lat = position.coords.latitude;
                         const lon = position.coords.longitude;
                         pendingMarkerLocation = [lat, lon];
-                        promptMarkerDetails();
+                        promptMarkerDetails(true);
                     },
                     function(error) {
                         displayError('Không thể lấy vị trí: ' + error.message);
+                        disableAddMarkerMode();
                     }
                 );
-            } else {
-                pendingNewMarker = true;
-                pendingMarkerLocation = null;
-                displayError('Nhấp vào bản đồ để chọn vị trí trụ mới.');
             }
         }
 
-        function promptMarkerDetails() {
+        function promptMarkerDetails(useCurrentLocation = false) {
             const name = prompt('Nhập tên trụ mới:');
             if (!name) {
-                displayError('Đã hủy thêm marker.');
-                pendingNewMarker = false;
-                pendingMarkerLocation = null;
+                displayError(addMarkerMode ? 'Đã hủy thêm marker. Chế độ thêm marker vẫn mở.' : 'Đã hủy thêm marker.');
+                pendingNewMarker = addMarkerMode;
+                pendingMarkerLocation = addMarkerMode ? null : null;
                 return;
             }
             const note = prompt('Nhập ghi chú (có thể để trống):') || '';
@@ -551,9 +579,14 @@
                 newMarker.marker.openPopup();
             }
             
-            displayError('Đã thêm marker mới. Nhấn Lưu dữ liệu để tải file XLSX.');
-            pendingNewMarker = false;
-            pendingMarkerLocation = null;
+            displayError('Đã thêm marker mới. Nhấn nút Thêm marker để dừng, hoặc tiếp tục chọn vị trí. Nhấn Lưu dữ liệu để tải file XLSX.');
+            if (addMarkerMode) {
+                pendingNewMarker = true;
+                pendingMarkerLocation = null;
+            } else {
+                pendingNewMarker = false;
+                pendingMarkerLocation = null;
+            }
         }
 
         function saveMarkerData() {
@@ -612,11 +645,29 @@
             }
         }
 
+        function closeControlsModal() {
+            const modal = document.getElementById('controlsModal');
+            if (!modal) return;
+
+            if (typeof $ !== 'undefined' && $.fn.modal) {
+                $('#controlsModal').modal('hide');
+            } else {
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) {
+                    backdrop.remove();
+                }
+            }
+        }
+
         function goToMarker(index) {
             const item = markers[index];
             if (!item) return;
             map.setView([item.lat, item.lon], 18);
             item.marker.openPopup();
+            closeControlsModal();
         }
 
         function searchMarkers() {

@@ -109,6 +109,104 @@
             left: 0;
         }
 
+        .marker-popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.35);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            pointer-events: auto;
+        }
+
+        .marker-popup-card {
+            width: min(420px, 100%);
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.12);
+        }
+
+        .marker-popup-card header {
+            padding: 16px 20px;
+            background: #007bff;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .marker-popup-card .body {
+            padding: 16px 20px;
+        }
+
+        .marker-popup-card .body .form-group {
+            margin-bottom: 14px;
+        }
+
+        .marker-popup-card .body label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .marker-popup-card .body input,
+        .marker-popup-card .body textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .marker-popup-card .body textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        .marker-popup-card .footer {
+            padding: 14px 20px 18px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            background: #f8f9fa;
+        }
+
+        .marker-popup-card .footer button {
+            min-width: 100px;
+        }
+
+        .marker-popup-card .coords-info {
+            font-size: 13px;
+            color: #555;
+            margin-top: 6px;
+        }
+
+        .marker-image-preview {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .marker-image-preview img {
+            max-width: 100%;
+            max-height: 140px;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+            object-fit: cover;
+        }
+
+        .marker-image-button {
+            width: 100%;
+            margin-top: 8px;
+        }
+
         .leaflet-control-custom {
             background: rgba(255, 255, 255, 0.95);
             border: 1px solid rgba(0, 0, 0, 0.18);
@@ -353,11 +451,37 @@
 
                     <div id="error" class="alert alert-danger" style="display: none;"></div>
                     <div id="searchResults" class="mt-3"></div>
+
                 </div>
             </div>
         </div>
     </div>
     <div id="map"></div>
+    <div id="markerPopupForm" class="marker-popup-overlay" role="dialog" aria-modal="true">
+        <div class="marker-popup-card">
+            <header>Thông tin marker mới</header>
+            <div class="body">
+                <div class="form-group">
+                    <label for="markerNameInput">Tên trụ</label>
+                    <input id="markerNameInput" type="text" class="form-control" placeholder="Nhập tên trụ" />
+                </div>
+                <div class="form-group">
+                    <label for="markerNoteInput">Ghi chú</label>
+                    <textarea id="markerNoteInput" class="form-control" placeholder="Nhập ghi chú (tùy chọn)"></textarea>
+                </div>
+                <div class="form-group">
+                    <button id="markerImageButton" type="button" class="btn btn-outline-primary marker-image-button" onclick="triggerMarkerImageInput()">Chụp / chọn ảnh</button>
+                    <input id="markerImageInput" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleMarkerImageFile(event)" />
+                </div>
+                <div class="marker-image-preview" id="markerImagePreview"></div>
+                <div id="markerCoordsText" class="coords-info">Tọa độ: -</div>
+            </div>
+            <div class="footer">
+                <button id="markerPopupCancel" type="button" class="btn btn-secondary" onclick="cancelMarkerPopup()">Hủy</button>
+                <button id="markerPopupSave" type="button" class="btn btn-primary" onclick="saveMarkerPopup()">Lưu marker</button>
+            </div>
+        </div>
+    </div>
 
       <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -375,7 +499,59 @@
         let routeLine = null;
         let pendingNewMarker = false;
         let pendingMarkerLocation = null;
+        let markerPopupLocation = null;
+        let markerImageDataUrl = null;
         let addMarkerMode = false;
+        const MAX_EXCEL_TEXT_LENGTH = 32767;
+
+        function addMarkerRowToMap(row) {
+            const name = row[1] || row[0] || '';
+            const lat = parseFloat(row[2]);
+            const lon = parseFloat(row[3]);
+            const type = parseInt(row[6]);
+            const note = row[4] || '';
+            const tudieukhien = row[7];
+            const loaitru = row[8];
+            const loaican = row[9];
+            const loaiden = row[10];
+            const imageBase64 = row[11] || '';
+
+            if (isNaN(lat) || isNaN(lon)) return null;
+
+            const icon = customIcons[type] || customIcons.default;
+            const markerIndex = markers.length;
+            const marker = L.marker([lat, lon], { icon: icon });
+            const imageHtml = imageBase64 ? `<div style="margin-top:8px;text-align:center;"><img src="${imageBase64}" alt="Ảnh trụ" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : '';
+            const popupContent = `
+                <div>
+                    <strong>Tên trụ: ${name || 'Không có tên'}</strong><br>
+                    Lat: ${lat.toFixed(6)}<br>
+                    Lon: ${lon.toFixed(6)}<br>
+                    Ghi chú: ${note || 'Không có'}<br>
+                    Trụ: ${loaitru || ''}<br>
+                    Tủ điều khiển: ${tudieukhien || ''}<br>
+                    Đèn: ${loaiden || ''}<br>
+                    ${imageHtml}
+                    <button onclick="routeToMarker(${markerIndex})" style="margin-top:8px;padding:6px 10px;font-size:14px;cursor:pointer;">Dẫn đường xe máy</button>
+                </div>`;
+
+            marker.bindPopup(popupContent);
+            markersCluster.addLayer(marker);
+            markers.push({ lat, lon, name, note, marker });
+
+            if (name) {
+                const label = L.marker([lat, lon], {
+                    icon: L.divIcon({
+                        className: 'custom-label',
+                        html: `<div style="font-size:12px; font-weight:bold;">${name}</div>`,
+                        iconSize: [80, 20],
+                        iconAnchor: [40, 30]
+                    })
+                }).addTo(map);
+            }
+
+            return marker;
+        }
 
         function updateAddMarkerButton() {
             const btn = document.getElementById('addMarkerBtn');
@@ -397,6 +573,7 @@
             addMarkerMode = false;
             pendingNewMarker = false;
             pendingMarkerLocation = null;
+            hideMarkerPopup();
             updateAddMarkerButton();
             displayError('Chế độ thêm marker đã tắt.');
         }
@@ -483,8 +660,7 @@
 
             map.on('click', function(e) {
                 if (!pendingNewMarker) return;
-                pendingMarkerLocation = [e.latlng.lat, e.latlng.lng];
-                promptMarkerDetails();
+                showMarkerPopupAt(e.latlng.lat, e.latlng.lng);
             });
 
             return map;
@@ -496,51 +672,7 @@
             markers = [];
 
             data.forEach(row => {
-                const name = row[1] || row[0] || '';
-                const lat = parseFloat(row[2]);
-                const lon = parseFloat(row[3]);
-                const type = parseInt(row[6]);
-                const note = row[4] || '';
-                const tudieukhien = row[7];
-                const loaitru = row[8];
-                const loaican = row[9];
-                const loaiden = row[10];
-
-                if (isNaN(lat) || isNaN(lon)) return;
-
-                const icon = customIcons[type] || customIcons.default;
-                const markerIndex = markers.length;
-
-                const marker = L.marker([lat, lon], { icon: icon });
-
-                const popupContent = `
-                    <div>
-                        <strong>Tên trụ: ${name || 'Không có tên'}</strong><br>
-                        Lat: ${lat.toFixed(6)}<br>
-                        Lon: ${lon.toFixed(6)}<br>
-                        Ghi chú: ${note || 'Không có'}<br>
-                        Trụ: ${loaitru || ''}<br>
-                        Tủ điều khiển: ${tudieukhien || ''}<br>
-                        Đèn: ${loaiden || ''}<br>
-                        <button onclick="routeToMarker(${markerIndex})" style="margin-top:8px;padding:6px 10px;font-size:14px;cursor:pointer;">Dẫn đường xe máy</button>
-                    </div>`;
-
-                marker.bindPopup(popupContent);
-                markersCluster.addLayer(marker);
-
-                markers.push({ lat, lon, name, note, marker });
-
-                // Optional: Add text label
-                if (name) {
-                    const label = L.marker([lat, lon], {
-                        icon: L.divIcon({
-                            className: 'custom-label',
-                            html: `<div style="font-size:12px; font-weight:bold;">${name}</div>`,
-                            iconSize: [80, 20],
-                            iconAnchor: [40, 30]
-                        })
-                    }).addTo(map);
-                }
+                addMarkerRowToMap(row);
             });
 
             if (markers.length > 0) {
@@ -584,8 +716,7 @@
                     function(position) {
                         const lat = position.coords.latitude;
                         const lon = position.coords.longitude;
-                        pendingMarkerLocation = [lat, lon];
-                        promptMarkerDetails(true);
+                        showMarkerPopupAt(lat, lon);
                     },
                     function(error) {
                         displayError('Không thể lấy vị trí: ' + error.message);
@@ -595,57 +726,222 @@
             }
         }
 
-        function promptMarkerDetails(useCurrentLocation = false) {
-            const name = prompt('Nhập tên trụ mới:');
-            if (!name) {
-                displayError(addMarkerMode ? 'Đã hủy thêm marker. Chế độ thêm marker vẫn mở.' : 'Đã hủy thêm marker.');
-                pendingNewMarker = addMarkerMode;
-                pendingMarkerLocation = addMarkerMode ? null : null;
+        function showMarkerPopupAt(lat, lon) {
+            markerPopupLocation = [lat, lon];
+            pendingMarkerLocation = [lat, lon];
+            pendingNewMarker = true;
+            addMarkerMode = true;
+            updateAddMarkerButton();
+            displayError('Nhập thông tin marker mới và nhấn Lưu marker.');
+
+            const overlay = document.getElementById('markerPopupForm');
+            const nameInput = document.getElementById('markerNameInput');
+            const noteInput = document.getElementById('markerNoteInput');
+            const coordsText = document.getElementById('markerCoordsText');
+            const preview = document.getElementById('markerImagePreview');
+            const fileInput = document.getElementById('markerImageInput');
+
+            if (!overlay || !nameInput || !noteInput || !coordsText || !preview || !fileInput) {
+                displayError('Không thể hiển thị form marker.');
                 return;
             }
-            const note = prompt('Nhập ghi chú (có thể để trống):') || '';
-            const type = 7;
-            const newRow = ['', name, pendingMarkerLocation[0], pendingMarkerLocation[1], note, '', type, '', '', '', ''];
-            loadedData.push(newRow);
-            addMarkersToMap(loadedData);
-            
-            // Nhảy tới marker vừa tạo
-            const newMarker = markers[markers.length - 1];
-            if (newMarker) {
-                map.setView([newMarker.lat, newMarker.lon], 19);
-                newMarker.marker.openPopup();
+
+            nameInput.value = '';
+            noteInput.value = '';
+            preview.innerHTML = '';
+            fileInput.value = null;
+            coordsText.textContent = `Tọa độ: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+            overlay.style.display = 'flex';
+            nameInput.focus();
+        }
+
+        function hideMarkerPopup() {
+            const overlay = document.getElementById('markerPopupForm');
+            if (overlay) overlay.style.display = 'none';
+            markerPopupLocation = null;
+            markerImageDataUrl = null;
+            const fileInput = document.getElementById('markerImageInput');
+            if (fileInput) fileInput.value = null;
+        }
+
+        function triggerMarkerImageInput() {
+            const fileInput = document.getElementById('markerImageInput');
+            if (fileInput) {
+                fileInput.value = null;
+                fileInput.click();
             }
-            
-            displayError('Đã thêm marker mới. Nhấn nút Thêm marker để dừng, hoặc tiếp tục chọn vị trí. Nhấn Lưu dữ liệu để tải file XLSX.');
-            if (addMarkerMode) {
+        }
+
+        function resizeImageDataUrl(dataUrl, callback) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const maxSide = 400;
+                const scale = Math.min(1, maxSide / Math.max(width, height));
+                width = Math.round(width * scale);
+                height = Math.round(height * scale);
+                let quality = 0.92;
+
+                const ctx = canvas.getContext('2d');
+
+                function render() {
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const result = canvas.toDataURL('image/jpeg', quality);
+                    return result;
+                }
+
+                let result = render();
+                while (result.length > MAX_EXCEL_TEXT_LENGTH && quality > 0.1) {
+                    quality -= 0.1;
+                    result = render();
+                }
+
+                while (result.length > MAX_EXCEL_TEXT_LENGTH && Math.max(width, height) > 120) {
+                    width = Math.round(width * 0.85);
+                    height = Math.round(height * 0.85);
+                    result = render();
+                }
+
+                if (result.length > MAX_EXCEL_TEXT_LENGTH) {
+                    callback('', 'Ảnh quá lớn để lưu vào ô Excel. Vui lòng chọn ảnh nhỏ hơn hoặc chụp lại.');
+                    return;
+                }
+
+                callback(result);
+            };
+            img.onerror = function() {
+                callback('', 'Không thể đọc ảnh.');
+            };
+            img.src = dataUrl;
+        }
+
+        function handleMarkerImageFile(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                resizeImageDataUrl(e.target.result, function(resizedDataUrl, errorMessage) {
+                    const preview = document.getElementById('markerImagePreview');
+                    if (resizedDataUrl) {
+                        markerImageDataUrl = resizedDataUrl;
+                        if (preview) {
+                            preview.innerHTML = `<img src="${markerImageDataUrl}" alt="Ảnh trụ" />`;
+                        }
+                        displayError('Ảnh đã sẵn sàng lưu vào Excel.');
+                    } else {
+                        markerImageDataUrl = '';
+                        if (preview) {
+                            preview.innerHTML = '';
+                        }
+                        displayError(errorMessage);
+                    }
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function saveMarkerPopup() {
+            try {
+                const nameInput = document.getElementById('markerNameInput');
+                const noteInput = document.getElementById('markerNoteInput');
+
+                if (!markerPopupLocation || !Array.isArray(markerPopupLocation) || markerPopupLocation.length !== 2) {
+                    displayError('Không có vị trí marker để lưu.');
+                    hideMarkerPopup();
+                    return;
+                }
+
+                const lat = Number(markerPopupLocation[0]);
+                const lon = Number(markerPopupLocation[1]);
+                if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+                    displayError('Tọa độ marker không hợp lệ.');
+                    hideMarkerPopup();
+                    return;
+                }
+
+                const name = nameInput.value.trim();
+                const note = noteInput.value.trim();
+
+                if (!name) {
+                    displayError('Vui lòng nhập tên trụ.');
+                    nameInput.focus();
+                    return;
+                }
+
+                const type = 7;
+                const imageData = markerImageDataUrl || '';
+                if (!Array.isArray(loadedData)) {
+                    loadedData = [];
+                }
+                const newRow = ['', name, lat, lon, note, '', type, '', '', '', '', imageData];
+                loadedData.push(newRow);
+                const newMarker = addMarkerRowToMap(newRow);
+
+                if (newMarker) {
+                    map.setView([newMarker.getLatLng().lat, newMarker.getLatLng().lng], 19);
+                    newMarker.openPopup();
+                }
+
+                hideMarkerPopup();
                 pendingNewMarker = true;
+                addMarkerMode = true;
                 pendingMarkerLocation = null;
-            } else {
-                pendingNewMarker = false;
+                updateAddMarkerButton();
+                displayError('Đã thêm marker mới. Vẫn ở chế độ thêm marker, chọn điểm khác trên bản đồ.');
+            } catch (error) {
+                console.error('saveMarkerPopup error:', error);
+                displayError('Lỗi khi lưu marker: ' + (error.message || error));
+            }
+        }
+
+        function cancelMarkerPopup() {
+            hideMarkerPopup();
+            displayError(addMarkerMode ? 'Đã hủy nhập marker. Vui lòng chọn lại vị trí hoặc nhấn Thêm marker để tắt.' : 'Đã hủy nhập marker.');
+            pendingNewMarker = addMarkerMode;
+            if (!addMarkerMode) {
                 pendingMarkerLocation = null;
             }
         }
 
         function saveMarkerData() {
-            if (!loadedData || loadedData.length === 0) {
-                displayError('Không có dữ liệu để lưu.');
-                return;
-            }
+            try {
+                if (!loadedData || loadedData.length === 0) {
+                    displayError('Không có dữ liệu để lưu.');
+                    return;
+                }
 
-            const worksheet = XLSX.utils.aoa_to_sheet(loadedData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
-            const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-            const blob = new Blob([wbout], { type: 'application/octet-stream' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'khaosat-updated.xlsx';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            displayError('File dữ liệu đã được tạo và tải xuống.');
+                const worksheet = XLSX.utils.aoa_to_sheet(loadedData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+                if (typeof XLSX.writeFile === 'function') {
+                    XLSX.writeFile(workbook, 'khaosat-updated.xlsx');
+                } else {
+                    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+                    const blob = new Blob([wbout], { type: 'application/octet-stream' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'khaosat-updated.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                }
+
+                displayError('File dữ liệu đã được tạo và tải xuống.');
+            } catch (error) {
+                console.error('saveMarkerData error:', error);
+                displayError('Lỗi khi tải file dữ liệu: ' + (error.message || error));
+            }
         }
 
         function loadDefaultFile() {
@@ -1052,6 +1348,15 @@
                 console.log('Event listener attached');
             } else {
                 console.error('Controls button not found');
+            }
+
+            const saveMarkerBtn = document.getElementById('markerPopupSave');
+            const cancelMarkerBtn = document.getElementById('markerPopupCancel');
+            if (saveMarkerBtn) {
+                saveMarkerBtn.addEventListener('click', saveMarkerPopup);
+            }
+            if (cancelMarkerBtn) {
+                cancelMarkerBtn.addEventListener('click', cancelMarkerPopup);
             }
         };
     </script>

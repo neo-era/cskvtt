@@ -109,42 +109,6 @@
             left: 0;
         }
 
-        .leaflet-control-custom {
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid rgba(0, 0, 0, 0.18);
-            border-radius: 10px;
-            box-shadow: 0 1px 8px rgba(0, 0, 0, 0.18);
-            padding: 6px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .leaflet-control-custom button {
-            width: 42px;
-            height: 42px;
-            border: none;
-            border-radius: 8px;
-            background: #fff;
-            color: #333;
-            font-size: 16px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .leaflet-control-custom button:hover {
-            background: #f0f0f0;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-        }
-
-        .leaflet-control-custom button i {
-            pointer-events: none;
-        }
-
         #error {
             color: red;
             text-align: center;
@@ -310,7 +274,7 @@
     </style>
 </head>
 <body>
-    <h1>BẢN ĐỒ KHẢO SÁT HỆ THỐNG CHIẾU SÁNG CÔNG CỘNG</h1>
+    <h1>BẢN ĐỒ HỆ THỐNG CHIẾU SÁNG CÔNG CỘNG QUẬN 1</h1>
 
     <!-- Controls Button -->
     <button id="controlsBtn" class="btn btn-primary">
@@ -476,7 +440,6 @@
             });
 
             L.control.zoomDisplay().addTo(map);
-            createMapControls();
 
             map.addLayer(markersCluster);
             map.addLayer(labelLayerGroup);
@@ -802,89 +765,6 @@
                     .addTo(map)
                     .bindPopup('Vị trí hiện tại của bạn');
             }
-        }
-
-        function createMapControls() {
-            const CustomControl = L.Control.extend({
-                options: {
-                    position: 'topright'
-                },
-
-                onAdd: function(map) {
-                    const container = L.DomUtil.create('div', 'leaflet-control-custom');
-                    L.DomEvent.disableClickPropagation(container);
-                    L.DomEvent.disableScrollPropagation(container);
-
-                    const locateBtn = L.DomUtil.create('button', '', container);
-                    locateBtn.type = 'button';
-                    locateBtn.title = 'Về vị trí hiện tại';
-                    locateBtn.innerHTML = '<i class="fa fa-location-arrow"></i>';
-                    L.DomEvent.on(locateBtn, 'click', L.DomEvent.stopPropagation)
-                        .on(locateBtn, 'click', L.DomEvent.preventDefault)
-                        .on(locateBtn, 'click', () => centerOnUserLocation());
-
-                    const routeBtn = L.DomUtil.create('button', '', container);
-                    routeBtn.type = 'button';
-                    routeBtn.title = 'Dẫn đường tới trung tâm bản đồ';
-                    routeBtn.innerHTML = '<i class="fa fa-compass"></i>';
-                    L.DomEvent.on(routeBtn, 'click', L.DomEvent.stopPropagation)
-                        .on(routeBtn, 'click', L.DomEvent.preventDefault)
-                        .on(routeBtn, 'click', () => routeToMapCenter());
-
-                    const clearBtn = L.DomUtil.create('button', '', container);
-                    clearBtn.type = 'button';
-                    clearBtn.title = 'Xóa lộ trình';
-                    clearBtn.innerHTML = '<i class="fa fa-times"></i>';
-                    L.DomEvent.on(clearBtn, 'click', L.DomEvent.stopPropagation)
-                        .on(clearBtn, 'click', L.DomEvent.preventDefault)
-                        .on(clearBtn, 'click', () => clearRoute());
-
-                    return container;
-                }
-            });
-
-            map.addControl(new CustomControl());
-        }
-
-        function routeToMapCenter() {
-            const destination = [map.getCenter().lat, map.getCenter().lng];
-
-            if (!Number.isFinite(destination[0]) || !Number.isFinite(destination[1])) {
-                displayError('Không thể lấy điểm đến từ trung tâm bản đồ.');
-                return;
-            }
-
-            function doRoute() {
-                fetchMotorbikeRoute(currentLocation, destination)
-                    .then(route => {
-                        drawRoute(route);
-                    })
-                    .catch(error => {
-                        displayError(error.message);
-                    });
-            }
-
-            if (currentLocation) {
-                doRoute();
-                return;
-            }
-
-            if (!navigator.geolocation) {
-                displayError('Trình duyệt không hỗ trợ định vị.');
-                return;
-            }
-
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    updateCurrentLocationMarker(lat, lon);
-                    doRoute();
-                },
-                function(error) {
-                    displayError('Không thể lấy vị trí: ' + error.message);
-                }
-            );
         }
 
         function clearRoute() {

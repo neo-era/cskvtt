@@ -451,6 +451,7 @@
                             <button onclick="centerOnUserLocation()" class="btn btn-info btn-block">Vị trí của tôi</button>
                             <button id="addMarkerBtn" onclick="startAddMarker()" class="btn btn-warning btn-block">Thêm marker</button>
                             <button onclick="saveMarkerData()" class="btn btn-secondary btn-block">Lưu dữ liệu</button>
+                            <button onclick="updateGitHubExcel()" class="btn btn-primary btn-block">Cập nhật GitHub</button>
                         </div>
                     </div>
 
@@ -499,6 +500,7 @@
         let labelLayerGroup = L.layerGroup();
         let markers = [];
         let loadedData = [];
+        let newMarkerRows = [];
         let currentLocation = null;
         let currentLocationMarker = null;
         let routeLine = null;
@@ -884,8 +886,12 @@
                 if (!Array.isArray(loadedData)) {
                     loadedData = [];
                 }
+                if (!Array.isArray(newMarkerRows)) {
+                    newMarkerRows = [];
+                }
                 const newRow = ['', name, lat, lon, note, '', type, '', '', '', '', imageData];
                 loadedData.push(newRow);
+                newMarkerRows.push(newRow);
                 const newMarker = addMarkerRowToMap(newRow);
 
                 if (newMarker) {
@@ -916,12 +922,14 @@
 
         function saveMarkerData() {
             try {
-                if (!loadedData || loadedData.length === 0) {
-                    displayError('Không có dữ liệu để lưu.');
+                if (!newMarkerRows || newMarkerRows.length === 0) {
+                    displayError('Không có marker mới để lưu.');
                     return;
                 }
 
-                const worksheet = XLSX.utils.aoa_to_sheet(loadedData);
+                const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh Base64'];
+                const exportData = [header, ...newMarkerRows];
+                const worksheet = XLSX.utils.aoa_to_sheet(exportData);
                 const workbook = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
                 if (typeof XLSX.writeFile === 'function') {
@@ -942,10 +950,125 @@
                     }, 100);
                 }
 
-                displayError('File dữ liệu đã được tạo và tải xuống.');
+                displayError('File dữ liệu mới đã được tạo và tải xuống.');
             } catch (error) {
                 console.error('saveMarkerData error:', error);
                 displayError('Lỗi khi tải file dữ liệu: ' + (error.message || error));
+            }
+        }
+
+        async function getGitHubFileContent(owner, repo, path, branch, token) {
+            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`;
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'application/vnd.github+json'
+                }
+            });
+
+            if (response.status === 404) {
+                return { sha: null, content: null };
+            }
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Không thể đọc file GitHub: ${response.status} ${response.statusText}\n${text}`);
+            }
+
+            const data = await response.json();
+            return {
+                sha: data.sha,
+                content: data.content
+            };
+        }
+
+        async function updateGitHubFile(owner, repo, path, branch, token, contentBase64, sha) {
+            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
+            const body = {
+                message: 'Cập nhật file excel từ bản đồ',
+                content: contentBase64,
+                branch: branch
+            };
+
+            if (sha) {
+                body.sha = sha;
+            }
+
+            const response = await fetch(apiUrl, {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'application/vnd.github+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`GitHub update failed: ${response.status} ${response.statusText}\n${errorText}`);
+            }
+
+            return await response.json();
+        }
+
+        function base64ToBinary(base64) {
+            const binaryString = atob(base64.replace(/\s/g, ''));
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes;
+        }
+
+        async function updateGitHubExcel() {
+            try {
+                if (!newMarkerRows || newMarkerRows.length === 0) {
+                    displayError('Không có marker mới để cập nhật lên GitHub.');
+                    return;
+                }
+
+                const owner = prompt('Nhập GitHub owner (tên người dùng hoặc tổ chức):');
+                if (!owner) return;
+                const repo = prompt('Nhập GitHub repository name:');
+                if (!repo) return;
+                const path = prompt('Nhập đường dẫn file trong repo:', 'data/khaosat.xlsx');
+                if (!path) return;
+                const branch = prompt('Nhập branch:', 'main') || 'main';
+                const token = prompt('Nhập GitHub personal access token (repo scope):');
+                if (!token) return;
+
+                displayError('Đang cập nhật file trên GitHub...');
+
+                const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh Base64'];
+                const fileData = await getGitHubFileContent(owner, repo, path, branch, token);
+                let combinedRows = [header, ...newMarkerRows];
+                let sheetName = 'Sheet1';
+
+                if (fileData.content) {
+                    const workbook = XLSX.read(base64ToBinary(fileData.content), { type: 'array' });
+                    sheetName = workbook.SheetNames[0] || sheetName;
+                    const sheet = workbook.Sheets[sheetName];
+                    const existingRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+                    if (existingRows.length > 0) {
+                        const existingHeader = existingRows[0];
+                        const existingDataRows = existingRows.slice(1);
+                        combinedRows = [header, ...existingDataRows, ...newMarkerRows];
+                    }
+                }
+
+                const workbook = XLSX.utils.book_new();
+                const worksheet = XLSX.utils.aoa_to_sheet(combinedRows);
+                XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+                const contentBase64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
+
+                await updateGitHubFile(owner, repo, path, branch, token, contentBase64, fileData.sha);
+                displayError('Đã cập nhật file Excel gốc trên GitHub thành công.');
+            } catch (error) {
+                console.error('updateGitHubExcel error:', error);
+                displayError('Lỗi khi cập nhật GitHub: ' + (error.message || error));
             }
         }
 

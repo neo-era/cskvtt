@@ -211,9 +211,10 @@
         }
 
         .leaflet-control-custom {
-            position: absolute;
             z-index: 3000;
-            background: rgba(255, 255, 255, 0.95);
+            margin-bottom: 10px;
+            margin-right: 10px;
+            background: transparent;
             border: 1px solid rgba(0, 0, 0, 0.18);
             border-radius: 10px;
             box-shadow: 0 1px 8px rgba(0, 0, 0, 0.18);
@@ -500,6 +501,7 @@
                             <button onclick="centerOnUserLocation()" class="btn btn-info btn-block">Vị trí của tôi</button>
                             <button id="addMarkerBtn" onclick="startAddMarker()" class="btn btn-warning btn-block">Thêm marker</button>
                             <button onclick="saveMarkerData()" class="btn btn-secondary btn-block">Lưu dữ liệu</button>
+                            <button onclick="exportMarkersToCad()" class="btn btn-dark btn-block">Export to CAD</button>
                             <button onclick="updateGitHubExcel()" class="btn btn-primary btn-block">Cập nhật GitHub</button>
                         </div>
 
@@ -626,6 +628,36 @@
             const a = Math.sin(dPhi / 2) * Math.sin(dPhi / 2) + Math.cos(phi1) * Math.cos(phi2) * Math.sin(dLambda / 2) * Math.sin(dLambda / 2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             return R * c;
+        }
+
+        function convertLatLonToVn2000(lat, lon) {
+            const toRad = x => x * Math.PI / 180;
+            const a = 6378137.0;
+            const f = 1 / 298.257222101;
+            const e2 = 2 * f - f * f;
+            const k0 = 0.9996;
+            const zone = Math.floor((lon + 180) / 6) + 1;
+            const lon0 = toRad(zone * 6 - 183);
+            const phi = toRad(lat);
+            const lambda = toRad(lon);
+            const sinPhi = Math.sin(phi);
+            const cosPhi = Math.cos(phi);
+            const tanPhi = Math.tan(phi);
+            const N = a / Math.sqrt(1 - e2 * sinPhi * sinPhi);
+            const T = tanPhi * tanPhi;
+            const C = e2 / (1 - e2) * cosPhi * cosPhi;
+            const A = (lambda - lon0) * cosPhi;
+            const M = a * ((1 - e2 / 4 - 3 * Math.pow(e2, 2) / 64 - 5 * Math.pow(e2, 3) / 256) * phi
+                - (3 * e2 / 8 + 3 * Math.pow(e2, 2) / 32 + 45 * Math.pow(e2, 3) / 1024) * Math.sin(2 * phi)
+                + (15 * Math.pow(e2, 2) / 256 + 45 * Math.pow(e2, 3) / 1024) * Math.sin(4 * phi)
+                - (35 * Math.pow(e2, 3) / 3072) * Math.sin(6 * phi));
+            const x = k0 * N * (A + (1 - T + C) * Math.pow(A, 3) / 6 + (5 - 18 * T + T * T + 72 * C - 58 * e2 / (1 - e2)) * Math.pow(A, 5) / 120);
+            const y = k0 * (M + N * tanPhi * (Math.pow(A, 2) / 2 + (5 - T + 9 * C + 4 * C * C) * Math.pow(A, 4) / 24 + (61 - 58 * T + T * T + 600 * C - 330 * e2 / (1 - e2)) * Math.pow(A, 6) / 720));
+            return {
+                x: x + 500000,
+                y: y,
+                zone: zone
+            };
         }
 
         function createMarkerPopupContent(row) {
@@ -1100,6 +1132,130 @@
             }
         }
 
+        function downloadTextFile(filename, content) {
+            const blob = new Blob([content], { type: 'application/dxf;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+        }
+
+        function createDxfForMarkers(rows) {
+            const lines = [];
+            const addLine = text => lines.push(text);
+
+            addLine('0');
+            addLine('SECTION');
+            addLine('2');
+            addLine('HEADER');
+            addLine('0');
+            addLine('ENDSEC');
+            addLine('0');
+            addLine('SECTION');
+            addLine('2');
+            addLine('ENTITIES');
+
+            let previousPoint = null;
+            rows.forEach((row, index) => {
+                const name = row[1] || row[0] || `Marker ${index + 1}`;
+                const rawX = parseFloat(row[3]);
+                const rawY = parseFloat(row[2]);
+                const note = row[4] || '';
+                const cabinet = row[7] || '';
+                const poleType = row[8] || '';
+                const lampType = row[10] || '';
+                const label = name.replace(/\r?\n/g, ' ');
+
+                if (!Number.isFinite(rawX) || !Number.isFinite(rawY)) return;
+
+                const vn2000 = convertLatLonToVn2000(rawY, rawX);
+                const x = vn2000.x;
+                const y = vn2000.y;
+
+                // Draw circle marker with diameter 2mm => radius 1.0 in drawing units
+                addLine('0');
+                addLine('CIRCLE');
+                addLine('8');
+                addLine('0');
+                addLine('10');
+                addLine(x.toFixed(6));
+                addLine('20');
+                addLine(y.toFixed(6));
+                addLine('30');
+                addLine('0');
+                addLine('40');
+                addLine('1.0');
+
+                // Draw line from previous marker to current marker
+                if (previousPoint) {
+                    addLine('0');
+                    addLine('LINE');
+                    addLine('8');
+                    addLine('0');
+                    addLine('10');
+                    addLine(previousPoint.x.toFixed(6));
+                    addLine('20');
+                    addLine(previousPoint.y.toFixed(6));
+                    addLine('30');
+                    addLine('0');
+                    addLine('11');
+                    addLine(x.toFixed(6));
+                    addLine('21');
+                    addLine(y.toFixed(6));
+                    addLine('31');
+                    addLine('0');
+                }
+
+                // Draw marker name text inside or near the circle
+                addLine('0');
+                addLine('TEXT');
+                addLine('8');
+                addLine('0');
+                addLine('10');
+                addLine(x.toFixed(6));
+                addLine('20');
+                addLine((y + 0.0015).toFixed(6));
+                addLine('30');
+                addLine('0');
+                addLine('40');
+                addLine('1.0');
+                addLine('1');
+                addLine(label);
+
+                previousPoint = { x, y };
+            });
+
+            addLine('0');
+            addLine('ENDSEC');
+            addLine('0');
+            addLine('EOF');
+            return lines.join('\r\n');
+        }
+
+        function exportMarkersToCad() {
+            try {
+                const rowsToExport = (newMarkerRows && newMarkerRows.length > 0) ? newMarkerRows : loadedData.filter(row => Array.isArray(row) && row.length >= 4 && !isNaN(parseFloat(row[2])) && !isNaN(parseFloat(row[3])));
+                if (!rowsToExport || rowsToExport.length === 0) {
+                    displayError('Không có marker để xuất CAD.');
+                    return;
+                }
+
+                const dxf = createDxfForMarkers(rowsToExport);
+                downloadTextFile('markers-export.dxf', dxf);
+                displayError(`Đã xuất ${rowsToExport.length} marker ra file CAD.`);
+            } catch (error) {
+                console.error('exportMarkersToCad error:', error);
+                displayError('Lỗi khi xuất CAD: ' + (error.message || error));
+            }
+        }
+
         function saveMarkerData() {
             try {
                 if (!newMarkerRows || newMarkerRows.length === 0) {
@@ -1537,7 +1693,7 @@
         function createMapControls() {
             const CustomControl = L.Control.extend({
                 options: {
-                    position: 'topright'
+                    position: 'bottomright'
                 },
 
                 onAdd: function(map) {

@@ -531,6 +531,18 @@
                     <textarea id="markerNoteInput" class="form-control" placeholder="Nhập ghi chú (tùy chọn)"></textarea>
                 </div>
                 <div class="form-group">
+                    <label for="markerCabinetInput">Tên tủ điều khiển</label>
+                    <input id="markerCabinetInput" type="text" class="form-control" placeholder="Nhập tên tủ điều khiển" />
+                </div>
+                <div class="form-group">
+                    <label for="markerPoleTypeInput">Loại trụ</label>
+                    <input id="markerPoleTypeInput" type="text" class="form-control" placeholder="Nhập loại trụ" />
+                </div>
+                <div class="form-group">
+                    <label for="markerLampTypeInput">Loại đèn</label>
+                    <input id="markerLampTypeInput" type="text" class="form-control" placeholder="Nhập loại đèn" />
+                </div>
+                <div class="form-group">
                     <button id="markerImageButton" type="button" class="btn btn-outline-primary marker-image-button" onclick="triggerMarkerImageInput()">Chụp / chọn ảnh</button>
                     <input id="markerImageInput" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleMarkerImageFile(event)" />
                 </div>
@@ -566,6 +578,9 @@
         let addMarkerMode = false;
         let lastMarkerName = '';
         let lastMarkerNote = '';
+        let lastMarkerCabinet = '';
+        let lastMarkerPoleType = '';
+        let lastMarkerLampType = '';
         let githubOwner = '';
         let githubRepo = '';
         let githubBranch = '';
@@ -624,6 +639,13 @@
             const imageBase64 = row[11] || '';
             const updatedAt = row[12] || '';
             const sameNameMarkers = getSameNameMarkers(name);
+            const currentLat = lat;
+            const currentLon = lon;
+            const currentNameNormalized = normalizeText(name || '');
+            const isAlreadyIncluded = sameNameMarkers.some(item => item.lat === currentLat && item.lon === currentLon && normalizeText(item.name || '') === currentNameNormalized);
+            if (!isAlreadyIncluded) {
+                sameNameMarkers.push({ lat: currentLat, lon: currentLon, name });
+            }
             const sameNameCount = sameNameMarkers.length;
             const sameNameHtml = sameNameCount > 1 ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tổng số trụ cùng tên:</strong> ${sameNameCount}</div>` : '';
 
@@ -884,11 +906,14 @@
             const overlay = document.getElementById('markerPopupForm');
             const nameInput = document.getElementById('markerNameInput');
             const noteInput = document.getElementById('markerNoteInput');
+            const cabinetInput = document.getElementById('markerCabinetInput');
+            const poleTypeInput = document.getElementById('markerPoleTypeInput');
+            const lampTypeInput = document.getElementById('markerLampTypeInput');
             const coordsText = document.getElementById('markerCoordsText');
             const preview = document.getElementById('markerImagePreview');
             const fileInput = document.getElementById('markerImageInput');
 
-            if (!overlay || !nameInput || !noteInput || !coordsText || !preview || !fileInput) {
+            if (!overlay || !nameInput || !noteInput || !cabinetInput || !poleTypeInput || !lampTypeInput || !coordsText || !preview || !fileInput) {
                 displayError('Không thể hiển thị form marker.');
                 return;
             }
@@ -897,6 +922,9 @@
             const currentNote = noteInput.value.trim() || lastMarkerNote;
             nameInput.value = getNextMarkerName(currentName) || currentName || '';
             noteInput.value = currentNote || '';
+            cabinetInput.value = cabinetInput.value.trim() || lastMarkerCabinet || '';
+            poleTypeInput.value = poleTypeInput.value.trim() || lastMarkerPoleType || '';
+            lampTypeInput.value = lampTypeInput.value.trim() || lastMarkerLampType || '';
             preview.innerHTML = '';
             fileInput.value = null;
             coordsText.textContent = `Tọa độ: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
@@ -1016,6 +1044,9 @@
 
                 const name = nameInput.value.trim();
                 const note = noteInput.value.trim();
+                const cabinetName = document.getElementById('markerCabinetInput').value.trim();
+                const poleType = document.getElementById('markerPoleTypeInput').value.trim();
+                const lampType = document.getElementById('markerLampTypeInput').value.trim();
 
                 if (!name) {
                     displayError('Vui lòng nhập tên trụ.');
@@ -1025,6 +1056,9 @@
 
                 lastMarkerName = name;
                 lastMarkerNote = note;
+                lastMarkerCabinet = cabinetName;
+                lastMarkerPoleType = poleType;
+                lastMarkerLampType = lampType;
 
                 const type = 7;
                 const imageData = markerImageDataUrl || '';
@@ -1035,7 +1069,7 @@
                     newMarkerRows = [];
                 }
                 const updatedAt = new Date().toLocaleString('vi-VN');
-                const newRow = ['', name, lat, lon, note, '', type, '', '', '', '', imageData, updatedAt];
+                const newRow = ['', name, lat, lon, note, '', type, cabinetName, poleType, '', lampType, imageData, updatedAt];
                 loadedData.push(newRow);
                 newMarkerRows.push(newRow);
                 const newMarker = addMarkerRowToMap(newRow);

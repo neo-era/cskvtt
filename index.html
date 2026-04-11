@@ -581,6 +581,7 @@
             const loaican = row[9];
             const loaiden = row[10];
             const imageBase64 = row[11] || '';
+            const updatedAt = row[12] || '';
 
             if (isNaN(lat) || isNaN(lon)) return null;
 
@@ -588,6 +589,7 @@
             const markerIndex = markers.length;
             const marker = L.marker([lat, lon], { icon: icon });
             const imageHtml = imageBase64 ? `<div style="margin-top:8px;text-align:center;"><img src="${imageBase64}" alt="Ảnh trụ" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : '';
+            const timestampHtml = updatedAt ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Thời gian cập nhật:</strong> ${updatedAt}</div>` : '';
             const popupContent = `
                 <div>
                     <strong>Tên trụ: ${name || 'Không có tên'}</strong><br>
@@ -597,6 +599,7 @@
                     Trụ: ${loaitru || ''}<br>
                     Tủ điều khiển: ${tudieukhien || ''}<br>
                     Đèn: ${loaiden || ''}<br>
+                    ${timestampHtml}
                     ${imageHtml}
                     <button onclick="routeToMarker(${markerIndex})" style="margin-top:8px;padding:6px 10px;font-size:14px;cursor:pointer;">Dẫn đường xe máy</button>
                 </div>`;
@@ -948,7 +951,8 @@
                 if (!Array.isArray(newMarkerRows)) {
                     newMarkerRows = [];
                 }
-                const newRow = ['', name, lat, lon, note, '', type, '', '', '', '', imageData];
+                const updatedAt = new Date().toLocaleString('vi-VN');
+                const newRow = ['', name, lat, lon, note, '', type, '', '', '', '', imageData, updatedAt];
                 loadedData.push(newRow);
                 newMarkerRows.push(newRow);
                 const newMarker = addMarkerRowToMap(newRow);
@@ -986,7 +990,7 @@
                     return;
                 }
 
-                const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh Base64'];
+                const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh Base64', 'Thời gian cập nhật'];
                 const exportData = [header, ...newMarkerRows];
                 const worksheet = XLSX.utils.aoa_to_sheet(exportData);
                 const workbook = XLSX.utils.book_new();
@@ -1212,7 +1216,7 @@
 
                 displayError('Đang cập nhật file trên GitHub...');
 
-                const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh Base64'];
+                const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh Base64', 'Thời gian cập nhật'];
 
                 const fileData = await getGitHubFileContent(githubOwner, githubRepo, path, githubBranch, githubToken);
                 let combinedRows = [header, ...newMarkerRows];

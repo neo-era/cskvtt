@@ -564,11 +564,100 @@
         let markerPopupLocation = null;
         let markerImageDataUrl = null;
         let addMarkerMode = false;
+        let lastMarkerName = '';
+        let lastMarkerNote = '';
         let githubOwner = '';
         let githubRepo = '';
         let githubBranch = '';
         let githubToken = '';
         const MAX_EXCEL_TEXT_LENGTH = 32767;
+
+        function getNextMarkerName(previousName) {
+            if (!previousName) return '';
+            const match = previousName.match(/^(.*?)(\d+)$/);
+            if (!match) return previousName;
+            const prefix = match[1];
+            const number = match[2];
+            const nextNumber = String(parseInt(number, 10) + 1).padStart(number.length, '0');
+            return prefix + nextNumber;
+        }
+
+        function normalizeMarkerBaseName(name) {
+            const base = (name || '').toString().trim().replace(/[\s\-]*\d+$/, '');
+            return normalizeText(base);
+        }
+
+        function getMarkerCountByName(name) {
+            if (!name) return 0;
+            const normalizedBase = normalizeMarkerBaseName(name);
+            return markers.reduce((acc, item) => {
+                return acc + (normalizeMarkerBaseName(item.name || '') === normalizedBase ? 1 : 0);
+            }, 0);
+        }
+
+        function getSameNameMarkers(name) {
+            if (!name) return [];
+            const normalizedBase = normalizeMarkerBaseName(name);
+            return markers.filter(item => normalizeMarkerBaseName(item.name || '') === normalizedBase);
+        }
+
+        function getDistanceMeters(lat1, lon1, lat2, lon2) {
+            const toRad = x => x * Math.PI / 180;
+            const R = 6371e3;
+            const phi1 = toRad(lat1);
+            const phi2 = toRad(lat2);
+            const dPhi = toRad(lat2 - lat1);
+            const dLambda = toRad(lon2 - lon1);
+            const a = Math.sin(dPhi / 2) * Math.sin(dPhi / 2) + Math.cos(phi1) * Math.cos(phi2) * Math.sin(dLambda / 2) * Math.sin(dLambda / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        function createMarkerPopupContent(row) {
+            const name = row[1] || row[0] || '';
+            const lat = parseFloat(row[2]);
+            const lon = parseFloat(row[3]);
+            const note = row[4] || '';
+            const tudieukhien = row[7];
+            const loaitru = row[8];
+            const loaiden = row[10];
+            const imageBase64 = row[11] || '';
+            const updatedAt = row[12] || '';
+            const sameNameMarkers = getSameNameMarkers(name);
+            const sameNameCount = sameNameMarkers.length;
+            const sameNameHtml = sameNameCount > 1 ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tổng số trụ cùng tên:</strong> ${sameNameCount}</div>` : '';
+
+            let distancesHtml = '';
+            if (sameNameCount > 1) {
+                const segments = [];
+                let totalDistance = 0;
+                for (let i = 1; i < sameNameMarkers.length; i++) {
+                    const prev = sameNameMarkers[i - 1];
+                    const current = sameNameMarkers[i];
+                    const dist = getDistanceMeters(prev.lat, prev.lon, current.lat, current.lon);
+                    totalDistance += dist;
+                    segments.push(`<li style="margin-bottom:4px;list-style:disc;">${prev.name || 'Không có tên'} → ${current.name || 'Không có tên'}: ${Math.round(dist)} m</li>`);
+                }
+                distancesHtml = `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tổng khoảng cách nối tiếp:</strong> ${Math.round(totalDistance)} m<ul style="margin:4px 0 0 16px;padding:0;">${segments.join('')}</ul></div>`;
+            }
+
+            const imageHtml = imageBase64 ? `<div style="margin-top:8px;text-align:center;"><img src="${imageBase64}" alt="Ảnh trụ" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : '';
+            const timestampHtml = updatedAt ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Thời gian cập nhật:</strong> ${updatedAt}</div>` : '';
+            return `
+                <div>
+                    <strong>Tên trụ: ${name || 'Không có tên'}</strong><br>
+                    Lat: ${lat.toFixed(6)}<br>
+                    Lon: ${lon.toFixed(6)}<br>
+                    Ghi chú: ${note || 'Không có'}<br>
+                    Trụ: ${loaitru || ''}<br>
+                    Tủ điều khiển: ${tudieukhien || ''}<br>
+                    Đèn: ${loaiden || ''}<br>
+                    ${sameNameHtml}
+                    ${distancesHtml}
+                    ${timestampHtml}
+                    ${imageHtml}
+                </div>`;
+        }
 
         function addMarkerRowToMap(row) {
             const name = row[1] || row[0] || '';
@@ -588,23 +677,12 @@
             const icon = customIcons[type] || customIcons.default;
             const markerIndex = markers.length;
             const marker = L.marker([lat, lon], { icon: icon });
-            const imageHtml = imageBase64 ? `<div style="margin-top:8px;text-align:center;"><img src="${imageBase64}" alt="Ảnh trụ" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : '';
-            const timestampHtml = updatedAt ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Thời gian cập nhật:</strong> ${updatedAt}</div>` : '';
-            const popupContent = `
-                <div>
-                    <strong>Tên trụ: ${name || 'Không có tên'}</strong><br>
-                    Lat: ${lat.toFixed(6)}<br>
-                    Lon: ${lon.toFixed(6)}<br>
-                    Ghi chú: ${note || 'Không có'}<br>
-                    Trụ: ${loaitru || ''}<br>
-                    Tủ điều khiển: ${tudieukhien || ''}<br>
-                    Đèn: ${loaiden || ''}<br>
-                    ${timestampHtml}
-                    ${imageHtml}
-                    <button onclick="routeToMarker(${markerIndex})" style="margin-top:8px;padding:6px 10px;font-size:14px;cursor:pointer;">Dẫn đường xe máy</button>
-                </div>`;
+            const popupContent = createMarkerPopupContent(row);
 
             marker.bindPopup(popupContent);
+            marker.on('popupopen', function() {
+                marker.setPopupContent(createMarkerPopupContent(row));
+            });
             markersCluster.addLayer(marker);
             markers.push({ lat, lon, name, note, marker });
 
@@ -815,8 +893,10 @@
                 return;
             }
 
-            nameInput.value = '';
-            noteInput.value = '';
+            const currentName = nameInput.value.trim() || lastMarkerName;
+            const currentNote = noteInput.value.trim() || lastMarkerNote;
+            nameInput.value = getNextMarkerName(currentName) || currentName || '';
+            noteInput.value = currentNote || '';
             preview.innerHTML = '';
             fileInput.value = null;
             coordsText.textContent = `Tọa độ: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
@@ -942,6 +1022,9 @@
                     nameInput.focus();
                     return;
                 }
+
+                lastMarkerName = name;
+                lastMarkerNote = note;
 
                 const type = 7;
                 const imageData = markerImageDataUrl || '';
@@ -1347,6 +1430,12 @@
                 map.setView([firstMatch.item.lat, firstMatch.item.lon], 18);
                 firstMatch.item.marker.openPopup();
 
+                const nameCounts = matches.reduce((counts, match) => {
+                    const normalized = normalizeMarkerBaseName(match.item.name || '');
+                    counts[normalized] = (counts[normalized] || 0) + 1;
+                    return counts;
+                }, {});
+
                 const results = document.getElementById('searchResults');
                 const list = document.createElement('ul');
                 // Hiển thị toàn bộ kết quả
@@ -1354,7 +1443,10 @@
                     const listItem = document.createElement('li');
                     const link = document.createElement('a');
                     link.href = '#';
-                    link.textContent = `${match.item.name || 'Không có tên'} (${match.item.lat.toFixed(6)}, ${match.item.lon.toFixed(6)})`;
+                    const normalized = normalizeMarkerBaseName(match.item.name || '');
+                    const sameCount = nameCounts[normalized] || 0;
+                    const sameText = sameCount > 1 ? ` [${sameCount} cùng tên]` : '';
+                    link.textContent = `${match.item.name || 'Không có tên'}${sameText} (${match.item.lat.toFixed(6)}, ${match.item.lon.toFixed(6)})`;
                     link.onclick = function(event) {
                         event.preventDefault();
                         goToMarker(match.index);

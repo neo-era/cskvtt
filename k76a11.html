@@ -652,7 +652,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.1/exceljs.min.js"></script>
 
     <script>
         let map;
@@ -756,9 +755,9 @@
             const lat = parseFloat(row[2]);
             const lon = parseFloat(row[3]);
             const note = row[4] || '';
-            const tudieukhien = row[7] || '';
-            const loaitru = row[8] || '';
-            const loaiden = row[10] || '';
+            const tudieukhien = row[7];
+            const loaitru = row[8];
+            const loaiden = row[10];
             const imageBase64 = row[11] || '';
             const updatedAt = row[12] || '';
             const sameNameMarkers = getSameNameMarkers(name);
@@ -770,33 +769,10 @@
                 sameNameMarkers.push({ lat: currentLat, lon: currentLon, name });
             }
             const sameNameCount = sameNameMarkers.length;
+            const sameNameHtml = sameNameCount > 1 ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tổng số trụ cùng tên:</strong> ${sameNameCount}</div>` : '';
 
-            const container = document.createElement('div');
-            container.style.fontSize = '13px';
-            container.style.color = '#333';
-
-            const title = document.createElement('div');
-            title.innerHTML = `<strong>Tên trụ:</strong> ${name || 'Không có tên'}`;
-            container.appendChild(title);
-
-            const coords = document.createElement('div');
-            coords.innerHTML = `Lat: ${isNaN(lat) ? 'N/A' : lat.toFixed(6)}<br>Lon: ${isNaN(lon) ? 'N/A' : lon.toFixed(6)}`;
-            container.appendChild(coords);
-
-            const noteEl = document.createElement('div');
-            noteEl.innerHTML = `<strong>Ghi chú:</strong> ${note || 'Không có'}`;
-            container.appendChild(noteEl);
-
-            const detailsEl = document.createElement('div');
-            detailsEl.innerHTML = `<strong>Trụ:</strong> ${loaitru}<br><strong>Tủ điều khiển:</strong> ${tudieukhien}<br><strong>Đèn:</strong> ${loaiden}`;
-            container.appendChild(detailsEl);
-
+            let distancesHtml = '';
             if (sameNameCount > 1) {
-                const sameNameEl = document.createElement('div');
-                sameNameEl.style.marginTop = '8px';
-                sameNameEl.innerHTML = `<strong>Tổng số trụ cùng tên:</strong> ${sameNameCount}`;
-                container.appendChild(sameNameEl);
-
                 const segments = [];
                 let totalDistance = 0;
                 for (let i = 1; i < sameNameMarkers.length; i++) {
@@ -806,38 +782,25 @@
                     totalDistance += dist;
                     segments.push(`<li style="margin-bottom:4px;list-style:disc;">${prev.name || 'Không có tên'} → ${current.name || 'Không có tên'}: ${Math.round(dist)} m</li>`);
                 }
-                const distanceEl = document.createElement('div');
-                distanceEl.style.marginTop = '8px';
-                distanceEl.innerHTML = `<strong>Tổng khoảng cách nối tiếp:</strong> ${Math.round(totalDistance)} m<ul style="margin:4px 0 0 16px;padding:0;">${segments.join('')}</ul>`;
-                container.appendChild(distanceEl);
+                distancesHtml = `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tổng khoảng cách nối tiếp:</strong> ${Math.round(totalDistance)} m<ul style="margin:4px 0 0 16px;padding:0;">${segments.join('')}</ul></div>`;
             }
 
-            if (updatedAt) {
-                const timeEl = document.createElement('div');
-                timeEl.style.marginTop = '8px';
-                timeEl.innerHTML = `<strong>Thời gian cập nhật:</strong> ${updatedAt}`;
-                container.appendChild(timeEl);
-            }
-
-            if (imageBase64) {
-                const imageWrapper = document.createElement('div');
-                imageWrapper.style.marginTop = '8px';
-                imageWrapper.style.textAlign = 'center';
-
-                const img = document.createElement('img');
-                img.src = imageBase64;
-                img.alt = 'Ảnh trụ';
-                img.style.maxWidth = '100%';
-                img.style.maxHeight = '140px';
-                img.style.borderRadius = '8px';
-                img.style.border = '1px solid #ccc';
-                img.style.display = 'block';
-                img.style.margin = '0 auto';
-                imageWrapper.appendChild(img);
-                container.appendChild(imageWrapper);
-            }
-
-            return container;
+            const imageHtml = imageBase64 ? `<div style="margin-top:8px;text-align:center;"><img src="${imageBase64}" alt="Ảnh trụ" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : '';
+            const timestampHtml = updatedAt ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Thời gian cập nhật:</strong> ${updatedAt}</div>` : '';
+            return `
+                <div>
+                    <strong>Tên trụ: ${name || 'Không có tên'}</strong><br>
+                    Lat: ${lat.toFixed(6)}<br>
+                    Lon: ${lon.toFixed(6)}<br>
+                    Ghi chú: ${note || 'Không có'}<br>
+                    Trụ: ${loaitru || ''}<br>
+                    Tủ điều khiển: ${tudieukhien || ''}<br>
+                    Đèn: ${loaiden || ''}<br>
+                    ${sameNameHtml}
+                    ${distancesHtml}
+                    ${timestampHtml}
+                    ${imageHtml}
+                </div>`;
         }
 
         function addMarkerRowToMap(row) {
@@ -1166,25 +1129,25 @@
                 const scale = Math.min(1, maxSide / Math.max(width, height));
                 width = Math.round(width * scale);
                 height = Math.round(height * scale);
+                let quality = 0.92;
 
                 const ctx = canvas.getContext('2d');
-                const originalMimeMatch = dataUrl.match(/^data:(image\/[^;]+);/i);
-                const originalMime = originalMimeMatch ? originalMimeMatch[1].toLowerCase() : 'image/png';
-                const supportedMimes = ['image/png', 'image/jpeg', 'image/webp'];
-                const targetMime = supportedMimes.includes(originalMime) ? originalMime : 'image/png';
 
                 function render() {
                     canvas.width = width;
                     canvas.height = height;
                     ctx.clearRect(0, 0, width, height);
                     ctx.drawImage(img, 0, 0, width, height);
-                    if (targetMime === 'image/jpeg' || targetMime === 'image/webp') {
-                        return canvas.toDataURL(targetMime, 0.8);
-                    }
-                    return canvas.toDataURL(targetMime);
+                    const result = canvas.toDataURL('image/jpeg', quality);
+                    return result;
                 }
 
                 let result = render();
+                while (result.length > MAX_EXCEL_TEXT_LENGTH && quality > 0.1) {
+                    quality -= 0.1;
+                    result = render();
+                }
+
                 while (result.length > MAX_EXCEL_TEXT_LENGTH && Math.max(width, height) > 120) {
                     width = Math.round(width * 0.85);
                     height = Math.round(height * 0.85);
@@ -1437,101 +1400,24 @@
             }
         }
 
-        function getImageExtensionFromDataUrl(dataUrl) {
-            const match = dataUrl.match(/^data:image\/(png|jpeg|jpg|webp);base64,/i);
-            if (!match) return 'png';
-            return match[1].toLowerCase() === 'jpg' ? 'jpeg' : match[1].toLowerCase();
-        }
-
-        function arrayBufferToBase64(buffer) {
-            let binary = '';
-            const bytes = new Uint8Array(buffer);
-            const chunkSize = 0x8000;
-            for (let i = 0; i < bytes.length; i += chunkSize) {
-                binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
-            }
-            return btoa(binary);
-        }
-
-        async function createExcelBufferWithImages(rows) {
-            const ExcelJSGlobal = typeof ExcelJS !== 'undefined' ? ExcelJS : (typeof window !== 'undefined' ? window.ExcelJS : undefined);
-            if (!ExcelJSGlobal) return null;
-            const workbook = new ExcelJSGlobal.Workbook();
-            const worksheet = workbook.addWorksheet('Sheet1');
-            const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh', 'Thời gian cập nhật'];
-            worksheet.addRow(header);
-
-            const columnWidths = [8, 20, 12, 12, 24, 8, 10, 18, 14, 12, 14, 24, 20];
-            columnWidths.forEach((width, index) => {
-                worksheet.getColumn(index + 1).width = width;
-            });
-
-            for (let i = 0; i < rows.length; i++) {
-                const row = Array.isArray(rows[i]) ? [...rows[i]] : [];
-                const imageDataUrl = row[11] || '';
-                row[11] = '';
-                const excelRow = worksheet.addRow(row);
-                if (typeof imageDataUrl === 'string' && imageDataUrl.startsWith('data:image/')) {
-                    const extension = getImageExtensionFromDataUrl(imageDataUrl);
-                    const base64Data = imageDataUrl.replace(/^data:image\/[^;]+;base64,/, '');
-                    const imageId = workbook.addImage({ base64: base64Data, extension });
-                    const rowNumber = excelRow.number;
-                    worksheet.addImage(imageId, {
-                        tl: { col: 11, row: rowNumber - 1 },
-                        ext: { width: 180, height: 120 },
-                        editAs: 'oneCell'
-                    });
-                    worksheet.getRow(rowNumber).height = 95;
-                }
-            }
-
-            return await workbook.xlsx.writeBuffer();
-        }
-
-        function attachImagesToWorksheet(worksheet, rows, startRow = 1) {
-            if (!worksheet || !Array.isArray(rows)) return;
-            const images = [];
-            rows.forEach((row, index) => {
-                const imageData = row[11];
-                if (typeof imageData === 'string' && imageData.startsWith('data:image/')) {
-                    const rowIndex = startRow + index;
-                    const cellAddress = XLSX.utils.encode_cell({ r: rowIndex, c: 11 });
-                    worksheet[cellAddress] = { t: 's', v: '' };
-
-                    images.push({
-                        image: imageData,
-                        origin: { r: rowIndex, c: 11 },
-                        base64: true
-                    });
-
-                    worksheet['!cols'] = worksheet['!cols'] || [];
-                    worksheet['!cols'][11] = { wpx: 140 };
-                    worksheet['!rows'] = worksheet['!rows'] || [];
-                    worksheet['!rows'][rowIndex] = { hpx: 120 };
-                }
-            });
-            if (images.length > 0) {
-                worksheet['!images'] = images;
-            }
-        }
-
-        async function saveMarkerData() {
+        function saveMarkerData() {
             try {
                 if (!newMarkerRows || newMarkerRows.length === 0) {
                     displayError('Không có marker mới để lưu.');
                     return;
                 }
 
-                let downloadBlob = null;
-                if (typeof ExcelJS !== 'undefined' || (typeof window !== 'undefined' && window.ExcelJS)) {
-                    const buffer = await createExcelBufferWithImages(newMarkerRows);
-                    if (buffer) {
-                        downloadBlob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                    }
-                }
-
-                if (downloadBlob) {
-                    const url = URL.createObjectURL(downloadBlob);
+                const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh Base64', 'Thời gian cập nhật'];
+                const exportData = [header, ...newMarkerRows];
+                const worksheet = XLSX.utils.aoa_to_sheet(exportData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+                if (typeof XLSX.writeFile === 'function') {
+                    XLSX.writeFile(workbook, 'khaosat-updated.xlsx');
+                } else {
+                    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+                    const blob = new Blob([wbout], { type: 'application/octet-stream' });
+                    const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.style.display = 'none';
                     a.href = url;
@@ -1542,35 +1428,6 @@
                         document.body.removeChild(a);
                         URL.revokeObjectURL(url);
                     }, 100);
-                } else {
-                    const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh', 'Thời gian cập nhật'];
-                    const exportRows = newMarkerRows.map(row => {
-                        const copy = Array.isArray(row) ? [...row] : [];
-                        copy[11] = '';
-                        return copy;
-                    });
-                    const exportData = [header, ...exportRows];
-                    const worksheet = XLSX.utils.aoa_to_sheet(exportData);
-                    attachImagesToWorksheet(worksheet, newMarkerRows);
-                    const workbook = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
-                    if (typeof XLSX.writeFile === 'function') {
-                        XLSX.writeFile(workbook, 'khaosat-updated.xlsx');
-                    } else {
-                        const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-                        const blob = new Blob([wbout], { type: 'application/octet-stream' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.style.display = 'none';
-                        a.href = url;
-                        a.download = 'khaosat-updated.xlsx';
-                        document.body.appendChild(a);
-                        a.click();
-                        setTimeout(() => {
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                        }, 100);
-                    }
                 }
 
                 displayError('File dữ liệu mới đã được tạo và tải xuống.');
@@ -1776,7 +1633,7 @@
 
                 displayError('Đang cập nhật file trên GitHub...');
 
-                const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh', 'Thời gian cập nhật'];
+                const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh Base64', 'Thời gian cập nhật'];
 
                 const fileData = await getGitHubFileContent(githubOwner, githubRepo, path, githubBranch, githubToken);
                 let combinedRows = [header, ...newMarkerRows];
@@ -1795,26 +1652,10 @@
                     }
                 }
 
-                let contentBase64 = '';
-                if (typeof ExcelJS !== 'undefined' || (typeof window !== 'undefined' && window.ExcelJS)) {
-                    const buffer = await createExcelBufferWithImages(combinedRows.slice(1));
-                    if (buffer) {
-                        contentBase64 = arrayBufferToBase64(buffer);
-                    }
-                }
-
-                if (!contentBase64) {
-                    const workbook = XLSX.utils.book_new();
-                    const exportRows = combinedRows.slice(1).map(row => {
-                        const copy = Array.isArray(row) ? [...row] : [];
-                        copy[11] = '';
-                        return copy;
-                    });
-                    const worksheet = XLSX.utils.aoa_to_sheet([header, ...exportRows]);
-                    attachImagesToWorksheet(worksheet, combinedRows.slice(1));
-                    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-                    contentBase64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
-                }
+                const workbook = XLSX.utils.book_new();
+                const worksheet = XLSX.utils.aoa_to_sheet(combinedRows);
+                XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+                const contentBase64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
 
                 await updateGitHubFile(githubOwner, githubRepo, path, githubBranch, githubToken, contentBase64, fileData.sha);
                 newMarkerRows = [];

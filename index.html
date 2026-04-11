@@ -42,7 +42,8 @@
         h1 {
             position: fixed;
             top: 10px;
-            left: 10px;
+            left: 50%;
+            transform: translateX(-50%);
             font-size: 18px;
             color: #2510c6;
             margin: 0;
@@ -344,7 +345,8 @@
             h1 {
                 font-size: 16px;
                 top: 5px;
-                left: 5px;
+                left: 50%;
+                transform: translateX(-50%);
                 padding: 3px 8px;
             }
 
@@ -437,7 +439,7 @@
                             <select id="pages" class="form-control" onchange="navigateToPage()">
                                 <option value="index.html">Trang khảo sát</option>
                                 <option value="quan1.html">Quận 1</option>
-                                <option value="index.html">Kế hoạch</option>
+                                <option value="test.html">Kế hoạch</option>
                             </select>
                         </div>
 
@@ -1065,6 +1067,10 @@
                 const contentBase64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
 
                 await updateGitHubFile(owner, repo, path, branch, token, contentBase64, fileData.sha);
+                newMarkerRows = [];
+                pendingNewMarker = false;
+                addMarkerMode = false;
+                updateAddMarkerButton();
                 displayError('Đã cập nhật file Excel gốc trên GitHub thành công.');
             } catch (error) {
                 console.error('updateGitHubExcel error:', error);

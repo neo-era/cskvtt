@@ -129,6 +129,7 @@
 
         .marker-popup-card {
             width: min(420px, 100%);
+            max-height: calc(100vh - 40px);
             background: #fff;
             border-radius: 14px;
             box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
@@ -146,6 +147,8 @@
 
         .marker-popup-card .body {
             padding: 16px 20px;
+            max-height: calc(100vh - 180px);
+            overflow-y: auto;
         }
 
         .marker-popup-card .body .form-group {
@@ -178,11 +181,13 @@
             display: flex;
             gap: 10px;
             justify-content: flex-end;
+            flex-wrap: wrap;
             background: #f8f9fa;
         }
 
         .marker-popup-card .footer button {
             min-width: 100px;
+            flex: 1 1 45%;
         }
 
         .marker-popup-card .coords-info {
@@ -432,6 +437,37 @@
             .modal.left.show .modal-dialog {
                 left: 0;
             }
+
+            .marker-popup-overlay {
+                padding: 10px;
+            }
+
+            .marker-popup-card {
+                width: calc(100% - 16px);
+                max-width: 100%;
+                border-radius: 12px;
+                max-height: calc(100vh - 20px);
+            }
+
+            .marker-popup-card header {
+                padding: 12px 14px;
+                font-size: 15px;
+            }
+
+            .marker-popup-card .body {
+                padding: 14px 14px;
+                max-height: calc(100vh - 160px);
+            }
+
+            .marker-popup-card .footer {
+                padding: 12px 14px 14px;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .marker-popup-card .footer button {
+                min-width: 100%;
+            }
         }
 
         @media only screen and (max-width: 480px) {
@@ -448,6 +484,37 @@
             #searchResults {
                 max-height: 120px;
                 font-size: 12px;
+            }
+
+            .marker-popup-overlay {
+                padding: 8px;
+            }
+
+            .marker-popup-card {
+                width: 100%;
+                max-width: 100%;
+                border-radius: 10px;
+                max-height: calc(100vh - 16px);
+            }
+
+            .marker-popup-card header {
+                padding: 10px 12px;
+                font-size: 14px;
+            }
+
+            .marker-popup-card .body {
+                padding: 12px 12px;
+                max-height: calc(100vh - 150px);
+            }
+
+            .marker-popup-card .footer {
+                padding: 10px 12px 12px;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .marker-popup-card .footer button {
+                min-width: 100%;
             }
 
             /* Mobile modal takes full screen */

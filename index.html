@@ -1017,13 +1017,12 @@
                 return;
             }
 
-            const currentName = nameInput.value.trim() || lastMarkerName;
-            const currentNote = noteInput.value.trim() || lastMarkerNote;
-            nameInput.value = getNextMarkerName(currentName) || currentName || '';
-            noteInput.value = currentNote || '';
-            cabinetInput.value = cabinetInput.value.trim() || lastMarkerCabinet || '';
-            poleTypeInput.value = poleTypeInput.value.trim() || lastMarkerPoleType || '';
-            lampTypeInput.value = lampTypeInput.value.trim() || lastMarkerLampType || '';
+            const nextName = lastMarkerName ? getNextMarkerName(lastMarkerName) : '';
+            nameInput.value = nextName;
+            noteInput.value = lastMarkerNote || '';
+            cabinetInput.value = lastMarkerCabinet || '';
+            poleTypeInput.value = lastMarkerPoleType || '';
+            lampTypeInput.value = lastMarkerLampType || '';
             preview.innerHTML = '';
             fileInput.value = null;
             coordsText.textContent = `Tọa độ: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;

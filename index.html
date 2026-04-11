@@ -56,7 +56,7 @@
 
         #controlsBtn {
             position: fixed;
-            top: 10px;
+            top: 35px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 3000;
@@ -128,6 +128,10 @@
         }
 
         .marker-popup-card {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             width: min(360px, 100%);
             max-height: calc(100vh - 30px);
             background: #fff;
@@ -143,6 +147,12 @@
             color: #fff;
             font-size: 15px;
             font-weight: 700;
+            cursor: grab;
+            user-select: none;
+        }
+
+        .marker-popup-card.dragging header {
+            cursor: grabbing;
         }
 
         .marker-popup-card .body {
@@ -1052,6 +1062,55 @@
             if (fileInput) fileInput.value = null;
         }
 
+        function makeElementDraggable(handle, target) {
+            if (!handle || !target) return;
+            let dragging = false;
+            let startX = 0;
+            let startY = 0;
+            let origLeft = 0;
+            let origTop = 0;
+
+            handle.style.touchAction = 'none';
+
+            handle.addEventListener('pointerdown', function(event) {
+                if (event.pointerType === 'mouse' && event.button !== 0) return;
+                dragging = true;
+                const rect = target.getBoundingClientRect();
+                origLeft = rect.left;
+                origTop = rect.top;
+                startX = event.clientX;
+                startY = event.clientY;
+                target.setPointerCapture(event.pointerId);
+                target.classList.add('dragging');
+                event.preventDefault();
+            });
+
+            handle.addEventListener('pointermove', function(event) {
+                if (!dragging) return;
+                const dx = event.clientX - startX;
+                const dy = event.clientY - startY;
+                target.style.left = `${origLeft + dx}px`;
+                target.style.top = `${origTop + dy}px`;
+                target.style.transform = 'none';
+            });
+
+            const endDrag = function(event) {
+                if (!dragging) return;
+                dragging = false;
+                if (event.pointerId) {
+                    try {
+                        target.releasePointerCapture(event.pointerId);
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+                target.classList.remove('dragging');
+            };
+
+            handle.addEventListener('pointerup', endDrag);
+            handle.addEventListener('pointercancel', endDrag);
+        }
+
         function triggerMarkerImageInput() {
             const fileInput = document.getElementById('markerImageInput');
             if (fileInput) {
@@ -1171,7 +1230,13 @@
                 lastMarkerPoleType = poleType;
                 lastMarkerLampType = lampType;
 
-                const type = 7;
+                let type = 1;
+                if (cabinetName) {
+                    type = 6;
+                } else if (poleType.toUpperCase() === 'STK') {
+                    type = 2;
+                }
+
                 const imageData = markerImageDataUrl || '';
                 if (!Array.isArray(loadedData)) {
                     loadedData = [];
@@ -2027,6 +2092,10 @@
             if (cancelMarkerBtn) {
                 cancelMarkerBtn.addEventListener('click', cancelMarkerPopup);
             }
+
+            const markerPopupHeader = document.querySelector('#markerPopupForm .marker-popup-card header');
+            const markerPopupCard = document.querySelector('#markerPopupForm .marker-popup-card');
+            makeElementDraggable(markerPopupHeader, markerPopupCard);
         };
     </script>
 </body>

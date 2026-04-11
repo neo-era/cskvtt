@@ -1182,13 +1182,13 @@
                 }
 
                 if (!githubOwner || !githubRepo || !githubBranch || !githubToken) {
-                    githubOwner = prompt('Nhập GitHub owner (tên người dùng hoặc tổ chức):', 'neo-era');
+                    githubOwner = prompt('Nhập GitHub owner (tên người dùng):', 'neo-era');
                     if (!githubOwner) return;
-                    githubRepo = prompt('Nhập GitHub repository name:', 'cskvtt');
+                    githubRepo = prompt('Nhập repository name:', 'cskvtt');
                     if (!githubRepo) return;
                     githubBranch = prompt('Nhập branch:', 'sub1');
                     if (!githubBranch) return;
-                    githubToken = prompt('Nhập GitHub personal access token (repo scope):');
+                    githubToken = prompt('Nhập GitHub personal access token (repo scope):', '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');
                     if (!githubToken) return;
                 }
 

@@ -54,40 +54,6 @@
             touch-action: manipulation;
         }
 
-        #controlsBtn {
-            position: fixed;
-            top: 35px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 3000;
-            touch-action: manipulation;
-        }
-
-        .controls-container {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .controls-container .form-group {
-            margin-bottom: 15px;
-        }
-
-        .button-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .button-group .btn {
-            margin: 0;
-        }
-
-        #pages, #searchInput {
-            padding: 8px;
-            margin: 5px;
-            font-size: 16px;
-        }
 
         button {
             background-color: #007bff;
@@ -227,46 +193,6 @@
             margin-top: 8px;
         }
 
-        .leaflet-control-custom {
-            z-index: 3000;
-            margin-bottom: 10px;
-            margin-right: 10px;
-            background: transparent;
-            border: 1px solid rgba(0, 0, 0, 0.18);
-            border-radius: 10px;
-            box-shadow: 0 1px 8px rgba(0, 0, 0, 0.18);
-            padding: 6px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            touch-action: manipulation;
-        }
-
-        .leaflet-control-custom button {
-            width: 42px;
-            height: 42px;
-            border: none;
-            border-radius: 8px;
-            background: #fff;
-            color: #333;
-            font-size: 16px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .leaflet-control-custom button:hover {
-            background: #f0f0f0;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-        }
-
-        .leaflet-control-custom button i {
-            pointer-events: none;
-        }
-
         #error {
             color: red;
             text-align: center;
@@ -283,64 +209,6 @@
             overflow-y: auto;
         }
 
-        .marker-list-panel {
-            position: fixed;
-            top: 80px;
-            left: 16px;
-            width: min(320px, 90vw);
-            max-height: calc(100vh - 100px);
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid rgba(0,0,0,0.12);
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.16);
-            z-index: 2500;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            backdrop-filter: blur(8px);
-        }
-
-        .marker-list-header {
-            padding: 12px 14px;
-            background: #007bff;
-            color: #fff;
-            font-weight: 700;
-            font-size: 14px;
-        }
-
-        .marker-list-content {
-            overflow-y: auto;
-            padding: 10px 12px;
-            flex: 1;
-        }
-
-        .marker-list-item {
-            padding: 10px 12px;
-            border-radius: 10px;
-            border: 1px solid rgba(0,0,0,0.08);
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: transform 0.15s ease, background-color 0.15s ease;
-            background: #fff;
-        }
-
-        .marker-list-item:hover {
-            transform: translateY(-1px);
-            background: #f8f9ff;
-        }
-
-        .marker-list-item strong {
-            display: block;
-            margin-bottom: 4px;
-            font-size: 14px;
-            color: #0a3d85;
-        }
-
-        .marker-list-item small {
-            display: block;
-            color: #444;
-            font-size: 12px;
-        }
 
         #searchResults ul {
             list-style: none;
@@ -474,26 +342,6 @@
                 padding: 3px 8px;
             }
 
-            #controlsBtn {
-                top: 5px;
-                left: 50%;
-                transform: translateX(-50%);
-                padding: 8px 12px;
-                font-size: 14px;
-            }
-
-            .controls-container {
-                gap: 10px;
-            }
-
-            .button-group {
-                grid-template-columns: 1fr;
-            }
-
-            #searchResults {
-                max-height: 150px;
-                font-size: 14px;
-            }
 
             .modal-dialog {
                 margin: 10px;
@@ -558,11 +406,6 @@
                 padding: 2px 6px;
             }
 
-            #controlsBtn {
-                padding: 6px 10px;
-                font-size: 12px;
-            }
-
             #searchResults {
                 max-height: 120px;
                 font-size: 12px;
@@ -612,90 +455,74 @@
     </style>
 </head>
 <body>
-    <h1>BẢN ĐỒ KHẢO SÁT HỆ THỐNG CHIẾU SÁNG CÔNG CỘNG</h1>
+    <h1>A76.A11</h1>
 
-    <!-- Controls Button -->
-    <button id="controlsBtn" class="btn btn-primary">
-        <i class="fa fa-cog"></i> Điều khiển
-    </button>
-
-    <!-- Controls Modal -->
-    <div class="modal fade left" id="controlsModal" tabindex="-1" role="dialog" aria-labelledby="controlsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="controlsModalLabel">Điều khiển bản đồ</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div id="pageSelector" class="controls-container">
-                        <div class="form-group">
-                            <label for="pages">Chọn Quận:</label>
-                            <select id="pages" class="form-control" onchange="navigateToPage()">
-                                <option value="index.html">Trang khảo sát</option>
-                                <option value="quan1.html">Quận 1</option>
-                                <option value="test.html">Kế hoạch</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="searchInput">Tìm kiếm:</label>
-                            <input type="text" id="searchInput" class="form-control" placeholder="Nhập tên trụ hoặc tọa độ (lat, lon)" />
-                        </div>
-
-                        <div class="button-group">
-                            <button onclick="searchMarkers()" class="btn btn-success btn-block">Tìm kiếm</button>
-                            <button onclick="centerOnUserLocation()" class="btn btn-info btn-block">Vị trí của tôi</button>
-                            <button id="addMarkerBtn" onclick="startAddMarker()" class="btn btn-warning btn-block">Thêm marker</button>
-                            <button onclick="saveMarkerData()" class="btn btn-secondary btn-block">Lưu dữ liệu</button>
-                            <button onclick="exportMarkersToCad()" class="btn btn-dark btn-block">Export to CAD</button>
-                            <button onclick="updateGitHubExcel()" class="btn btn-primary btn-block">Cập nhật GitHub</button>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="githubPathInput">Đường dẫn file GitHub:</label>
-                            <input type="text" id="githubPathInput" class="form-control" placeholder="Ví dụ: data/danhsach.xlsx" />
-                        </div>
-                    </div>
-
-                    <div id="error" class="alert alert-danger" style="display: none;"></div>
-                    <div id="searchResults" class="mt-3"></div>
-                    <div id="githubContents" class="mt-3"></div>
-
-                </div>
-            </div>
-        </div>
-    </div>
     <div id="map"></div>
-    <div id="markerListPanel" class="marker-list-panel">
-        <div class="marker-list-header">Danh sách điểm</div>
-        <div id="markerListContent" class="marker-list-content"></div>
-    </div>
     <div id="markerPopupForm" class="marker-popup-overlay" role="dialog" aria-modal="true">
         <div class="marker-popup-card">
-            <header>Thông tin marker mới</header>
+            <header>Thông tin marker</header>
             <div class="body">
                 <div class="form-group">
-                    <label for="markerNameInput">Tên trụ</label>
-                    <input id="markerNameInput" type="text" class="form-control" placeholder="Nhập tên trụ" />
+                    <label for="markerIdInput">ID</label>
+                    <input id="markerIdInput" type="text" class="form-control" placeholder="Nhập ID" />
                 </div>
                 <div class="form-group">
-                    <label for="markerNoteInput">Ghi chú</label>
-                    <textarea id="markerNoteInput" class="form-control" placeholder="Nhập ghi chú (tùy chọn)"></textarea>
+                    <label for="markerNameInput">Tên</label>
+                    <input id="markerNameInput" type="text" class="form-control" placeholder="Nhập tên" />
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex:1; margin-right:8px;">
+                        <label for="markerLatitudeInput">Latitude</label>
+                        <input id="markerLatitudeInput" type="text" class="form-control" placeholder="Lat" />
+                    </div>
+                    <div class="form-group" style="flex:1; margin-left:8px;">
+                        <label for="markerLongitudeInput">Longitude</label>
+                        <input id="markerLongitudeInput" type="text" class="form-control" placeholder="Lon" />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex:1; margin-right:8px;">
+                        <label for="markerNorthInput">N</label>
+                        <input id="markerNorthInput" type="text" class="form-control" placeholder="N" />
+                    </div>
+                    <div class="form-group" style="flex:1; margin-left:8px;">
+                        <label for="markerEastInput">E</label>
+                        <input id="markerEastInput" type="text" class="form-control" placeholder="E" />
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label for="markerCabinetInput">Tên tủ điều khiển</label>
-                    <input id="markerCabinetInput" type="text" class="form-control" placeholder="Nhập tên tủ điều khiển" />
+                    <label for="markerStatusInput">Trạng thái</label>
+                    <input id="markerStatusInput" type="text" class="form-control" placeholder="Nhập trạng thái" />
                 </div>
                 <div class="form-group">
-                    <label for="markerPoleTypeInput">Loại trụ</label>
-                    <input id="markerPoleTypeInput" type="text" class="form-control" placeholder="Nhập loại trụ" />
+                    <label for="markerHomeAddressInput">Địa chỉ nhà riêng</label>
+                    <input id="markerHomeAddressInput" type="text" class="form-control" placeholder="Nhập địa chỉ nhà riêng" />
                 </div>
                 <div class="form-group">
-                    <label for="markerLampTypeInput">Loại đèn</label>
-                    <input id="markerLampTypeInput" type="text" class="form-control" placeholder="Nhập loại đèn" />
+                    <label for="markerOfficeAddressInput">Địa chỉ cơ quan</label>
+                    <input id="markerOfficeAddressInput" type="text" class="form-control" placeholder="Nhập địa chỉ cơ quan" />
+                </div>
+                <div class="form-group">
+                    <label for="markerCompanyInput">Cơ quan công tác</label>
+                    <input id="markerCompanyInput" type="text" class="form-control" placeholder="Nhập cơ quan công tác" />
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex:1; margin-right:8px;">
+                        <label for="markerPhone1Input">Điện thoại 1</label>
+                        <input id="markerPhone1Input" type="text" class="form-control" placeholder="Nhập điện thoại 1" />
+                    </div>
+                    <div class="form-group" style="flex:1; margin-left:8px;">
+                        <label for="markerPhone2Input">Điện thoại 2</label>
+                        <input id="markerPhone2Input" type="text" class="form-control" placeholder="Nhập điện thoại 2" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="markerFacebookInput">Facebook</label>
+                    <input id="markerFacebookInput" type="text" class="form-control" placeholder="Nhập Facebook" />
+                </div>
+                <div class="form-group">
+                    <label for="markerTitleInput">Chức vụ</label>
+                    <input id="markerTitleInput" type="text" class="form-control" placeholder="Nhập chức vụ" />
                 </div>
                 <div class="form-group">
                     <button id="markerImageButton" type="button" class="btn btn-outline-primary marker-image-button" onclick="triggerMarkerImageInput()">Chụp / chọn ảnh</button>
@@ -730,6 +557,9 @@
         let pendingMarkerLocation = null;
         let markerPopupLocation = null;
         let markerImageDataUrl = null;
+        let markerImageFileName = '';
+        let markerImagePath = '';
+        let editingMarkerIndex = null;
         let addMarkerMode = false;
         let lastMarkerName = '';
         let lastMarkerNote = '';
@@ -813,6 +643,10 @@
             };
         }
 
+        function normalizeKeyValue(value) {
+            return String(value || '').trim().toLowerCase();
+        }
+
         function getRowValue(row, keys, fallback = '') {
             if (row == null) return fallback;
             if (Array.isArray(row)) {
@@ -822,9 +656,20 @@
                     }
                 }
             } else if (typeof row === 'object') {
+                const normalizedKeys = Object.keys(row).reduce((acc, key) => {
+                    acc[normalizeKeyValue(key)] = key;
+                    return acc;
+                }, {});
                 for (const key of keys) {
                     if (Object.prototype.hasOwnProperty.call(row, key) && row[key] != null && row[key] !== '') {
                         return row[key];
+                    }
+                    const normalizedKey = normalizeKeyValue(key);
+                    if (normalizedKey && normalizedKeys[normalizedKey] != null) {
+                        const actualKey = normalizedKeys[normalizedKey];
+                        if (row[actualKey] != null && row[actualKey] !== '') {
+                            return row[actualKey];
+                        }
                     }
                 }
             }
@@ -844,8 +689,9 @@
             phone1: [9, 'điện thoại 1', 'dien thoai 1', 'phone1', 'Phone 1'],
             phone2: [10, 'điện thoại 2', 'dien thoai 2', 'phone2', 'Phone 2'],
             facebook: [11, 'facebook', 'Facebook'],
-            title: [12, 'chức vụ', 'chuc vu', 'title', 'Title'],
-            image: [13, 'hình ảnh', 'hinh anh', 'image', 'Image']
+            company: [12, 'cơ quan công tác', 'co quan cong tac', 'organization', 'Organization', 'cơ quan', 'Cơ quan công tác'],
+            title: [13, 'chức vụ', 'chuc vu', 'title', 'Title'],
+            image: [14, 'hình ảnh', 'hinh anh', 'image', 'Image']
         };
 
         function parseMarkerRow(row) {
@@ -861,6 +707,7 @@
             const phone1 = String(getRowValue(row, rowFieldKeys.phone1, '')).trim();
             const phone2 = String(getRowValue(row, rowFieldKeys.phone2, '')).trim();
             const facebook = String(getRowValue(row, rowFieldKeys.facebook, '')).trim();
+            const company = String(getRowValue(row, rowFieldKeys.company, '')).trim();
             const title = String(getRowValue(row, rowFieldKeys.title, '')).trim();
             const image = String(getRowValue(row, rowFieldKeys.image, '')).trim();
 
@@ -878,6 +725,7 @@
                 phone1,
                 phone2,
                 facebook,
+                company,
                 title,
                 image
             };
@@ -885,10 +733,10 @@
 
         function rowToArray(row) {
             const parsed = parseMarkerRow(row);
-            return [parsed.id, parsed.name, parsed.lat, parsed.lon, parsed.north, parsed.east, parsed.status, parsed.homeAddress, parsed.officeAddress, parsed.phone1, parsed.phone2, parsed.facebook, parsed.title, parsed.image];
+            return [parsed.id, parsed.name, parsed.lat, parsed.lon, parsed.north, parsed.east, parsed.status, parsed.homeAddress, parsed.officeAddress, parsed.phone1, parsed.phone2, parsed.facebook, parsed.company, parsed.title, parsed.image];
         }
 
-        function createMarkerPopupContent(row) {
+        function createMarkerPopupContent(row, rowIndex) {
             const parsed = parseMarkerRow(row);
             const id = parsed.id || 'Không có ID';
             const name = parsed.name || 'Không có tên';
@@ -902,6 +750,7 @@
             const phone1 = parsed.phone1 || '';
             const phone2 = parsed.phone2 || '';
             const facebook = parsed.facebook || '';
+            const company = parsed.company || '';
             const title = parsed.title || '';
             const image = parsed.image || '';
 
@@ -931,69 +780,95 @@
                 distancesHtml = `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tổng khoảng cách nối tiếp:</strong> ${Math.round(totalDistance)} m<ul style="margin:4px 0 0 16px;padding:0;">${segments.join('')}</ul></div>`;
             }
 
-            const imageHtml = image ? `<div style="margin-top:8px;text-align:center;"><img src="${image}" alt="Hình ảnh" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : '';
-            const latitudeText = Number.isFinite(lat) ? lat.toFixed(6) : 'Không hợp lệ';
-            const longitudeText = Number.isFinite(lon) ? lon.toFixed(6) : 'Không hợp lệ';
+            const imageLabelHtml = `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Hình ảnh:</strong></div>`;
+            const imageUrl = normalizeImagePath(image);
+            const imageHtml = imageUrl ? `<div style="margin-top:4px;text-align:center;"><img src="${imageUrl}" alt="Hình ảnh" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : `<div style="margin-top:4px;font-size:13px;color:#777;">Không có ảnh</div>`;
+            const imageInfoHtml = imageUrl ? `<div style="margin-top:4px;font-size:11px;color:#666;word-break:break-all;">${imageUrl}</div>` : '';
             const phoneHtml = phone1 || phone2 ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Điện thoại:</strong> ${phone1}${phone1 && phone2 ? '<br>' : ''}${phone2}</div>` : '';
             const facebookHtml = facebook ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Facebook:</strong> ${facebook}</div>` : '';
+            const editButton = Number.isInteger(rowIndex) ? `<div style="margin-top:10px;text-align:center;"><button type="button" class="btn btn-sm btn-secondary" onclick="openMarkerEditPopup(${rowIndex})">Chỉnh sửa</button></div>` : '';
             return `
                 <div>
-                    <strong>ID: ${id}</strong><br>
                     <strong>Tên: ${name}</strong><br>
-                    Lat: ${latitudeText}<br>
-                    Lon: ${longitudeText}<br>
-                    N: ${north}<br>
-                    E: ${east}<br>
-                    Trạng thái: ${status}<br>
-                    Địa chỉ nhà riêng: ${homeAddress}<br>
-                    Địa chỉ cơ quan: ${officeAddress}<br>
-                    Chức vụ: ${title}<br>
+                    <div style="margin-top:4px;font-size:13px;color:#333;"><strong>Trạng thái:</strong> ${status}</div>
+                    <div style="margin-top:4px;font-size:13px;color:#333;"><strong>Địa chỉ nhà riêng:</strong> ${homeAddress}</div>
+                    <div style="margin-top:4px;font-size:13px;color:#333;"><strong>Địa chỉ cơ quan:</strong> ${officeAddress}</div>
+                    <div style="margin-top:4px;font-size:13px;color:#333;"><strong>Cơ quan công tác:</strong> ${company}</div>
+                    <div style="margin-top:4px;font-size:13px;color:#333;"><strong>Chức vụ:</strong> ${title}</div>
                     ${phoneHtml}
                     ${facebookHtml}
                     ${sameNameHtml}
                     ${distancesHtml}
+                    ${imageLabelHtml}
                     ${imageHtml}
+                    
+                    
                 </div>`;
+        }
+
+        function normalizeImagePath(image) {
+            if (!image || typeof image !== 'string') return '';
+            const trimmed = image.trim();
+            if (!trimmed) return '';
+            const normalized = trimmed.replace(/\\/g, '/');
+            if (/^data:/i.test(normalized) || /^https?:\/\//i.test(normalized) || /^\/|^\.\.\//.test(normalized) || /^\.\//.test(normalized)) {
+                return normalized;
+            }
+            const imagesPos = normalized.toLowerCase().indexOf('images/');
+            if (imagesPos !== -1) {
+                return normalized.slice(imagesPos);
+            }
+            if (/^[a-zA-Z]:\//.test(normalized) || /^\\\\/.test(normalized)) {
+                const winPath = normalized;
+                return winPath.startsWith('/') ? `file://${winPath}` : `file:///${winPath}`;
+            }
+            if (!/\//.test(normalized)) {
+                return `images/${normalized}`;
+            }
+            return normalized;
         }
 
         function createMarkerIcon(parsed) {
             const image = String(parsed.image || '').trim();
-            if (image) {
-                const iconUrl = image.startsWith('data:') ? image : image;
+            const iconUrl = normalizeImagePath(image);
+            if (iconUrl) {
                 return L.icon({
                     iconUrl: iconUrl,
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 16],
-                    popupAnchor: [0, -16]
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20],
+                    popupAnchor: [0, -22],
+                    className: 'custom-image-icon'
                 });
             }
             return customIcons[parsed.type] || customIcons.default;
         }
 
-        function addMarkerRowToMap(row) {
+        function addMarkerRowToMap(row, rowIndex) {
             const parsed = parseMarkerRow(row);
             const name = parsed.name;
             const lat = parsed.lat;
             const lon = parsed.lon;
-            const type = parsed.type;
             const note = parsed.note;
 
             if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
 
             const icon = createMarkerIcon(parsed);
-            const markerIndex = markers.length;
+            const markerIndex = Number.isInteger(rowIndex) ? rowIndex : markers.length;
             const marker = L.marker([lat, lon], { icon: icon });
-            const popupContent = createMarkerPopupContent(row);
+            const popupContent = createMarkerPopupContent(row, markerIndex);
 
             marker.bindPopup(popupContent);
             marker.on('popupopen', function() {
-                marker.setPopupContent(createMarkerPopupContent(row));
+                marker.setPopupContent(createMarkerPopupContent(row, markerIndex));
+            });
+            marker.on('dblclick', function() {
+                openMarkerEditPopup(markerIndex);
             });
             markersCluster.addLayer(marker);
-            markers.push({ lat, lon, name, note, marker });
 
+            const markerEntry = { lat, lon, name, note, marker, row, rowIndex: markerIndex, labelMarker: null };
             if (name) {
-                const label = L.marker([lat, lon], {
+                markerEntry.labelMarker = L.marker([lat, lon], {
                     icon: L.divIcon({
                         className: 'custom-label',
                         html: `<div style="font-size:12px; font-weight:bold;">${name}</div>`,
@@ -1003,6 +878,7 @@
                 }).addTo(map);
             }
 
+            markers.push(markerEntry);
             return marker;
         }
 
@@ -1062,52 +938,6 @@
                 layers: [osm]
             });
 
-            L.control.layers({
-                "OpenStreetMap": osm,
-                "Satellite": satellite
-            }).addTo(map);
-
-            // Add zoom display control
-            L.control.zoomDisplay = function(opts) {
-                return new L.Control.ZoomDisplay(opts);
-            };
-
-            L.Control.ZoomDisplay = L.Control.extend({
-                options: {
-                    position: 'topright'
-                },
-
-                onAdd: function(map) {
-                    this._container = L.DomUtil.create('div', 'leaflet-control-zoom-display');
-                    this._container.style.backgroundColor = 'white';
-                    this._container.style.padding = '5px 10px';
-                    this._container.style.border = '2px solid rgba(0,0,0,0.2)';
-                    this._container.style.borderRadius = '4px';
-                    this._container.style.fontSize = '14px';
-                    this._container.style.fontWeight = 'bold';
-                    this._container.style.color = '#333';
-                    this._container.style.boxShadow = '0 1px 5px rgba(0,0,0,0.4)';
-
-                    this._updateZoom();
-                    map.on('zoomend', this._updateZoom, this);
-
-                    return this._container;
-                },
-
-                onRemove: function(map) {
-                    map.off('zoomend', this._updateZoom, this);
-                },
-
-                _updateZoom: function() {
-                    if (this._container) {
-                        this._container.innerHTML = 'Zoom: ' + this._map.getZoom();
-                    }
-                }
-            });
-
-            L.control.zoomDisplay().addTo(map);
-            createMapControls();
-
             map.addLayer(markersCluster);
             map.addLayer(labelLayerGroup);
 
@@ -1124,8 +954,8 @@
             labelLayerGroup.clearLayers();
             markers = [];
 
-            data.forEach(row => {
-                addMarkerRowToMap(row);
+            data.forEach((row, index) => {
+                addMarkerRowToMap(row, index);
             });
 
             renderMarkerList(data);
@@ -1153,7 +983,7 @@
                 const subtitle = Number.isFinite(parsed.lat) && Number.isFinite(parsed.lon)
                     ? `${parsed.lat.toFixed(6)}, ${parsed.lon.toFixed(6)}`
                     : 'Tọa độ không hợp lệ';
-                const noteText = parsed.note ? parsed.note : 'Không có ghi chú';
+                const noteText = parsed.status || parsed.title || 'Không có ghi chú';
                 item.innerHTML = `<strong>${title}</strong><small>${subtitle}</small><small>${noteText}</small>`;
                 item.addEventListener('click', () => {
                     const markerItem = markers[index];
@@ -1218,37 +1048,98 @@
         }
 
         function showMarkerPopupAt(lat, lon) {
+            editingMarkerIndex = null;
             markerPopupLocation = [lat, lon];
             pendingMarkerLocation = [lat, lon];
             pendingNewMarker = true;
             addMarkerMode = true;
             updateAddMarkerButton();
             displayError('Nhập thông tin marker mới và nhấn Lưu marker.');
+            fillMarkerPopupForm(null, lat, lon);
+        }
 
+        function openMarkerEditPopup(index) {
+            if (!Array.isArray(loadedData) || index < 0 || index >= loadedData.length) {
+                displayError('Không tìm thấy marker để chỉnh sửa.');
+                return;
+            }
+            editingMarkerIndex = index;
+            markerPopupLocation = null;
+            pendingMarkerLocation = null;
+            pendingNewMarker = false;
+            addMarkerMode = false;
+            updateAddMarkerButton();
+            displayError('Chỉnh sửa thông tin marker và nhấn Lưu marker.');
+            fillMarkerPopupForm(loadedData[index]);
+        }
+
+        function fillMarkerPopupForm(row, lat, lon) {
             const overlay = document.getElementById('markerPopupForm');
+            const idInput = document.getElementById('markerIdInput');
             const nameInput = document.getElementById('markerNameInput');
-            const noteInput = document.getElementById('markerNoteInput');
-            const cabinetInput = document.getElementById('markerCabinetInput');
-            const poleTypeInput = document.getElementById('markerPoleTypeInput');
-            const lampTypeInput = document.getElementById('markerLampTypeInput');
+            const latInput = document.getElementById('markerLatitudeInput');
+            const lonInput = document.getElementById('markerLongitudeInput');
+            const northInput = document.getElementById('markerNorthInput');
+            const eastInput = document.getElementById('markerEastInput');
+            const statusInput = document.getElementById('markerStatusInput');
+            const homeAddressInput = document.getElementById('markerHomeAddressInput');
+            const officeAddressInput = document.getElementById('markerOfficeAddressInput');
+            const companyInput = document.getElementById('markerCompanyInput');
+            const phone1Input = document.getElementById('markerPhone1Input');
+            const phone2Input = document.getElementById('markerPhone2Input');
+            const facebookInput = document.getElementById('markerFacebookInput');
+            const titleInput = document.getElementById('markerTitleInput');
             const coordsText = document.getElementById('markerCoordsText');
             const preview = document.getElementById('markerImagePreview');
             const fileInput = document.getElementById('markerImageInput');
 
-            if (!overlay || !nameInput || !noteInput || !cabinetInput || !poleTypeInput || !lampTypeInput || !coordsText || !preview || !fileInput) {
+            if (!overlay || !idInput || !nameInput || !latInput || !lonInput || !northInput || !eastInput || !statusInput || !homeAddressInput || !officeAddressInput || !companyInput || !phone1Input || !phone2Input || !facebookInput || !titleInput || !coordsText || !preview || !fileInput) {
                 displayError('Không thể hiển thị form marker.');
                 return;
             }
 
-            const nextName = lastMarkerName ? getNextMarkerName(lastMarkerName) : '';
-            nameInput.value = nextName;
-            noteInput.value = lastMarkerNote || '';
-            cabinetInput.value = lastMarkerCabinet || '';
-            poleTypeInput.value = lastMarkerPoleType || '';
-            lampTypeInput.value = lastMarkerLampType || '';
-            preview.innerHTML = '';
+            if (row) {
+                idInput.value = String(row['ID'] || row['Id'] || row['id'] || '').trim();
+                nameInput.value = String(row['name'] || row['Tên'] || row['tên'] || row['Name'] || '').trim();
+                latInput.value = row['latitude'] != null ? String(row['latitude']) : '';
+                lonInput.value = row['longtitude'] != null ? String(row['longtitude']) : '';
+                northInput.value = String(row['N'] || row['n'] || '').trim();
+                eastInput.value = String(row['E'] || row['e'] || '').trim();
+                statusInput.value = String(row['trạng thái'] || row['status'] || '').trim();
+                homeAddressInput.value = String(row['địa chỉ nhà riêng'] || row['home address'] || '').trim();
+                officeAddressInput.value = String(row['địa chỉ cơ quan'] || row['office address'] || '').trim();
+                companyInput.value = String(row['cơ quan công tác'] || row['company'] || '').trim();
+                phone1Input.value = String(row['điện thoại 1'] || row['phone1'] || '').trim();
+                phone2Input.value = String(row['điện thoại 2'] || row['phone2'] || '').trim();
+                facebookInput.value = String(row['facebook'] || '').trim();
+                titleInput.value = String(row['chức vụ'] || row['title'] || '').trim();
+                markerImageDataUrl = String(row['hình ảnh'] || row['image'] || '').trim();
+                markerImagePath = markerImageDataUrl && !/^data:/i.test(markerImageDataUrl) ? normalizeImagePath(markerImageDataUrl) : '';
+                markerImageFileName = markerImagePath ? markerImagePath.split('/').pop() : '';
+                coordsText.textContent = `Tọa độ: ${latInput.value || '-'}, ${lonInput.value || '-'}`;
+            } else {
+                idInput.value = '';
+                nameInput.value = lastMarkerName ? getNextMarkerName(lastMarkerName) : '';
+                latInput.value = lat != null ? lat.toFixed(6) : '';
+                lonInput.value = lon != null ? lon.toFixed(6) : '';
+                northInput.value = '';
+                eastInput.value = '';
+                statusInput.value = '';
+                homeAddressInput.value = '';
+                officeAddressInput.value = '';
+                companyInput.value = '';
+                phone1Input.value = '';
+                phone2Input.value = '';
+                facebookInput.value = '';
+                titleInput.value = '';
+                markerImageDataUrl = '';
+                markerImagePath = '';
+                markerImageFileName = '';
+                coordsText.textContent = `Tọa độ: ${lat != null && lon != null ? `${lat.toFixed(6)}, ${lon.toFixed(6)}` : '-'}`;
+            }
+
+            preview.innerHTML = markerImageDataUrl ? `<img src="${markerImageDataUrl}" alt="Ảnh trụ" />` : '';
             fileInput.value = null;
-            coordsText.textContent = `Tọa độ: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
             overlay.style.display = 'flex';
             nameInput.focus();
         }
@@ -1258,6 +1149,9 @@
             if (overlay) overlay.style.display = 'none';
             markerPopupLocation = null;
             markerImageDataUrl = null;
+            markerImagePath = '';
+            markerImageFileName = '';
+            editingMarkerIndex = null;
             const fileInput = document.getElementById('markerImageInput');
             if (fileInput) fileInput.value = null;
         }
@@ -1377,12 +1271,16 @@
                     const preview = document.getElementById('markerImagePreview');
                     if (resizedDataUrl) {
                         markerImageDataUrl = resizedDataUrl;
+                        markerImageFileName = file.name;
+                        markerImagePath = `images/${markerImageFileName}`;
                         if (preview) {
                             preview.innerHTML = `<img src="${markerImageDataUrl}" alt="Ảnh trụ" />`;
                         }
                         displayError('Ảnh đã sẵn sàng lưu vào Excel.');
                     } else {
                         markerImageDataUrl = '';
+                        markerImagePath = '';
+                        markerImageFileName = '';
                         if (preview) {
                             preview.innerHTML = '';
                         }
@@ -1396,86 +1294,117 @@
         function saveMarkerPopup() {
             try {
                 const nameInput = document.getElementById('markerNameInput');
-                const noteInput = document.getElementById('markerNoteInput');
 
-                if (!markerPopupLocation || !Array.isArray(markerPopupLocation) || markerPopupLocation.length !== 2) {
-                    displayError('Không có vị trí marker để lưu.');
-                    hideMarkerPopup();
+                if (!nameInput) {
+                    displayError('Không thể đọc dữ liệu form marker.');
                     return;
                 }
 
-                const lat = Number(markerPopupLocation[0]);
-                const lon = Number(markerPopupLocation[1]);
-                if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-                    displayError('Tọa độ marker không hợp lệ.');
-                    hideMarkerPopup();
-                    return;
-                }
-
+                const id = document.getElementById('markerIdInput').value.trim();
                 const name = nameInput.value.trim();
-                const note = noteInput.value.trim();
-                const cabinetName = document.getElementById('markerCabinetInput').value.trim();
-                const poleType = document.getElementById('markerPoleTypeInput').value.trim();
-                const lampType = document.getElementById('markerLampTypeInput').value.trim();
+                const latitudeValue = document.getElementById('markerLatitudeInput').value.trim();
+                const longitudeValue = document.getElementById('markerLongitudeInput').value.trim();
+                const northValue = document.getElementById('markerNorthInput').value.trim();
+                const eastValue = document.getElementById('markerEastInput').value.trim();
+                const statusValue = document.getElementById('markerStatusInput').value.trim();
+                const homeAddressValue = document.getElementById('markerHomeAddressInput').value.trim();
+                const officeAddressValue = document.getElementById('markerOfficeAddressInput').value.trim();
+                const companyValue = document.getElementById('markerCompanyInput').value.trim();
+                const phone1Value = document.getElementById('markerPhone1Input').value.trim();
+                const phone2Value = document.getElementById('markerPhone2Input').value.trim();
+                const facebookValue = document.getElementById('markerFacebookInput').value.trim();
+                const titleValue = document.getElementById('markerTitleInput').value.trim();
 
                 if (!name) {
-                    displayError('Vui lòng nhập tên trụ.');
+                    displayError('Vui lòng nhập tên.');
                     nameInput.focus();
                     return;
                 }
 
-                lastMarkerName = name;
-                lastMarkerNote = note;
-                lastMarkerCabinet = cabinetName;
-                lastMarkerPoleType = poleType;
-                lastMarkerLampType = lampType;
-
-                let type = 1;
-                if (cabinetName) {
-                    type = 6;
-                } else if (poleType.toUpperCase() === 'STK') {
-                    type = 2;
+                const lat = Number(latitudeValue);
+                const lon = Number(longitudeValue);
+                if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+                    displayError('Tọa độ marker không hợp lệ.');
+                    return;
                 }
 
-                const imageData = markerImageDataUrl || '';
+                const imagePathValue = markerImagePath || '';
+                const imageData = imagePathValue || (markerImageDataUrl && markerImageDataUrl.startsWith('data:') ? markerImageDataUrl : '');
+                if (markerImagePath && markerImageDataUrl && markerImageDataUrl.startsWith('data:')) {
+                    downloadFileFromDataUrl(markerImageDataUrl, markerImagePath);
+                }
                 if (!Array.isArray(loadedData)) {
                     loadedData = [];
                 }
                 if (!Array.isArray(newMarkerRows)) {
                     newMarkerRows = [];
                 }
-                const newRow = {
-                    'ID': '',
+
+                const rowData = {
+                    'ID': id,
                     'name': name,
                     'latitude': lat,
                     'longtitude': lon,
-                    'N': '',
-                    'E': '',
-                    'trạng thái': '',
-                    'địa chỉ nhà riêng': '',
-                    'địa chỉ cơ quan': '',
-                    'điện thoại 1': '',
-                    'điện thoại 2': '',
-                    'facebook': '',
-                    'chức vụ': '',
+                    'N': northValue,
+                    'E': eastValue,
+                    'trạng thái': statusValue,
+                    'địa chỉ nhà riêng': homeAddressValue,
+                    'địa chỉ cơ quan': officeAddressValue,
+                    'cơ quan công tác': companyValue,
+                    'điện thoại 1': phone1Value,
+                    'điện thoại 2': phone2Value,
+                    'facebook': facebookValue,
+                    'chức vụ': titleValue,
                     'hình ảnh': imageData
                 };
-                loadedData.push(newRow);
-                newMarkerRows.push(newRow);
-                const newMarker = addMarkerRowToMap(newRow);
-                renderMarkerList(loadedData);
 
-                if (newMarker) {
-                    map.setView([newMarker.getLatLng().lat, newMarker.getLatLng().lng], 19);
-                    newMarker.openPopup();
+                let message = 'Đã thêm marker mới.';
+                if (editingMarkerIndex !== null && editingMarkerIndex >= 0 && editingMarkerIndex < loadedData.length) {
+                    loadedData[editingMarkerIndex] = rowData;
+                    const markerEntry = markers[editingMarkerIndex];
+                    if (markerEntry) {
+                        markerEntry.row = rowData;
+                        markerEntry.lat = lat;
+                        markerEntry.lon = lon;
+                        markerEntry.name = name;
+                        markersCluster.removeLayer(markerEntry.marker);
+                        markerEntry.marker.setLatLng([lat, lon]);
+                        markerEntry.marker.setIcon(createMarkerIcon(parseMarkerRow(rowData)));
+                        markerEntry.marker.setPopupContent(createMarkerPopupContent(rowData, editingMarkerIndex));
+                        markersCluster.addLayer(markerEntry.marker);
+                        if (markerEntry.labelMarker) {
+                            markerEntry.labelMarker.setLatLng([lat, lon]);
+                            markerEntry.labelMarker.setIcon(L.divIcon({
+                                className: 'custom-label',
+                                html: `<div style="font-size:12px; font-weight:bold;">${name}</div>`,
+                                iconSize: [80, 20],
+                                iconAnchor: [40, 30]
+                            }));
+                        }
+                    }
+                    renderMarkerList(loadedData);
+                    map.setView([lat, lon], 19);
+                    if (markerEntry && markerEntry.marker) {
+                        markerEntry.marker.openPopup();
+                    }
+                    message = 'Đã cập nhật marker.';
+                } else {
+                    loadedData.push(rowData);
+                    newMarkerRows.push(rowData);
+                    const newMarker = addMarkerRowToMap(rowData, loadedData.length - 1);
+                    renderMarkerList(loadedData);
+                    if (newMarker) {
+                        map.setView([newMarker.getLatLng().lat, newMarker.getLatLng().lng], 19);
+                        newMarker.openPopup();
+                    }
+                    pendingNewMarker = true;
+                    addMarkerMode = true;
+                    pendingMarkerLocation = null;
+                    updateAddMarkerButton();
                 }
 
                 hideMarkerPopup();
-                pendingNewMarker = true;
-                addMarkerMode = true;
-                pendingMarkerLocation = null;
-                updateAddMarkerButton();
-                displayError('Đã thêm marker mới. Vẫn ở chế độ thêm marker, chọn điểm khác trên bản đồ.');
+                displayError(message);
             } catch (error) {
                 console.error('saveMarkerPopup error:', error);
                 displayError('Lỗi khi lưu marker: ' + (error.message || error));
@@ -1503,6 +1432,19 @@
             setTimeout(() => {
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
+            }, 100);
+        }
+
+        function downloadFileFromDataUrl(dataUrl, filename) {
+            if (!dataUrl || !filename) return;
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = dataUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
             }, 100);
         }
 
@@ -1622,7 +1564,7 @@
                     return;
                 }
 
-                const header = ['ID', 'name', 'latitude', 'longtitude', 'N', 'E', 'trạng thái', 'địa chỉ nhà riêng', 'địa chỉ cơ quan', 'điện thoại 1', 'điện thoại 2', 'facebook', 'chức vụ', 'hình ảnh'];
+                const header = ['ID', 'name', 'latitude', 'longtitude', 'N', 'E', 'trạng thái', 'địa chỉ nhà riêng', 'địa chỉ cơ quan', 'điện thoại 1', 'điện thoại 2', 'facebook', 'cơ quan công tác', 'chức vụ', 'hình ảnh'];
                 const exportData = [header, ...newMarkerRows.map(rowToArray)];
                 const worksheet = XLSX.utils.aoa_to_sheet(exportData);
                 const workbook = XLSX.utils.book_new();
@@ -1848,7 +1790,7 @@
 
                 displayError('Đang cập nhật file trên GitHub...');
 
-                const header = ['ID', 'name', 'latitude', 'longtitude', 'N', 'E', 'trạng thái', 'địa chỉ nhà riêng', 'địa chỉ cơ quan', 'điện thoại 1', 'điện thoại 2', 'facebook', 'chức vụ', 'hình ảnh'];
+                const header = ['ID', 'name', 'latitude', 'longtitude', 'N', 'E', 'trạng thái', 'địa chỉ nhà riêng', 'địa chỉ cơ quan', 'điện thoại 1', 'điện thoại 2', 'facebook', 'cơ quan công tác', 'chức vụ', 'hình ảnh'];
 
                 const fileData = await getGitHubFileContent(githubOwner, githubRepo, path, githubBranch, githubToken);
                 let combinedRows = [header, ...newMarkerRows.map(rowToArray)];
@@ -1918,29 +1860,11 @@
             }
         }
 
-        function closeControlsModal() {
-            const modal = document.getElementById('controlsModal');
-            if (!modal) return;
-
-            if (typeof $ !== 'undefined' && $.fn.modal) {
-                $('#controlsModal').modal('hide');
-            } else {
-                modal.classList.remove('show');
-                modal.style.display = 'none';
-                document.body.classList.remove('modal-open');
-                const backdrop = document.querySelector('.modal-backdrop');
-                if (backdrop) {
-                    backdrop.remove();
-                }
-            }
-        }
-
         function goToMarker(index) {
             const item = markers[index];
             if (!item) return;
             map.setView([item.lat, item.lon], 18);
             item.marker.openPopup();
-            closeControlsModal();
         }
 
         function searchMarkers() {
@@ -2049,47 +1973,6 @@
             }
         }
 
-        function createMapControls() {
-            const CustomControl = L.Control.extend({
-                options: {
-                    position: 'bottomright'
-                },
-
-                onAdd: function(map) {
-                    const container = L.DomUtil.create('div', 'leaflet-control-custom');
-                    L.DomEvent.disableClickPropagation(container);
-                    L.DomEvent.disableScrollPropagation(container);
-
-                    const locateBtn = L.DomUtil.create('button', '', container);
-                    locateBtn.type = 'button';
-                    locateBtn.title = 'Về vị trí hiện tại';
-                    locateBtn.innerHTML = '<i class="fa fa-location-arrow"></i>';
-                    L.DomEvent.on(locateBtn, 'click', L.DomEvent.stopPropagation)
-                        .on(locateBtn, 'click', L.DomEvent.preventDefault)
-                        .on(locateBtn, 'click', () => centerOnUserLocation());
-
-                    const routeBtn = L.DomUtil.create('button', '', container);
-                    routeBtn.type = 'button';
-                    routeBtn.title = 'Dẫn đường tới trung tâm bản đồ';
-                    routeBtn.innerHTML = '<i class="fa fa-compass"></i>';
-                    L.DomEvent.on(routeBtn, 'click', L.DomEvent.stopPropagation)
-                        .on(routeBtn, 'click', L.DomEvent.preventDefault)
-                        .on(routeBtn, 'click', () => routeToMapCenter());
-
-                    const clearBtn = L.DomUtil.create('button', '', container);
-                    clearBtn.type = 'button';
-                    clearBtn.title = 'Xóa lộ trình';
-                    clearBtn.innerHTML = '<i class="fa fa-times"></i>';
-                    L.DomEvent.on(clearBtn, 'click', L.DomEvent.stopPropagation)
-                        .on(clearBtn, 'click', L.DomEvent.preventDefault)
-                        .on(clearBtn, 'click', () => clearRoute());
-
-                    return container;
-                }
-            });
-
-            map.addControl(new CustomControl());
-        }
 
         function routeToMapCenter() {
             const destination = [map.getCenter().lat, map.getCenter().lng];
@@ -2241,65 +2124,7 @@
             map = initializeMap();
             loadDefaultFile();
 
-            // Setup modal controls
-            console.log('Setting up modal controls...');
-            const controlsBtn = document.getElementById('controlsBtn');
-            console.log('Controls button:', controlsBtn);
-            if (controlsBtn) {
-                controlsBtn.addEventListener('click', function() {
-                    console.log('Controls button clicked');
-                    // Try jQuery first, fallback to vanilla JS
-                    if (typeof $ !== 'undefined' && $.fn.modal) {
-                        $('#controlsModal').modal({
-                            backdrop: true,
-                            keyboard: true,
-                            show: true
-                        });
-                    } else {
-                        console.log('jQuery not available, using vanilla JS');
-                        const modal = document.getElementById('controlsModal');
-                        if (modal) {
-                            modal.style.display = 'block';
-                            // Force reflow before adding show class for transition
-                            modal.offsetHeight;
-                            modal.classList.add('show');
-                            document.body.classList.add('modal-open');
-
-                            // Add backdrop
-                            const backdrop = document.createElement('div');
-                            backdrop.className = 'modal-backdrop show';
-                            document.body.appendChild(backdrop);
-
-                            // Close modal when clicking backdrop or close button
-                            backdrop.onclick = function() {
-                                modal.classList.remove('show');
-                                setTimeout(() => {
-                                    modal.style.display = 'none';
-                                    document.body.classList.remove('modal-open');
-                                    document.body.removeChild(backdrop);
-                                }, 300); // Wait for transition
-                            };
-
-                            const closeBtn = modal.querySelector('.close');
-                            if (closeBtn) {
-                                closeBtn.onclick = function() {
-                                    modal.classList.remove('show');
-                                    setTimeout(() => {
-                                        modal.style.display = 'none';
-                                        document.body.classList.remove('modal-open');
-                                        document.body.removeChild(backdrop);
-                                    }, 300); // Wait for transition
-                                };
-                            }
-                        }
-                    }
-                });
-                console.log('Event listener attached');
-            } else {
-                console.error('Controls button not found');
-            }
-
-            const saveMarkerBtn = document.getElementById('markerPopupSave');
+                const saveMarkerBtn = document.getElementById('markerPopupSave');
             const cancelMarkerBtn = document.getElementById('markerPopupCancel');
             if (saveMarkerBtn) {
                 saveMarkerBtn.addEventListener('click', saveMarkerPopup);

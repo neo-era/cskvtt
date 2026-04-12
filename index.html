@@ -786,7 +786,9 @@
                 distancesHtml = `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tổng khoảng cách nối tiếp:</strong> ${Math.round(totalDistance)} m<ul style="margin:4px 0 0 16px;padding:0;">${segments.join('')}</ul></div>`;
             }
 
+            const imagePath = (typeof imageValue === 'string' && !imageValue.startsWith('data:image/')) ? imageValue : '';
             const imageHtml = imageValue ? `<div style="margin-top:8px;text-align:center;"><img src="${imageValue}" alt="Ảnh trụ" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : '';
+            const imagePathHtml = imagePath ? `<div style="margin-top:6px;font-size:12px;color:#555;word-break:break-all;text-align:center;">${imagePath}</div>` : '';
             const timestampHtml = updatedAt ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Thời gian cập nhật:</strong> ${updatedAt}</div>` : '';
             return `
                 <div>
@@ -801,6 +803,7 @@
                     ${distancesHtml}
                     ${timestampHtml}
                     ${imageHtml}
+                    ${imagePathHtml}
                 </div>`;
         }
 

@@ -613,6 +613,10 @@
     <div id="markerPopupForm" class="marker-popup-overlay" role="dialog" aria-modal="true">
         <div class="marker-popup-card">
             <header>Thông tin marker mới</header>
+             <div class="footer">
+                <button id="markerPopupCancel" type="button" class="btn btn-secondary" onclick="cancelMarkerPopup()">Hủy</button>
+                <button id="markerPopupSave" type="button" class="btn btn-primary" onclick="saveMarkerPopup()">Lưu marker</button>
+            </div>
             <div class="body">
                 <div class="form-group">
                     <label for="markerNameInput">Tên trụ</label>
@@ -639,12 +643,9 @@
                     <input id="markerImageInput" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleMarkerImageFile(event)" />
                 </div>
                 <div class="marker-image-preview" id="markerImagePreview"></div>
-                <div id="markerCoordsText" class="coords-info">Tọa độ: -</div>
+                
             </div>
-            <div class="footer">
-                <button id="markerPopupCancel" type="button" class="btn btn-secondary" onclick="cancelMarkerPopup()">Hủy</button>
-                <button id="markerPopupSave" type="button" class="btn btn-primary" onclick="saveMarkerPopup()">Lưu marker</button>
-            </div>
+           
         </div>
     </div>
 
@@ -954,6 +955,7 @@
             map.addLayer(labelLayerGroup);
 
             map.on('click', function(e) {
+                closeControlsModal();
                 if (!pendingNewMarker) return;
                 showMarkerPopupAt(e.latlng.lat, e.latlng.lng);
             });
@@ -2327,6 +2329,21 @@
             } else {
                 console.error('Controls button not found');
             }
+
+            const controlsModalElement = document.getElementById('controlsModal');
+            if (controlsModalElement) {
+                controlsModalElement.addEventListener('click', function(event) {
+                    if (event.target === controlsModalElement) {
+                        closeControlsModal();
+                    }
+                });
+            }
+
+            document.addEventListener('click', function(event) {
+                if (event.target && event.target.classList && event.target.classList.contains('modal-backdrop')) {
+                    closeControlsModal();
+                }
+            });
 
             const saveMarkerBtn = document.getElementById('markerPopupSave');
             const cancelMarkerBtn = document.getElementById('markerPopupCancel');

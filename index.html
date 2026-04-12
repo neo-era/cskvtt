@@ -1450,6 +1450,58 @@
             }
         }
 
+        function getBase64FromDataUrl(dataUrl) {
+            return dataUrl.replace(/^data:image\/[^;]+;base64,/, '');
+        }
+
+        async function uploadGitHubImageFile(owner, repo, path, branch, token, dataUrl, message) {
+            if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+                return null;
+            }
+            const contentBase64 = getBase64FromDataUrl(dataUrl);
+            const existing = await getGitHubFileContent(owner, repo, path, branch, token);
+            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
+            const body = {
+                message: message || `Upload image ${path}`,
+                content: contentBase64,
+                branch: branch
+            };
+            if (existing.sha) {
+                body.sha = existing.sha;
+            }
+            const response = await fetch(apiUrl, {
+                method: 'PUT',
+                headers: {
+                    Authorization: `token ${token}`,
+                    Accept: 'application/vnd.github+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Không thể tải ảnh lên GitHub: ${response.status} ${response.statusText}\n${text}`);
+            }
+            return await response.json();
+        }
+
+        async function prepareImagePathsForGitHub(rows, owner, repo, branch, token) {
+            if (!Array.isArray(rows)) return [];
+            const uploadedImages = [];
+            for (const row of rows) {
+                if (!Array.isArray(row)) continue;
+                const imageValue = row[11];
+                if (typeof imageValue === 'string' && imageValue.startsWith('data:image/')) {
+                    const markerName = row[1] || row[0] || 'marker';
+                    const imagePath = getImagePathForMarker(markerName, imageValue);
+                    await uploadGitHubImageFile(owner, repo, imagePath, branch, token, imageValue, `Upload marker image ${imagePath}`);
+                    row[11] = imagePath;
+                    uploadedImages.push(imagePath);
+                }
+            }
+            return uploadedImages;
+        }
+
         function prepareImagePathsForSave(rows) {
             if (!Array.isArray(rows)) return [];
             const downloadedImages = [];
@@ -1787,8 +1839,6 @@
                 const githubPathInput = document.getElementById('githubPathInput');
                 const path = githubPathInput && githubPathInput.value.trim() ? githubPathInput.value.trim() : '';
 
-                prepareImagePathsForSave(newMarkerRows);
-
                 displayError('Đang kiểm tra repo GitHub...');
 
                 const branchExists = await checkGitHubBranchExists(githubOwner, githubRepo, githubBranch, githubToken);
@@ -1805,6 +1855,8 @@
                 }
 
                 displayError('Đang cập nhật file trên GitHub...');
+
+                await prepareImagePathsForGitHub(newMarkerRows, githubOwner, githubRepo, githubBranch, githubToken);
 
                 const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh', 'Thời gian cập nhật'];
 
@@ -1851,7 +1903,7 @@
                 pendingNewMarker = false;
                 addMarkerMode = false;
                 updateAddMarkerButton();
-                displayError('Đã cập nhật file Excel gốc trên GitHub thành công.');
+                displayError('Đã cập nhật file Excel và ảnh lên GitHub thành công. Ảnh đã được lưu vào thư mục images, đường dẫn được ghi vào file Excel.');
             } catch (error) {
                 console.error('updateGitHubExcel error:', error);
                 displayError('Lỗi khi cập nhật GitHub: ' + (error.message || error));

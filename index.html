@@ -756,9 +756,9 @@
             const lat = parseFloat(row[2]);
             const lon = parseFloat(row[3]);
             const note = row[4] || '';
-            const tudieukhien = row[7] || '';
-            const loaitru = row[8] || '';
-            const loaiden = row[10] || '';
+            const tudieukhien = row[7];
+            const loaitru = row[8];
+            const loaiden = row[10];
             const imageBase64 = row[11] || '';
             const updatedAt = row[12] || '';
             const sameNameMarkers = getSameNameMarkers(name);
@@ -770,33 +770,10 @@
                 sameNameMarkers.push({ lat: currentLat, lon: currentLon, name });
             }
             const sameNameCount = sameNameMarkers.length;
+            const sameNameHtml = sameNameCount > 1 ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tổng số trụ cùng tên:</strong> ${sameNameCount}</div>` : '';
 
-            const container = document.createElement('div');
-            container.style.fontSize = '13px';
-            container.style.color = '#333';
-
-            const title = document.createElement('div');
-            title.innerHTML = `<strong>Tên trụ:</strong> ${name || 'Không có tên'}`;
-            container.appendChild(title);
-
-            const coords = document.createElement('div');
-            coords.innerHTML = `Lat: ${isNaN(lat) ? 'N/A' : lat.toFixed(6)}<br>Lon: ${isNaN(lon) ? 'N/A' : lon.toFixed(6)}`;
-            container.appendChild(coords);
-
-            const noteEl = document.createElement('div');
-            noteEl.innerHTML = `<strong>Ghi chú:</strong> ${note || 'Không có'}`;
-            container.appendChild(noteEl);
-
-            const detailsEl = document.createElement('div');
-            detailsEl.innerHTML = `<strong>Trụ:</strong> ${loaitru}<br><strong>Tủ điều khiển:</strong> ${tudieukhien}<br><strong>Đèn:</strong> ${loaiden}`;
-            container.appendChild(detailsEl);
-
+            let distancesHtml = '';
             if (sameNameCount > 1) {
-                const sameNameEl = document.createElement('div');
-                sameNameEl.style.marginTop = '8px';
-                sameNameEl.innerHTML = `<strong>Tổng số trụ cùng tên:</strong> ${sameNameCount}`;
-                container.appendChild(sameNameEl);
-
                 const segments = [];
                 let totalDistance = 0;
                 for (let i = 1; i < sameNameMarkers.length; i++) {
@@ -806,38 +783,25 @@
                     totalDistance += dist;
                     segments.push(`<li style="margin-bottom:4px;list-style:disc;">${prev.name || 'Không có tên'} → ${current.name || 'Không có tên'}: ${Math.round(dist)} m</li>`);
                 }
-                const distanceEl = document.createElement('div');
-                distanceEl.style.marginTop = '8px';
-                distanceEl.innerHTML = `<strong>Tổng khoảng cách nối tiếp:</strong> ${Math.round(totalDistance)} m<ul style="margin:4px 0 0 16px;padding:0;">${segments.join('')}</ul>`;
-                container.appendChild(distanceEl);
+                distancesHtml = `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tổng khoảng cách nối tiếp:</strong> ${Math.round(totalDistance)} m<ul style="margin:4px 0 0 16px;padding:0;">${segments.join('')}</ul></div>`;
             }
 
-            if (updatedAt) {
-                const timeEl = document.createElement('div');
-                timeEl.style.marginTop = '8px';
-                timeEl.innerHTML = `<strong>Thời gian cập nhật:</strong> ${updatedAt}`;
-                container.appendChild(timeEl);
-            }
-
-            if (imageBase64) {
-                const imageWrapper = document.createElement('div');
-                imageWrapper.style.marginTop = '8px';
-                imageWrapper.style.textAlign = 'center';
-
-                const img = document.createElement('img');
-                img.src = imageBase64;
-                img.alt = 'Ảnh trụ';
-                img.style.maxWidth = '100%';
-                img.style.maxHeight = '140px';
-                img.style.borderRadius = '8px';
-                img.style.border = '1px solid #ccc';
-                img.style.display = 'block';
-                img.style.margin = '0 auto';
-                imageWrapper.appendChild(img);
-                container.appendChild(imageWrapper);
-            }
-
-            return container;
+            const imageHtml = imageBase64 ? `<div style="margin-top:8px;text-align:center;"><img src="${imageBase64}" alt="Ảnh trụ" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : '';
+            const timestampHtml = updatedAt ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Thời gian cập nhật:</strong> ${updatedAt}</div>` : '';
+            return `
+                <div>
+                    <strong>Tên trụ: ${name || 'Không có tên'}</strong><br>
+                    Lat: ${lat.toFixed(6)}<br>
+                    Lon: ${lon.toFixed(6)}<br>
+                    Ghi chú: ${note || 'Không có'}<br>
+                    Trụ: ${loaitru || ''}<br>
+                    Tủ điều khiển: ${tudieukhien || ''}<br>
+                    Đèn: ${loaiden || ''}<br>
+                    ${sameNameHtml}
+                    ${distancesHtml}
+                    ${timestampHtml}
+                    ${imageHtml}
+                </div>`;
         }
 
         function addMarkerRowToMap(row) {

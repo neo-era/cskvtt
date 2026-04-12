@@ -597,7 +597,7 @@
 
                         <div class="form-group">
                             <label for="githubPathInput">Đường dẫn file GitHub:</label>
-                            <input type="text" id="githubPathInput" class="form-control" placeholder="Ví dụ: data/khaosat.xlsx" />
+                            <input type="text" id="githubPathInput" class="form-control" placeholder="Ví dụ: data/danhsach.xlsx" />
                         </div>
                     </div>
 
@@ -694,6 +694,70 @@
             return normalizeText(base);
         }
 
+        function getRowValue(row, keys, fallback = '') {
+            if (row == null) return fallback;
+            if (Array.isArray(row)) {
+                for (const key of keys) {
+                    if (typeof key === 'number' && row[key] != null && row[key] !== '') {
+                        return row[key];
+                    }
+                }
+            } else if (typeof row === 'object') {
+                for (const key of keys) {
+                    if (Object.prototype.hasOwnProperty.call(row, key) && row[key] != null && row[key] !== '') {
+                        return row[key];
+                    }
+                }
+            }
+            return fallback;
+        }
+
+        const rowFieldKeys = {
+            name: [1, 0, 'Tên trụ', 'Name', 'name', 'trụ', 'tru'],
+            lat: [2, 3, 'Lat', 'Latitude', 'LAT', 'latitude'],
+            lon: [3, 2, 'Lon', 'Longitude', 'LON', 'longitude'],
+            note: [4, 'Ghi chú', 'Ghi chu', 'Notes', 'note', 'Remark', 'remark'],
+            type: [6, 'Loại', 'Type', 'type'],
+            cabinet: [7, 'Tủ điều khiển', 'Tu dieu khien', 'Cabinet', 'cabinet'],
+            poleType: [8, 'Loại trụ', 'Loai tru', 'Pole Type', 'pole type', 'poleType'],
+            lampType: [10, 'Loại đèn', 'Loai den', 'Lamp Type', 'lamp type', 'lampType'],
+            imageBase64: [11, 'Ảnh Base64', 'Anh Base64', 'ImageBase64', 'Image'],
+            updatedAt: [12, 'Thời gian cập nhật', 'Thoi gian cap nhat', 'updatedAt', 'Updated At']
+        };
+
+        function parseMarkerRow(row) {
+            const name = String(getRowValue(row, rowFieldKeys.name, '')).trim();
+            const latValue = getRowValue(row, rowFieldKeys.lat, '');
+            const lonValue = getRowValue(row, rowFieldKeys.lon, '');
+            const note = String(getRowValue(row, rowFieldKeys.note, '')).trim();
+            const rawType = getRowValue(row, rowFieldKeys.type, '');
+            const type = Number.isFinite(Number(rawType)) ? parseInt(rawType, 10) : 1;
+            const cabinet = String(getRowValue(row, rowFieldKeys.cabinet, '')).trim();
+            const poleType = String(getRowValue(row, rowFieldKeys.poleType, '')).trim();
+            const lampType = String(getRowValue(row, rowFieldKeys.lampType, '')).trim();
+            const imageBase64 = String(getRowValue(row, rowFieldKeys.imageBase64, '')).trim();
+            const updatedAt = String(getRowValue(row, rowFieldKeys.updatedAt, '')).trim();
+
+            return {
+                raw: row,
+                name,
+                lat: parseFloat(latValue),
+                lon: parseFloat(lonValue),
+                note,
+                type: Number.isFinite(type) && type > 0 ? type : 1,
+                cabinet,
+                poleType,
+                lampType,
+                imageBase64,
+                updatedAt
+            };
+        }
+
+        function rowToArray(row) {
+            const parsed = parseMarkerRow(row);
+            return ['', parsed.name, parsed.lat, parsed.lon, parsed.note, '', parsed.type, parsed.cabinet, parsed.poleType, '', parsed.lampType, parsed.imageBase64, parsed.updatedAt];
+        }
+
         function getMarkerCountByName(name) {
             if (!name) return 0;
             const normalizedBase = normalizeMarkerBaseName(name);
@@ -751,15 +815,16 @@
         }
 
         function createMarkerPopupContent(row) {
-            const name = row[1] || row[0] || '';
-            const lat = parseFloat(row[2]);
-            const lon = parseFloat(row[3]);
-            const note = row[4] || '';
-            const tudieukhien = row[7];
-            const loaitru = row[8];
-            const loaiden = row[10];
-            const imageBase64 = row[11] || '';
-            const updatedAt = row[12] || '';
+            const parsed = parseMarkerRow(row);
+            const name = parsed.name || 'Không có tên';
+            const lat = parsed.lat;
+            const lon = parsed.lon;
+            const note = parsed.note || 'Không có';
+            const tudieukhien = parsed.cabinet || '';
+            const loaitru = parsed.poleType || '';
+            const loaiden = parsed.lampType || '';
+            const imageBase64 = parsed.imageBase64 || '';
+            const updatedAt = parsed.updatedAt || '';
             const sameNameMarkers = getSameNameMarkers(name);
             const currentLat = lat;
             const currentLon = lon;
@@ -787,15 +852,17 @@
 
             const imageHtml = imageBase64 ? `<div style="margin-top:8px;text-align:center;"><img src="${imageBase64}" alt="Ảnh trụ" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : '';
             const timestampHtml = updatedAt ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Thời gian cập nhật:</strong> ${updatedAt}</div>` : '';
+            const latitudeText = Number.isFinite(lat) ? lat.toFixed(6) : 'Không hợp lệ';
+            const longitudeText = Number.isFinite(lon) ? lon.toFixed(6) : 'Không hợp lệ';
             return `
                 <div>
-                    <strong>Tên trụ: ${name || 'Không có tên'}</strong><br>
-                    Lat: ${lat.toFixed(6)}<br>
-                    Lon: ${lon.toFixed(6)}<br>
-                    Ghi chú: ${note || 'Không có'}<br>
-                    Trụ: ${loaitru || ''}<br>
-                    Tủ điều khiển: ${tudieukhien || ''}<br>
-                    Đèn: ${loaiden || ''}<br>
+                    <strong>Tên trụ: ${name}</strong><br>
+                    Lat: ${latitudeText}<br>
+                    Lon: ${longitudeText}<br>
+                    Ghi chú: ${note}<br>
+                    Trụ: ${loaitru}<br>
+                    Tủ điều khiển: ${tudieukhien}<br>
+                    Đèn: ${loaiden}<br>
                     ${sameNameHtml}
                     ${distancesHtml}
                     ${timestampHtml}
@@ -804,19 +871,14 @@
         }
 
         function addMarkerRowToMap(row) {
-            const name = row[1] || row[0] || '';
-            const lat = parseFloat(row[2]);
-            const lon = parseFloat(row[3]);
-            const type = parseInt(row[6]);
-            const note = row[4] || '';
-            const tudieukhien = row[7];
-            const loaitru = row[8];
-            const loaican = row[9];
-            const loaiden = row[10];
-            const imageBase64 = row[11] || '';
-            const updatedAt = row[12] || '';
+            const parsed = parseMarkerRow(row);
+            const name = parsed.name;
+            const lat = parsed.lat;
+            const lon = parsed.lon;
+            const type = parsed.type;
+            const note = parsed.note;
 
-            if (isNaN(lat) || isNaN(lon)) return null;
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
 
             const icon = customIcons[type] || customIcons.default;
             const markerIndex = markers.length;
@@ -978,9 +1040,9 @@
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-                    loadedData = jsonData;
-                    addMarkersToMap(jsonData);
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+                    loadedData = jsonData.filter(row => row && Object.keys(row).length > 0);
+                    addMarkersToMap(loadedData);
                 } catch (error) {
                     displayError('Lỗi xử lý file Excel: ' + error.message);
                 }
@@ -1245,7 +1307,18 @@
                     newMarkerRows = [];
                 }
                 const updatedAt = new Date().toLocaleString('vi-VN');
-                const newRow = ['', name, lat, lon, note, '', type, cabinetName, poleType, '', lampType, imageData, updatedAt];
+                const newRow = {
+                    'Tên trụ': name,
+                    'Lat': lat,
+                    'Lon': lon,
+                    'Ghi chú': note,
+                    'Loại': type,
+                    'Tủ điều khiển': cabinetName,
+                    'Loại trụ': poleType,
+                    'Loại đèn': lampType,
+                    'Ảnh Base64': imageData,
+                    'Thời gian cập nhật': updatedAt
+                };
                 loadedData.push(newRow);
                 newMarkerRows.push(newRow);
                 const newMarker = addMarkerRowToMap(newRow);
@@ -1308,13 +1381,10 @@
 
             let previousPoint = null;
             rows.forEach((row, index) => {
-                const name = row[1] || row[0] || `Marker ${index + 1}`;
-                const rawX = parseFloat(row[3]);
-                const rawY = parseFloat(row[2]);
-                const note = row[4] || '';
-                const cabinet = row[7] || '';
-                const poleType = row[8] || '';
-                const lampType = row[10] || '';
+                const parsed = parseMarkerRow(row);
+                const name = parsed.name || `Marker ${index + 1}`;
+                const rawX = parsed.lon;
+                const rawY = parsed.lat;
                 const label = name.replace(/\r?\n/g, ' ');
 
                 if (!Number.isFinite(rawX) || !Number.isFinite(rawY)) return;
@@ -1385,7 +1455,10 @@
 
         function exportMarkersToCad() {
             try {
-                const rowsToExport = (newMarkerRows && newMarkerRows.length > 0) ? newMarkerRows : loadedData.filter(row => Array.isArray(row) && row.length >= 4 && !isNaN(parseFloat(row[2])) && !isNaN(parseFloat(row[3])));
+                const rowsToExport = (newMarkerRows && newMarkerRows.length > 0) ? newMarkerRows : loadedData.filter(row => {
+                    const parsed = parseMarkerRow(row);
+                    return Number.isFinite(parsed.lat) && Number.isFinite(parsed.lon);
+                });
                 if (!rowsToExport || rowsToExport.length === 0) {
                     displayError('Không có marker để xuất CAD.');
                     return;
@@ -1408,12 +1481,12 @@
                 }
 
                 const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh Base64', 'Thời gian cập nhật'];
-                const exportData = [header, ...newMarkerRows];
+                const exportData = [header, ...newMarkerRows.map(rowToArray)];
                 const worksheet = XLSX.utils.aoa_to_sheet(exportData);
                 const workbook = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
                 if (typeof XLSX.writeFile === 'function') {
-                    XLSX.writeFile(workbook, 'khaosat-updated.xlsx');
+                    XLSX.writeFile(workbook, 'danhsach-updated.xlsx');
                 } else {
                     const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
                     const blob = new Blob([wbout], { type: 'application/octet-stream' });
@@ -1421,7 +1494,7 @@
                     const a = document.createElement('a');
                     a.style.display = 'none';
                     a.href = url;
-                    a.download = 'khaosat-updated.xlsx';
+                    a.download = 'danhsach-updated.xlsx';
                     document.body.appendChild(a);
                     a.click();
                     setTimeout(() => {
@@ -1670,13 +1743,13 @@
         }
 
         function loadDefaultFile() {
-            fetch('data/khaosat.xlsx')
+            fetch('data/danhsach.xlsx')
                 .then(response => {
                     if (!response.ok) throw new Error('File không tồn tại');
                     return response.blob();
                 })
                 .then(blob => {
-                    const file = new File([blob], 'khaosat.xlsx');
+                    const file = new File([blob], 'danhsach.xlsx');
                     processFile(file);
                 })
                 .catch(error => {

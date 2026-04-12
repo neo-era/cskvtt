@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <title>Lighting System V1.1</title>
+    <title>K76.A11</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -25,7 +25,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
     <!-- Favicon -->
-    <link rel="icon" href="images/fevicon.png" type="image/gif" />
+    <link rel="icon" href="images1/fevicon.png" type="image/gif" />
 
     <!-- Bootstrap JS and jQuery -->
     <script src="js/jquery-3.0.0.min.js"></script>
@@ -455,7 +455,7 @@
     </style>
 </head>
 <body>
-    <h1>A76.A11</h1>
+    <h1>DANH SÁCH HỌC VIÊN K76.A11</h1>
 
     <div id="map"></div>
     <div id="markerPopupForm" class="marker-popup-overlay" role="dialog" aria-modal="true">
@@ -814,7 +814,7 @@
             if (/^data:/i.test(normalized) || /^https?:\/\//i.test(normalized) || /^\/|^\.\.\//.test(normalized) || /^\.\//.test(normalized)) {
                 return normalized;
             }
-            const imagesPos = normalized.toLowerCase().indexOf('images/');
+            const imagesPos = normalized.toLowerCase().indexOf('images1/');
             if (imagesPos !== -1) {
                 return normalized.slice(imagesPos);
             }
@@ -823,7 +823,7 @@
                 return winPath.startsWith('/') ? `file://${winPath}` : `file:///${winPath}`;
             }
             if (!/\//.test(normalized)) {
-                return `images/${normalized}`;
+                return `images1/${normalized}`;
             }
             return normalized;
         }
@@ -909,14 +909,14 @@
 
         // Custom Icons
         const customIcons = {
-            1: L.icon({ iconUrl: 'images/1.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
-            2: L.icon({ iconUrl: 'images/2.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
-            3: L.icon({ iconUrl: 'images/3.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
-            4: L.icon({ iconUrl: 'images/4.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
-            5: L.icon({ iconUrl: 'images/5.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
-            6: L.icon({ iconUrl: 'images/9.png', iconSize: [16, 20], iconAnchor: [8, 10], popupAnchor: [0, -10] }),
-            7: L.icon({ iconUrl: 'images/7.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
-            default: L.icon({ iconUrl: 'images/8.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] })
+            1: L.icon({ iconUrl: 'images1/1.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
+            2: L.icon({ iconUrl: 'images1/2.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
+            3: L.icon({ iconUrl: 'images1/3.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
+            4: L.icon({ iconUrl: 'images1/4.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
+            5: L.icon({ iconUrl: 'images1/5.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
+            6: L.icon({ iconUrl: 'images1/9.png', iconSize: [16, 20], iconAnchor: [8, 10], popupAnchor: [0, -10] }),
+            7: L.icon({ iconUrl: 'images1/7.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
+            default: L.icon({ iconUrl: 'images1/8.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] })
         };
 
         function initializeMap() {
@@ -1272,7 +1272,7 @@
                     if (resizedDataUrl) {
                         markerImageDataUrl = resizedDataUrl;
                         markerImageFileName = file.name;
-                        markerImagePath = `images/${markerImageFileName}`;
+                        markerImagePath = `images1/${markerImageFileName}`;
                         if (preview) {
                             preview.innerHTML = `<img src="${markerImageDataUrl}" alt="Ảnh trụ" />`;
                         }

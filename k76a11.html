@@ -832,65 +832,79 @@
         }
 
         const rowFieldKeys = {
-            name: [1, 0, 'Tên trụ', 'Ten tru', 'Name', 'name', 'trụ', 'tru'],
-            lat: [2, 3, 'Lat', 'Latitude', 'LAT', 'latitude'],
-            lon: [3, 2, 'Lon', 'Longitude', 'LON', 'longitude'],
-            note: [4, 'Ghi chú', 'Ghi chu', 'Notes', 'note', 'Remark', 'remark'],
-            type: [6, 'Loại', 'Loai', 'Type', 'type'],
-            cabinet: [7, 'Tủ điều khiển', 'Tu dieu khien', 'Cabinet', 'cabinet'],
-            poleType: [8, 'Loại trụ', 'Loai tru', 'Pole Type', 'pole type', 'poleType'],
-            loaiCan: [9, 'Loại cần', 'Loai can', 'Need Type', 'needType'],
-            lampType: [10, 'Loại đèn', 'Loai den', 'Lamp Type', 'lamp type', 'lampType'],
-            imageBase64: [11, 'Ảnh Base64', 'Anh Base64', 'ImageBase64', 'Image'],
-            updatedAt: [12, 'Thời gian cập nhật', 'Thoi gian cap nhat', 'updatedAt', 'Updated At']
+            id: [0, 'ID', 'Id', 'id'],
+            name: [1, 'name', 'Name', 'Tên', 'tên', 'name'],
+            latitude: [2, 'latitude', 'Latitude', 'lat', 'Lat'],
+            longitude: [3, 'longitude', 'Longitude', 'lon', 'Lon', 'longtitude', 'Longtitude'],
+            north: [4, 'N', 'n'],
+            east: [5, 'E', 'e'],
+            status: [6, 'trạng thái', 'trang thai', 'Status', 'status'],
+            homeAddress: [7, 'địa chỉ nhà riêng', 'dia chi nha rieng', 'home address', 'Home Address'],
+            officeAddress: [8, 'địa chỉ cơ quan', 'dia chi co quan', 'office address', 'Office Address'],
+            phone1: [9, 'điện thoại 1', 'dien thoai 1', 'phone1', 'Phone 1'],
+            phone2: [10, 'điện thoại 2', 'dien thoai 2', 'phone2', 'Phone 2'],
+            facebook: [11, 'facebook', 'Facebook'],
+            title: [12, 'chức vụ', 'chuc vu', 'title', 'Title'],
+            image: [13, 'hình ảnh', 'hinh anh', 'image', 'Image']
         };
 
         function parseMarkerRow(row) {
+            const id = String(getRowValue(row, rowFieldKeys.id, '')).trim();
             const name = String(getRowValue(row, rowFieldKeys.name, '')).trim();
-            const latValue = getRowValue(row, rowFieldKeys.lat, '');
-            const lonValue = getRowValue(row, rowFieldKeys.lon, '');
-            const note = String(getRowValue(row, rowFieldKeys.note, '')).trim();
-            const rawType = getRowValue(row, rowFieldKeys.type, '');
-            const type = Number.isFinite(Number(rawType)) ? parseInt(rawType, 10) : 1;
-            const cabinet = String(getRowValue(row, rowFieldKeys.cabinet, '')).trim();
-            const poleType = String(getRowValue(row, rowFieldKeys.poleType, '')).trim();
-            const loaiCan = String(getRowValue(row, rowFieldKeys.loaiCan, '')).trim();
-            const lampType = String(getRowValue(row, rowFieldKeys.lampType, '')).trim();
-            const imageBase64 = String(getRowValue(row, rowFieldKeys.imageBase64, '')).trim();
-            const updatedAt = String(getRowValue(row, rowFieldKeys.updatedAt, '')).trim();
+            const latValue = getRowValue(row, rowFieldKeys.latitude, '');
+            const lonValue = getRowValue(row, rowFieldKeys.longitude, '');
+            const north = String(getRowValue(row, rowFieldKeys.north, '')).trim();
+            const east = String(getRowValue(row, rowFieldKeys.east, '')).trim();
+            const status = String(getRowValue(row, rowFieldKeys.status, '')).trim();
+            const homeAddress = String(getRowValue(row, rowFieldKeys.homeAddress, '')).trim();
+            const officeAddress = String(getRowValue(row, rowFieldKeys.officeAddress, '')).trim();
+            const phone1 = String(getRowValue(row, rowFieldKeys.phone1, '')).trim();
+            const phone2 = String(getRowValue(row, rowFieldKeys.phone2, '')).trim();
+            const facebook = String(getRowValue(row, rowFieldKeys.facebook, '')).trim();
+            const title = String(getRowValue(row, rowFieldKeys.title, '')).trim();
+            const image = String(getRowValue(row, rowFieldKeys.image, '')).trim();
 
             return {
                 raw: row,
+                id,
                 name,
                 lat: parseFloat(latValue),
                 lon: parseFloat(lonValue),
-                note,
-                type: Number.isFinite(type) && type > 0 ? type : 1,
-                cabinet,
-                poleType,
-                loaiCan,
-                lampType,
-                imageBase64,
-                updatedAt
+                north,
+                east,
+                status,
+                homeAddress,
+                officeAddress,
+                phone1,
+                phone2,
+                facebook,
+                title,
+                image
             };
         }
 
         function rowToArray(row) {
             const parsed = parseMarkerRow(row);
-            return ['', parsed.name, parsed.lat, parsed.lon, parsed.note, '', parsed.type, parsed.cabinet, parsed.poleType, parsed.loaiCan, parsed.lampType, parsed.imageBase64, parsed.updatedAt];
+            return [parsed.id, parsed.name, parsed.lat, parsed.lon, parsed.north, parsed.east, parsed.status, parsed.homeAddress, parsed.officeAddress, parsed.phone1, parsed.phone2, parsed.facebook, parsed.title, parsed.image];
         }
 
         function createMarkerPopupContent(row) {
             const parsed = parseMarkerRow(row);
+            const id = parsed.id || 'Không có ID';
             const name = parsed.name || 'Không có tên';
             const lat = parsed.lat;
             const lon = parsed.lon;
-            const note = parsed.note || 'Không có';
-            const tudieukhien = parsed.cabinet || '';
-            const loaitru = parsed.poleType || '';
-            const loaiden = parsed.lampType || '';
-            const imageBase64 = parsed.imageBase64 || '';
-            const updatedAt = parsed.updatedAt || '';
+            const north = parsed.north || '';
+            const east = parsed.east || '';
+            const status = parsed.status || '';
+            const homeAddress = parsed.homeAddress || '';
+            const officeAddress = parsed.officeAddress || '';
+            const phone1 = parsed.phone1 || '';
+            const phone2 = parsed.phone2 || '';
+            const facebook = parsed.facebook || '';
+            const title = parsed.title || '';
+            const image = parsed.image || '';
+
             const sameNameMarkers = getSameNameMarkers(name);
             const currentLat = lat;
             const currentLon = lon;
@@ -899,8 +913,9 @@
             if (!isAlreadyIncluded) {
                 sameNameMarkers.push({ lat: currentLat, lon: currentLon, name });
             }
+
             const sameNameCount = sameNameMarkers.length;
-            const sameNameHtml = sameNameCount > 1 ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tổng số trụ cùng tên:</strong> ${sameNameCount}</div>` : '';
+            const sameNameHtml = sameNameCount > 1 ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tổng số điểm cùng tên:</strong> ${sameNameCount}</div>` : '';
 
             let distancesHtml = '';
             if (sameNameCount > 1) {
@@ -916,24 +931,43 @@
                 distancesHtml = `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tổng khoảng cách nối tiếp:</strong> ${Math.round(totalDistance)} m<ul style="margin:4px 0 0 16px;padding:0;">${segments.join('')}</ul></div>`;
             }
 
-            const imageHtml = imageBase64 ? `<div style="margin-top:8px;text-align:center;"><img src="${imageBase64}" alt="Ảnh trụ" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : '';
-            const timestampHtml = updatedAt ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Thời gian cập nhật:</strong> ${updatedAt}</div>` : '';
+            const imageHtml = image ? `<div style="margin-top:8px;text-align:center;"><img src="${image}" alt="Hình ảnh" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : '';
             const latitudeText = Number.isFinite(lat) ? lat.toFixed(6) : 'Không hợp lệ';
             const longitudeText = Number.isFinite(lon) ? lon.toFixed(6) : 'Không hợp lệ';
+            const phoneHtml = phone1 || phone2 ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Điện thoại:</strong> ${phone1}${phone1 && phone2 ? '<br>' : ''}${phone2}</div>` : '';
+            const facebookHtml = facebook ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Facebook:</strong> ${facebook}</div>` : '';
             return `
                 <div>
-                    <strong>Tên trụ: ${name}</strong><br>
+                    <strong>ID: ${id}</strong><br>
+                    <strong>Tên: ${name}</strong><br>
                     Lat: ${latitudeText}<br>
                     Lon: ${longitudeText}<br>
-                    Ghi chú: ${note}<br>
-                    Trụ: ${loaitru}<br>
-                    Tủ điều khiển: ${tudieukhien}<br>
-                    Đèn: ${loaiden}<br>
+                    N: ${north}<br>
+                    E: ${east}<br>
+                    Trạng thái: ${status}<br>
+                    Địa chỉ nhà riêng: ${homeAddress}<br>
+                    Địa chỉ cơ quan: ${officeAddress}<br>
+                    Chức vụ: ${title}<br>
+                    ${phoneHtml}
+                    ${facebookHtml}
                     ${sameNameHtml}
                     ${distancesHtml}
-                    ${timestampHtml}
                     ${imageHtml}
                 </div>`;
+        }
+
+        function createMarkerIcon(parsed) {
+            const image = String(parsed.image || '').trim();
+            if (image) {
+                const iconUrl = image.startsWith('data:') ? image : image;
+                return L.icon({
+                    iconUrl: iconUrl,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16],
+                    popupAnchor: [0, -16]
+                });
+            }
+            return customIcons[parsed.type] || customIcons.default;
         }
 
         function addMarkerRowToMap(row) {
@@ -946,7 +980,7 @@
 
             if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
 
-            const icon = customIcons[type] || customIcons.default;
+            const icon = createMarkerIcon(parsed);
             const markerIndex = markers.length;
             const marker = L.marker([lat, lon], { icon: icon });
             const popupContent = createMarkerPopupContent(row);
@@ -1410,19 +1444,21 @@
                 if (!Array.isArray(newMarkerRows)) {
                     newMarkerRows = [];
                 }
-                const updatedAt = new Date().toLocaleString('vi-VN');
                 const newRow = {
-                    'Tên trụ': name,
-                    'Lat': lat,
-                    'Lon': lon,
-                    'Ghi chú': note,
-                    'Loại': type,
-                    'Tủ điều khiển': cabinetName,
-                    'Loại trụ': poleType,
-                    'Loại cần': '',
-                    'Loại đèn': lampType,
-                    'Ảnh Base64': imageData,
-                    'Thời gian cập nhật': updatedAt
+                    'ID': '',
+                    'name': name,
+                    'latitude': lat,
+                    'longtitude': lon,
+                    'N': '',
+                    'E': '',
+                    'trạng thái': '',
+                    'địa chỉ nhà riêng': '',
+                    'địa chỉ cơ quan': '',
+                    'điện thoại 1': '',
+                    'điện thoại 2': '',
+                    'facebook': '',
+                    'chức vụ': '',
+                    'hình ảnh': imageData
                 };
                 loadedData.push(newRow);
                 newMarkerRows.push(newRow);
@@ -1586,7 +1622,7 @@
                     return;
                 }
 
-                const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh Base64', 'Thời gian cập nhật'];
+                const header = ['ID', 'name', 'latitude', 'longtitude', 'N', 'E', 'trạng thái', 'địa chỉ nhà riêng', 'địa chỉ cơ quan', 'điện thoại 1', 'điện thoại 2', 'facebook', 'chức vụ', 'hình ảnh'];
                 const exportData = [header, ...newMarkerRows.map(rowToArray)];
                 const worksheet = XLSX.utils.aoa_to_sheet(exportData);
                 const workbook = XLSX.utils.book_new();
@@ -1812,7 +1848,7 @@
 
                 displayError('Đang cập nhật file trên GitHub...');
 
-                const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh Base64', 'Thời gian cập nhật'];
+                const header = ['ID', 'name', 'latitude', 'longtitude', 'N', 'E', 'trạng thái', 'địa chỉ nhà riêng', 'địa chỉ cơ quan', 'điện thoại 1', 'điện thoại 2', 'facebook', 'chức vụ', 'hình ảnh'];
 
                 const fileData = await getGitHubFileContent(githubOwner, githubRepo, path, githubBranch, githubToken);
                 let combinedRows = [header, ...newMarkerRows.map(rowToArray)];

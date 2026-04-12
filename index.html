@@ -759,7 +759,7 @@
             const tudieukhien = row[7];
             const loaitru = row[8];
             const loaiden = row[10];
-            const imageBase64 = row[11] || '';
+            const imageValue = row[11] || '';
             const updatedAt = row[12] || '';
             const sameNameMarkers = getSameNameMarkers(name);
             const currentLat = lat;
@@ -786,7 +786,7 @@
                 distancesHtml = `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tổng khoảng cách nối tiếp:</strong> ${Math.round(totalDistance)} m<ul style="margin:4px 0 0 16px;padding:0;">${segments.join('')}</ul></div>`;
             }
 
-            const imageHtml = imageBase64 ? `<div style="margin-top:8px;text-align:center;"><img src="${imageBase64}" alt="Ảnh trụ" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : '';
+            const imageHtml = imageValue ? `<div style="margin-top:8px;text-align:center;"><img src="${imageValue}" alt="Ảnh trụ" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : '';
             const timestampHtml = updatedAt ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Thời gian cập nhật:</strong> ${updatedAt}</div>` : '';
             return `
                 <div>
@@ -1249,6 +1249,7 @@
                 const newRow = ['', name, lat, lon, note, '', type, cabinetName, poleType, '', lampType, imageData, updatedAt];
                 loadedData.push(newRow);
                 newMarkerRows.push(newRow);
+                markerImageDataUrl = null;
                 const newMarker = addMarkerRowToMap(newRow);
 
                 if (newMarker) {
@@ -1261,7 +1262,7 @@
                 addMarkerMode = true;
                 pendingMarkerLocation = null;
                 updateAddMarkerButton();
-                displayError('Đã thêm marker mới. Vẫn ở chế độ thêm marker, chọn điểm khác trên bản đồ.');
+                displayError('Đã thêm marker mới (ảnh chưa lưu). Nhấn Lưu dữ liệu để lưu ảnh và cập nhật đường dẫn vào Excel/GitHub.');
             } catch (error) {
                 console.error('saveMarkerPopup error:', error);
                 displayError('Lỗi khi lưu marker: ' + (error.message || error));
@@ -1407,6 +1408,65 @@
             return match[1].toLowerCase() === 'jpg' ? 'jpeg' : match[1].toLowerCase();
         }
 
+        function sanitizeFileName(name) {
+            return (name || 'marker')
+                .toString()
+                .trim()
+                .toLowerCase()
+                .replace(/\s+/g, '-')
+                .replace(/[^a-z0-9\-_.]/g, '')
+                .replace(/\-+/g, '-')
+                .replace(/^[-_.]+|[-_.]+$/g, '') || 'marker';
+        }
+
+        function getImagePathForMarker(name, dataUrl) {
+            const extension = getImageExtensionFromDataUrl(dataUrl);
+            const safeName = sanitizeFileName(name);
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            return `images/${safeName || 'marker'}-${timestamp}.${extension}`;
+        }
+
+        function downloadDataUrlFile(dataUrl, suggestedPath) {
+            try {
+                const extension = getImageExtensionFromDataUrl(dataUrl);
+                const fileName = suggestedPath ? suggestedPath.replace(/^.*[\\/]/, '') : `marker-image.${extension}`;
+                fetch(dataUrl)
+                    .then(res => res.blob())
+                    .then(blobData => {
+                        const url = URL.createObjectURL(blobData);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = fileName;
+                        document.body.appendChild(a);
+                        a.click();
+                        setTimeout(() => {
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                        }, 100);
+                    });
+            } catch (error) {
+                console.warn('Không thể tải ảnh xuống tự động:', error);
+            }
+        }
+
+        function prepareImagePathsForSave(rows) {
+            if (!Array.isArray(rows)) return [];
+            const downloadedImages = [];
+            rows.forEach(row => {
+                if (!Array.isArray(row)) return;
+                const imageValue = row[11];
+                if (typeof imageValue === 'string' && imageValue.startsWith('data:image/')) {
+                    const markerName = row[1] || row[0] || 'marker';
+                    const imagePath = getImagePathForMarker(markerName, imageValue);
+                    row[11] = imagePath;
+                    downloadedImages.push({ dataUrl: imageValue, path: imagePath });
+                }
+            });
+            downloadedImages.forEach(item => downloadDataUrlFile(item.dataUrl, item.path));
+            return downloadedImages;
+        }
+
         function arrayBufferToBase64(buffer) {
             let binary = '';
             const bytes = new Uint8Array(buffer);
@@ -1432,12 +1492,16 @@
 
             for (let i = 0; i < rows.length; i++) {
                 const row = Array.isArray(rows[i]) ? [...rows[i]] : [];
-                const imageDataUrl = row[11] || '';
-                row[11] = '';
-                const excelRow = worksheet.addRow(row);
-                if (typeof imageDataUrl === 'string' && imageDataUrl.startsWith('data:image/')) {
-                    const extension = getImageExtensionFromDataUrl(imageDataUrl);
-                    const base64Data = imageDataUrl.replace(/^data:image\/[^;]+;base64,/, '');
+                const imageData = row[11] || '';
+                const excelRowData = [...row];
+                if (typeof imageData === 'string' && imageData.startsWith('data:image/')) {
+                    excelRowData[11] = '';
+                }
+
+                const excelRow = worksheet.addRow(excelRowData);
+                if (typeof imageData === 'string' && imageData.startsWith('data:image/')) {
+                    const extension = getImageExtensionFromDataUrl(imageData);
+                    const base64Data = imageData.replace(/^data:image\/[^;]+;base64,/, '');
                     const imageId = workbook.addImage({ base64: base64Data, extension });
                     const rowNumber = excelRow.number;
                     worksheet.addImage(imageId, {
@@ -1457,9 +1521,10 @@
             const images = [];
             rows.forEach((row, index) => {
                 const imageData = row[11];
+                const rowIndex = startRow + index;
+                const cellAddress = XLSX.utils.encode_cell({ r: rowIndex, c: 11 });
+
                 if (typeof imageData === 'string' && imageData.startsWith('data:image/')) {
-                    const rowIndex = startRow + index;
-                    const cellAddress = XLSX.utils.encode_cell({ r: rowIndex, c: 11 });
                     worksheet[cellAddress] = { t: 's', v: '' };
 
                     images.push({
@@ -1472,6 +1537,8 @@
                     worksheet['!cols'][11] = { wpx: 140 };
                     worksheet['!rows'] = worksheet['!rows'] || [];
                     worksheet['!rows'][rowIndex] = { hpx: 120 };
+                } else if (typeof imageData === 'string' && imageData) {
+                    worksheet[cellAddress] = { t: 's', v: imageData };
                 }
             });
             if (images.length > 0) {
@@ -1486,6 +1553,7 @@
                     return;
                 }
 
+                prepareImagePathsForSave(newMarkerRows);
                 let downloadBlob = null;
                 if (typeof ExcelJS !== 'undefined' || (typeof window !== 'undefined' && window.ExcelJS)) {
                     const buffer = await createExcelBufferWithImages(newMarkerRows);
@@ -1508,11 +1576,7 @@
                     }, 100);
                 } else {
                     const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh', 'Thời gian cập nhật'];
-                    const exportRows = newMarkerRows.map(row => {
-                        const copy = Array.isArray(row) ? [...row] : [];
-                        copy[11] = '';
-                        return copy;
-                    });
+                    const exportRows = newMarkerRows.map(row => Array.isArray(row) ? [...row] : []);
                     const exportData = [header, ...exportRows];
                     const worksheet = XLSX.utils.aoa_to_sheet(exportData);
                     attachImagesToWorksheet(worksheet, newMarkerRows);
@@ -1722,6 +1786,8 @@
 
                 const githubPathInput = document.getElementById('githubPathInput');
                 const path = githubPathInput && githubPathInput.value.trim() ? githubPathInput.value.trim() : '';
+
+                prepareImagePathsForSave(newMarkerRows);
 
                 displayError('Đang kiểm tra repo GitHub...');
 

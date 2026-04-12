@@ -191,14 +191,14 @@
             padding: 12px 16px 14px;
             display: flex;
             gap: 8px;
-            justify-content: flex-end;
+            justify-content: space-between;
             flex-wrap: wrap;
             background: #f8f9fa;
         }
 
         .marker-popup-card .footer button {
-            min-width: 90px;
-            flex: 1 1 42%;
+            min-width: 110px;
+            flex: 1 1 calc(33.333% - 8px);
             font-size: 13px;
         }
 
@@ -613,15 +613,17 @@
     <div id="markerPopupForm" class="marker-popup-overlay" role="dialog" aria-modal="true">
         <div class="marker-popup-card">
             <header>Thông tin marker mới</header>
+            <div class="footer">
+                <button id="markerPopupCancel" type="button" class="btn btn-secondary" onclick="cancelMarkerPopup()">Hủy</button>
+                <button id="markerPopupSave" type="button" class="btn btn-primary" onclick="saveMarkerPopup()">Lưu marker</button>
+                <button id="markerImageButton" type="button" class="btn btn-outline-primary marker-image-button" onclick="triggerMarkerImageInput()">Chụp / chọn ảnh</button>
+            </div>
             <div class="body">
                 <div class="form-group">
                     <label for="markerNameInput">Tên trụ</label>
                     <input id="markerNameInput" type="text" class="form-control" placeholder="Nhập tên trụ" />
                 </div>
-                <div class="form-group">
-                    <label for="markerNoteInput">Ghi chú</label>
-                    <textarea id="markerNoteInput" class="form-control" placeholder="Nhập ghi chú (tùy chọn)"></textarea>
-                </div>
+               
                 <div class="form-group">
                     <label for="markerCabinetInput">Tên tủ điều khiển</label>
                     <input id="markerCabinetInput" type="text" class="form-control" placeholder="Nhập tên tủ điều khiển" />
@@ -634,16 +636,16 @@
                     <label for="markerLampTypeInput">Loại đèn</label>
                     <input id="markerLampTypeInput" type="text" class="form-control" placeholder="Nhập loại đèn" />
                 </div>
+               <div class="form-group">
+                    <label for="markerNoteInput">Ghi chú</label>
+                    <textarea id="markerNoteInput" class="form-control" placeholder="Nhập ghi chú (tùy chọn)"></textarea>
+                </div>
                 <div class="form-group">
-                    <button id="markerImageButton" type="button" class="btn btn-outline-primary marker-image-button" onclick="triggerMarkerImageInput()">Chụp / chọn ảnh</button>
+                    
                     <input id="markerImageInput" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleMarkerImageFile(event)" />
                 </div>
                 <div class="marker-image-preview" id="markerImagePreview"></div>
                 <div id="markerCoordsText" class="coords-info">Tọa độ: -</div>
-            </div>
-            <div class="footer">
-                <button id="markerPopupCancel" type="button" class="btn btn-secondary" onclick="cancelMarkerPopup()">Hủy</button>
-                <button id="markerPopupSave" type="button" class="btn btn-primary" onclick="saveMarkerPopup()">Lưu marker</button>
             </div>
         </div>
     </div>

@@ -283,6 +283,65 @@
             overflow-y: auto;
         }
 
+        .marker-list-panel {
+            position: fixed;
+            top: 80px;
+            left: 16px;
+            width: min(320px, 90vw);
+            max-height: calc(100vh - 100px);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(0,0,0,0.12);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.16);
+            z-index: 2500;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(8px);
+        }
+
+        .marker-list-header {
+            padding: 12px 14px;
+            background: #007bff;
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .marker-list-content {
+            overflow-y: auto;
+            padding: 10px 12px;
+            flex: 1;
+        }
+
+        .marker-list-item {
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(0,0,0,0.08);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: transform 0.15s ease, background-color 0.15s ease;
+            background: #fff;
+        }
+
+        .marker-list-item:hover {
+            transform: translateY(-1px);
+            background: #f8f9ff;
+        }
+
+        .marker-list-item strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 14px;
+            color: #0a3d85;
+        }
+
+        .marker-list-item small {
+            display: block;
+            color: #444;
+            font-size: 12px;
+        }
+
         #searchResults ul {
             list-style: none;
             padding: 0;
@@ -610,6 +669,10 @@
         </div>
     </div>
     <div id="map"></div>
+    <div id="markerListPanel" class="marker-list-panel">
+        <div class="marker-list-header">Danh sách điểm</div>
+        <div id="markerListContent" class="marker-list-content"></div>
+    </div>
     <div id="markerPopupForm" class="marker-popup-overlay" role="dialog" aria-modal="true">
         <div class="marker-popup-card">
             <header>Thông tin marker mới</header>
@@ -750,16 +813,84 @@
             };
         }
 
+        function getRowValue(row, keys, fallback = '') {
+            if (row == null) return fallback;
+            if (Array.isArray(row)) {
+                for (const key of keys) {
+                    if (typeof key === 'number' && row[key] != null && row[key] !== '') {
+                        return row[key];
+                    }
+                }
+            } else if (typeof row === 'object') {
+                for (const key of keys) {
+                    if (Object.prototype.hasOwnProperty.call(row, key) && row[key] != null && row[key] !== '') {
+                        return row[key];
+                    }
+                }
+            }
+            return fallback;
+        }
+
+        const rowFieldKeys = {
+            name: [1, 0, 'Tên trụ', 'Ten tru', 'Name', 'name', 'trụ', 'tru'],
+            lat: [2, 3, 'Lat', 'Latitude', 'LAT', 'latitude'],
+            lon: [3, 2, 'Lon', 'Longitude', 'LON', 'longitude'],
+            note: [4, 'Ghi chú', 'Ghi chu', 'Notes', 'note', 'Remark', 'remark'],
+            type: [6, 'Loại', 'Loai', 'Type', 'type'],
+            cabinet: [7, 'Tủ điều khiển', 'Tu dieu khien', 'Cabinet', 'cabinet'],
+            poleType: [8, 'Loại trụ', 'Loai tru', 'Pole Type', 'pole type', 'poleType'],
+            loaiCan: [9, 'Loại cần', 'Loai can', 'Need Type', 'needType'],
+            lampType: [10, 'Loại đèn', 'Loai den', 'Lamp Type', 'lamp type', 'lampType'],
+            imageBase64: [11, 'Ảnh Base64', 'Anh Base64', 'ImageBase64', 'Image'],
+            updatedAt: [12, 'Thời gian cập nhật', 'Thoi gian cap nhat', 'updatedAt', 'Updated At']
+        };
+
+        function parseMarkerRow(row) {
+            const name = String(getRowValue(row, rowFieldKeys.name, '')).trim();
+            const latValue = getRowValue(row, rowFieldKeys.lat, '');
+            const lonValue = getRowValue(row, rowFieldKeys.lon, '');
+            const note = String(getRowValue(row, rowFieldKeys.note, '')).trim();
+            const rawType = getRowValue(row, rowFieldKeys.type, '');
+            const type = Number.isFinite(Number(rawType)) ? parseInt(rawType, 10) : 1;
+            const cabinet = String(getRowValue(row, rowFieldKeys.cabinet, '')).trim();
+            const poleType = String(getRowValue(row, rowFieldKeys.poleType, '')).trim();
+            const loaiCan = String(getRowValue(row, rowFieldKeys.loaiCan, '')).trim();
+            const lampType = String(getRowValue(row, rowFieldKeys.lampType, '')).trim();
+            const imageBase64 = String(getRowValue(row, rowFieldKeys.imageBase64, '')).trim();
+            const updatedAt = String(getRowValue(row, rowFieldKeys.updatedAt, '')).trim();
+
+            return {
+                raw: row,
+                name,
+                lat: parseFloat(latValue),
+                lon: parseFloat(lonValue),
+                note,
+                type: Number.isFinite(type) && type > 0 ? type : 1,
+                cabinet,
+                poleType,
+                loaiCan,
+                lampType,
+                imageBase64,
+                updatedAt
+            };
+        }
+
+        function rowToArray(row) {
+            const parsed = parseMarkerRow(row);
+            return ['', parsed.name, parsed.lat, parsed.lon, parsed.note, '', parsed.type, parsed.cabinet, parsed.poleType, parsed.loaiCan, parsed.lampType, parsed.imageBase64, parsed.updatedAt];
+        }
+
         function createMarkerPopupContent(row) {
-            const name = row[1] || row[0] || '';
-            const lat = parseFloat(row[2]);
-            const lon = parseFloat(row[3]);
-            const note = row[4] || '';
-            const tudieukhien = row[7];
-            const loaitru = row[8];
-            const loaiden = row[10];
-            const imageBase64 = row[11] || '';
-            const updatedAt = row[12] || '';
+            const parsed = parseMarkerRow(row);
+            const name = parsed.name || 'Không có tên';
+            const lat = parsed.lat;
+            const lon = parsed.lon;
+            const note = parsed.note || 'Không có';
+            const tudieukhien = parsed.cabinet || '';
+            const loaitru = parsed.poleType || '';
+            const loaiden = parsed.lampType || '';
+            const imageBase64 = parsed.imageBase64 || '';
+            const updatedAt = parsed.updatedAt || '';
             const sameNameMarkers = getSameNameMarkers(name);
             const currentLat = lat;
             const currentLon = lon;
@@ -787,15 +918,17 @@
 
             const imageHtml = imageBase64 ? `<div style="margin-top:8px;text-align:center;"><img src="${imageBase64}" alt="Ảnh trụ" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : '';
             const timestampHtml = updatedAt ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Thời gian cập nhật:</strong> ${updatedAt}</div>` : '';
+            const latitudeText = Number.isFinite(lat) ? lat.toFixed(6) : 'Không hợp lệ';
+            const longitudeText = Number.isFinite(lon) ? lon.toFixed(6) : 'Không hợp lệ';
             return `
                 <div>
-                    <strong>Tên trụ: ${name || 'Không có tên'}</strong><br>
-                    Lat: ${lat.toFixed(6)}<br>
-                    Lon: ${lon.toFixed(6)}<br>
-                    Ghi chú: ${note || 'Không có'}<br>
-                    Trụ: ${loaitru || ''}<br>
-                    Tủ điều khiển: ${tudieukhien || ''}<br>
-                    Đèn: ${loaiden || ''}<br>
+                    <strong>Tên trụ: ${name}</strong><br>
+                    Lat: ${latitudeText}<br>
+                    Lon: ${longitudeText}<br>
+                    Ghi chú: ${note}<br>
+                    Trụ: ${loaitru}<br>
+                    Tủ điều khiển: ${tudieukhien}<br>
+                    Đèn: ${loaiden}<br>
                     ${sameNameHtml}
                     ${distancesHtml}
                     ${timestampHtml}
@@ -804,19 +937,14 @@
         }
 
         function addMarkerRowToMap(row) {
-            const name = row[1] || row[0] || '';
-            const lat = parseFloat(row[2]);
-            const lon = parseFloat(row[3]);
-            const type = parseInt(row[6]);
-            const note = row[4] || '';
-            const tudieukhien = row[7];
-            const loaitru = row[8];
-            const loaican = row[9];
-            const loaiden = row[10];
-            const imageBase64 = row[11] || '';
-            const updatedAt = row[12] || '';
+            const parsed = parseMarkerRow(row);
+            const name = parsed.name;
+            const lat = parsed.lat;
+            const lon = parsed.lon;
+            const type = parsed.type;
+            const note = parsed.note;
 
-            if (isNaN(lat) || isNaN(lon)) return null;
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
 
             const icon = customIcons[type] || customIcons.default;
             const markerIndex = markers.length;
@@ -966,9 +1094,42 @@
                 addMarkerRowToMap(row);
             });
 
+            renderMarkerList(data);
+
             if (markers.length > 0) {
                 map.fitBounds(markersCluster.getBounds().pad(0.1));
             }
+        }
+
+        function renderMarkerList(data) {
+            const listContainer = document.getElementById('markerListContent');
+            if (!listContainer) return;
+            listContainer.innerHTML = '';
+            const rows = Array.isArray(data) ? data : [];
+            if (rows.length === 0) {
+                listContainer.innerHTML = '<div style="padding:12px;color:#555;font-size:14px;">Không có dữ liệu điểm để hiển thị.</div>';
+                return;
+            }
+
+            rows.forEach((row, index) => {
+                const parsed = parseMarkerRow(row);
+                const item = document.createElement('div');
+                item.className = 'marker-list-item';
+                const title = parsed.name || `Điểm ${index + 1}`;
+                const subtitle = Number.isFinite(parsed.lat) && Number.isFinite(parsed.lon)
+                    ? `${parsed.lat.toFixed(6)}, ${parsed.lon.toFixed(6)}`
+                    : 'Tọa độ không hợp lệ';
+                const noteText = parsed.note ? parsed.note : 'Không có ghi chú';
+                item.innerHTML = `<strong>${title}</strong><small>${subtitle}</small><small>${noteText}</small>`;
+                item.addEventListener('click', () => {
+                    const markerItem = markers[index];
+                    if (markerItem) {
+                        map.setView([markerItem.lat, markerItem.lon], 18);
+                        markerItem.marker.openPopup();
+                    }
+                });
+                listContainer.appendChild(item);
+            });
         }
 
         function processFile(file) {
@@ -978,7 +1139,12 @@
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    let jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+                    if (jsonData.length > 0 && Array.isArray(jsonData[0])) {
+                        jsonData = jsonData.filter(row => row && row.some(cell => cell !== null && cell !== ''));
+                    } else {
+                        jsonData = jsonData.filter(row => row && Object.values(row).some(cell => cell !== null && cell !== ''));
+                    }
                     loadedData = jsonData;
                     addMarkersToMap(jsonData);
                 } catch (error) {
@@ -1245,10 +1411,23 @@
                     newMarkerRows = [];
                 }
                 const updatedAt = new Date().toLocaleString('vi-VN');
-                const newRow = ['', name, lat, lon, note, '', type, cabinetName, poleType, '', lampType, imageData, updatedAt];
+                const newRow = {
+                    'Tên trụ': name,
+                    'Lat': lat,
+                    'Lon': lon,
+                    'Ghi chú': note,
+                    'Loại': type,
+                    'Tủ điều khiển': cabinetName,
+                    'Loại trụ': poleType,
+                    'Loại cần': '',
+                    'Loại đèn': lampType,
+                    'Ảnh Base64': imageData,
+                    'Thời gian cập nhật': updatedAt
+                };
                 loadedData.push(newRow);
                 newMarkerRows.push(newRow);
                 const newMarker = addMarkerRowToMap(newRow);
+                renderMarkerList(loadedData);
 
                 if (newMarker) {
                     map.setView([newMarker.getLatLng().lat, newMarker.getLatLng().lng], 19);
@@ -1308,13 +1487,10 @@
 
             let previousPoint = null;
             rows.forEach((row, index) => {
-                const name = row[1] || row[0] || `Marker ${index + 1}`;
-                const rawX = parseFloat(row[3]);
-                const rawY = parseFloat(row[2]);
-                const note = row[4] || '';
-                const cabinet = row[7] || '';
-                const poleType = row[8] || '';
-                const lampType = row[10] || '';
+                const parsed = parseMarkerRow(row);
+                const name = parsed.name || `Marker ${index + 1}`;
+                const rawX = parsed.lon;
+                const rawY = parsed.lat;
                 const label = name.replace(/\r?\n/g, ' ');
 
                 if (!Number.isFinite(rawX) || !Number.isFinite(rawY)) return;
@@ -1385,7 +1561,10 @@
 
         function exportMarkersToCad() {
             try {
-                const rowsToExport = (newMarkerRows && newMarkerRows.length > 0) ? newMarkerRows : loadedData.filter(row => Array.isArray(row) && row.length >= 4 && !isNaN(parseFloat(row[2])) && !isNaN(parseFloat(row[3])));
+                const rowsToExport = (newMarkerRows && newMarkerRows.length > 0) ? newMarkerRows : loadedData.filter(row => {
+                    const parsed = parseMarkerRow(row);
+                    return Number.isFinite(parsed.lat) && Number.isFinite(parsed.lon);
+                });
                 if (!rowsToExport || rowsToExport.length === 0) {
                     displayError('Không có marker để xuất CAD.');
                     return;
@@ -1408,7 +1587,7 @@
                 }
 
                 const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh Base64', 'Thời gian cập nhật'];
-                const exportData = [header, ...newMarkerRows];
+                const exportData = [header, ...newMarkerRows.map(rowToArray)];
                 const worksheet = XLSX.utils.aoa_to_sheet(exportData);
                 const workbook = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
@@ -1636,7 +1815,7 @@
                 const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh Base64', 'Thời gian cập nhật'];
 
                 const fileData = await getGitHubFileContent(githubOwner, githubRepo, path, githubBranch, githubToken);
-                let combinedRows = [header, ...newMarkerRows];
+                let combinedRows = [header, ...newMarkerRows.map(rowToArray)];
                 let sheetName = 'Sheet1';
 
                 if (fileData.content) {
@@ -1648,7 +1827,7 @@
                     if (existingRows.length > 0) {
                         const existingHeader = existingRows[0];
                         const existingDataRows = existingRows.slice(1);
-                        combinedRows = [header, ...existingDataRows, ...newMarkerRows];
+                        combinedRows = [header, ...existingDataRows, ...newMarkerRows.map(rowToArray)];
                     }
                 }
 

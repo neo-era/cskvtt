@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bản đồ Camera</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-o9N1j7kZ/9sW8N4NXH1zZ0KhQ+WxB+YW2i7dX3m2LLo=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <style>
@@ -64,10 +64,16 @@
         }
         #map {
             width: 100%;
-            height: calc(100% - 110px);
+            height: calc(100vh - 110px);
+            min-height: 320px;
         }
-        .popup-content {
+        .leaflet-popup-content-wrapper,
+        .leaflet-popup-tip {
+            max-width: min(360px, 90vw);
+        }
+        .leaflet-popup-content {
             line-height: 1.5;
+            word-break: break-word;
         }
         .popup-content strong {
             display: block;
@@ -76,6 +82,61 @@
         }
         .popup-content div {
             margin-bottom: 4px;
+        }
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+        .overlay.hidden {
+            display: none;
+        }
+        .overlay-card {
+            width: min(520px, 100%);
+            max-height: calc(100vh - 80px);
+            overflow-y: auto;
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 24px 50px rgba(0,0,0,0.18);
+            padding: 24px;
+        }
+        .overlay-card h2 {
+            margin: 0 0 16px;
+            font-size: 20px;
+        }
+        .overlay-row {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .overlay-row label {
+            font-size: 13px;
+            color: #374151;
+        }
+        .overlay-row input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .overlay-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        .overlay-actions button {
+            min-width: 120px;
+        }
+        .overlay-actions .secondary {
+            background: #e5e7eb;
+            color: #111827;
         }
     </style>
 </head>
@@ -86,23 +147,104 @@
             <input id="searchInput" type="search" placeholder="Tìm tên, địa chỉ hoặc tuyến" />
             <button id="searchBtn">Tìm kiếm</button>
             <button id="resetBtn">Hiển thị tất cả</button>
+            <button id="addCameraBtn">Thêm camera</button>
+            <button id="openFileBtn">Chọn Excel</button>
+            <input id="fileInput" type="file" accept=".xlsx,.xls" style="display:none" />
         </div>
     </div>
     <div id="status">Đang tải dữ liệu từ <strong>data/Camera.xlsx</strong> ...</div>
+    <div id="addCameraOverlay" class="overlay hidden">
+        <div class="overlay-card">
+            <h2>Thêm camera mới</h2>
+            <div class="overlay-row">
+                <label for="cameraStt">Stt</label>
+                <input id="cameraStt" type="text" />
+            </div>
+            <div class="overlay-row">
+                <label for="cameraLat">Lat</label>
+                <input id="cameraLat" type="text" />
+            </div>
+            <div class="overlay-row">
+                <label for="cameraLong">Long</label>
+                <input id="cameraLong" type="text" />
+            </div>
+            <div class="overlay-row">
+                <label for="cameraTuyen">Tuyến điều khiển</label>
+                <input id="cameraTuyen" type="text" />
+            </div>
+            <div class="overlay-row">
+                <label for="cameraTongSoTru">Tổng số trụ có camera đang lắp trên trụ</label>
+                <input id="cameraTongSoTru" type="text" />
+            </div>
+            <div class="overlay-row">
+                <label for="cameraViTriTru">Vị trí trụ (Số trụ CS)</label>
+                <input id="cameraViTriTru" type="text" />
+            </div>
+            <div class="overlay-row">
+                <label for="cameraLoaiTru">Loại trụ</label>
+                <input id="cameraLoaiTru" type="text" />
+            </div>
+            <div class="overlay-row">
+                <label for="cameraDiaChiSoNha">Địa chỉ: Số nhà (nếu có)</label>
+                <input id="cameraDiaChiSoNha" type="text" />
+            </div>
+            <div class="overlay-row">
+                <label for="cameraDiaChiPhuong">Địa chỉ: Phường bắc</label>
+                <input id="cameraDiaChiPhuong" type="text" />
+            </div>
+            <div class="overlay-row">
+                <label for="cameraMucDoHo">Mức độ an toàn: Có mỗi nối hở</label>
+                <input id="cameraMucDoHo" type="text" />
+            </div>
+            <div class="overlay-row">
+                <label for="cameraMucDoKep">Mức độ an toàn: Có kẹp treo, kẹp dừng cố định cáp</label>
+                <input id="cameraMucDoKep" type="text" />
+            </div>
+            <div class="overlay-row">
+                <label for="cameraNguyenNhan">Các nguyên nhân gây mất an toàn khác</label>
+                <input id="cameraNguyenNhan" type="text" />
+            </div>
+            <div class="overlay-row">
+                <label for="cameraHinhAnh">Hình ảnh</label>
+                <div style="display: flex; gap: 8px;">
+                    <input id="cameraHinhAnh" type="text" placeholder="Data URL hoặc đường dẫn" />
+                    <button type="button" onclick="document.getElementById('cameraImageFile').click()" style="white-space: nowrap; padding: 8px;">Chụp/Chọn</button>
+                </div>
+                <input type="file" id="cameraImageFile" accept="image/*" capture="environment" style="display:none" />
+                <div id="cameraImagePreview" style="margin-top: 8px; text-align: center;"></div>
+            </div>
+            <div class="overlay-row">
+                <label for="cameraGhiChu">Ghi chú</label>
+                <input id="cameraGhiChu" type="text" />
+            </div>
+            <div class="overlay-actions">
+                <button id="saveCameraBtn">Lưu camera</button>
+                <button id="cancelCameraBtn" class="secondary">Hủy</button>
+            </div>
+        </div>
+    </div>
     <div id="map"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o8CLn9vfs0Y2/K7H8eu4d7x7K0fiZj+estsGQRtWZMI=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
-        const map = L.map('map').setView([10.776889, 106.700806], 12);
+        const initialView = [10.776889, 106.700806];
+        const initialZoom = 12;
+        const map = L.map('map').setView(initialView, initialZoom);
         const markersCluster = L.markerClusterGroup();
         let allRecords = [];
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
+            crossOrigin: true,
             attribution: '© OpenStreetMap'
         }).addTo(map);
+
+        map.whenReady(() => {
+            map.invalidateSize();
+        });
 
         document.getElementById('searchBtn').addEventListener('click', () => {
             filterMarkers(document.getElementById('searchInput').value.trim());
@@ -111,14 +253,106 @@
         document.getElementById('resetBtn').addEventListener('click', () => {
             document.getElementById('searchInput').value = '';
             renderMarkers(allRecords);
+            fitMapToMarkers();
         });
 
-        async function loadExcel() {
+        document.getElementById('openFileBtn').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('resetViewBtn').addEventListener('click', () => {
+            map.setView(initialView, initialZoom);
+            updateStatus('Đã quay về đầu.');
+        });
+
+        document.getElementById('captureBtn').addEventListener('click', captureMapImage);
+
+        document.getElementById('addCameraBtn').addEventListener('click', () => {
+            openAddCameraForm();
+        });
+
+        document.getElementById('fileInput').addEventListener('change', event => {
+            const file = event.target.files && event.target.files[0];
+            if (file) {
+                loadExcel(file);
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            map.invalidateSize();
+        });
+
+        function openAddCameraForm() {
+            const fields = [
+                'cameraStt', 'cameraLat', 'cameraLong', 'cameraTuyen', 'cameraTongSoTru',
+                'cameraViTriTru', 'cameraLoaiTru', 'cameraDiaChiSoNha', 'cameraDiaChiPhuong',
+                'cameraMucDoHo', 'cameraMucDoKep', 'cameraNguyenNhan', 'cameraHinhAnh', 'cameraGhiChu'
+            ];
+            fields.forEach(id => document.getElementById(id).value = '');
+            document.getElementById('cameraImagePreview').innerHTML = '';
+            document.getElementById('addCameraOverlay').classList.remove('hidden');
+        }
+
+        document.getElementById('cameraImageFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const dataUrl = event.target.result;
+                // Resize image to keep Excel/Storage light
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const maxW = 400;
+                    const scale = maxW / img.width;
+                    canvas.width = maxW;
+                    canvas.height = img.height * scale;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const resizedUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    document.getElementById('cameraHinhAnh').value = resizedUrl;
+                    document.getElementById('cameraImagePreview').innerHTML = `<img src="${resizedUrl}" style="max-width:100%; border-radius:8px; max-height:150px;" />`;
+                };
+                img.src = dataUrl;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function closeAddCameraForm() {
+            document.getElementById('addCameraOverlay').classList.add('hidden');
+        }
+
+        document.getElementById('saveCameraBtn').addEventListener('click', saveNewCamera);
+        document.getElementById('cancelCameraBtn').addEventListener('click', closeAddCameraForm);
+
+        async function loadExcel(file) {
             try {
                 updateStatus('Tải file Excel...');
-                const response = await fetch('data/Camera.xlsx');
-                if (!response.ok) throw new Error('Không thể tải file Camera.xlsx');
-                const arrayBuffer = await response.arrayBuffer();
+                let arrayBuffer;
+                if (file) {
+                    const reader = new FileReader();
+                    arrayBuffer = await new Promise((resolve, reject) => {
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = () => reject(reader.error);
+                        reader.readAsArrayBuffer(file);
+                    });
+                } else {
+                    const paths = ['data/Camera.xlsx', 'Camera.xlsx'];
+                    let response = null;
+                    for (const path of paths) {
+                        try {
+                            response = await fetch(path);
+                            if (response.ok) break;
+                        } catch (err) {
+                            response = null;
+                        }
+                    }
+                    if (!response || !response.ok) {
+                        throw new Error('Không thể tải file Camera.xlsx bằng đường dẫn mặc định.');
+                    }
+                    arrayBuffer = await response.arrayBuffer();
+                }
+
                 const workbook = XLSX.read(arrayBuffer, { type: 'array' });
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
@@ -149,7 +383,11 @@
                 fitMapToMarkers();
             } catch (error) {
                 console.error(error);
-                updateStatus('Lỗi khi tải dữ liệu: ' + error.message);
+                if (location.protocol === 'file:') {
+                    updateStatus('Mở trực tiếp bằng file:// không hỗ trợ tải Excel tự động. Dùng nút Chọn Excel hoặc chạy qua máy chủ web.');
+                } else {
+                    updateStatus('Lỗi khi tải dữ liệu: ' + error.message);
+                }
             }
         }
 
@@ -161,6 +399,10 @@
             return String(text || '').toLowerCase();
         }
 
+        function findKey(record, patterns) {
+            return Object.keys(record).find(key => patterns.some(pattern => pattern.test(String(key || ''))));
+        }
+
         function hasValidLatLng(record) {
             const lat = getLat(record);
             const lon = getLon(record);
@@ -168,8 +410,7 @@
         }
 
         function getLat(record) {
-            const keys = Object.keys(record);
-            const latKey = keys.find(k => /lat|latitude|v[ií] trí|tọa độ/i.test(k));
+            const latKey = findKey(record, [/lat/i, /latitude/i, /y/i]);
             if (latKey && record[latKey] !== undefined && record[latKey] !== '') {
                 const num = parseFloat(String(record[latKey]).replace(/[^\d.-]/g, ''));
                 return Number.isFinite(num) ? num : NaN;
@@ -178,8 +419,7 @@
         }
 
         function getLon(record) {
-            const keys = Object.keys(record);
-            const lonKey = keys.find(k => /lon|long|longitude|tọa độ/i.test(k) && !/lat/i.test(k));
+            const lonKey = findKey(record, [/lon/i, /long/i, /longitude/i, /x/i]);
             if (lonKey && record[lonKey] !== undefined && record[lonKey] !== '') {
                 const num = parseFloat(String(record[lonKey]).replace(/[^\d.-]/g, ''));
                 return Number.isFinite(num) ? num : NaN;
@@ -195,6 +435,10 @@
             Object.entries(record).forEach(([key, value]) => {
                 if (!value) return;
                 if (/lat|long|latitude|longitude|tọa độ/i.test(key)) return;
+                if (/hình ảnh|image/i.test(key) && String(value).startsWith('data:image')) {
+                    rows.push(`<div style="text-align:center; margin-top:8px;"><img src="${value}" style="max-width:100%; border-radius:4px; max-height:150px;" /></div>`);
+                    return;
+                }
                 rows.push(`<div><strong>${escapeHtml(key)}:</strong> ${escapeHtml(value)}</div>`);
             });
             return `<div class="popup-content">${rows.join('')}</div>`;
@@ -209,6 +453,53 @@
                 .replace(/'/g, '&#039;');
         }
 
+        function saveNewCamera() {
+            const stt = document.getElementById('cameraStt').value.trim();
+            const latValue = document.getElementById('cameraLat').value.trim();
+            const longValue = document.getElementById('cameraLong').value.trim();
+            const tuyen = document.getElementById('cameraTuyen').value.trim();
+            const tongSoTru = document.getElementById('cameraTongSoTru').value.trim();
+            const viTriTru = document.getElementById('cameraViTriTru').value.trim();
+            const loaiTru = document.getElementById('cameraLoaiTru').value.trim();
+            const diaChiSoNha = document.getElementById('cameraDiaChiSoNha').value.trim();
+            const diaChiPhuong = document.getElementById('cameraDiaChiPhuong').value.trim();
+            const mucDoHo = document.getElementById('cameraMucDoHo').value.trim();
+            const mucDoKep = document.getElementById('cameraMucDoKep').value.trim();
+            const nguyenNhan = document.getElementById('cameraNguyenNhan').value.trim();
+            const hinhAnh = document.getElementById('cameraHinhAnh').value.trim();
+            const ghiChu = document.getElementById('cameraGhiChu').value.trim();
+
+            const lat = parseFloat(latValue.replace(/[^\d.-]/g, ''));
+            const long = parseFloat(longValue.replace(/[^\d.-]/g, ''));
+            if (!Number.isFinite(lat) || !Number.isFinite(long)) {
+                updateStatus('Latitude/Longitude không hợp lệ.');
+                return;
+            }
+
+            const record = {
+                'Stt': stt || String(allRecords.length + 1),
+                'Lat': lat,
+                'Long': long,
+                'Tuyến điều khiển': tuyen,
+                'Tổng số trụ có camera đang lắp trên trụ': tongSoTru,
+                'Vị trí trụ (Số trụ CS)': viTriTru,
+                'Loại trụ': loaiTru,
+                'Địa chỉ: Số nhà (nếu có)': diaChiSoNha,
+                'Địa chỉ: Phường bắc': diaChiPhuong,
+                'Mức độ an toàn: Có mỗi nối hở': mucDoHo,
+                'Mức độ an toàn: Có kẹp treo, kẹp dừng cố định cáp': mucDoKep,
+                'Các nguyên nhân gây mất an toàn khác': nguyenNhan,
+                'Hình ảnh': hinhAnh,
+                'Ghi chú': ghiChu
+            };
+
+            allRecords.push(record);
+            renderMarkers(allRecords);
+            fitMapToMarkers();
+            closeAddCameraForm();
+            updateStatus(`Đã thêm camera mới: ${escapeHtml(record['Vị trí trụ (Số trụ CS)'] || record['Stt'] || 'camera' )}.`);
+        }
+
         function renderMarkers(records) {
             markersCluster.clearLayers();
             records.forEach((record, index) => {
@@ -216,7 +507,12 @@
                 const lon = getLon(record);
                 if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
                 const marker = L.marker([lat, lon]);
-                marker.bindPopup(buildPopupHtml(record));
+                marker.bindPopup(buildPopupHtml(record), {
+                    maxWidth: 380,
+                    minWidth: 220,
+                    maxHeight: 420,
+                    autoPanPadding: [14, 14]
+                });
                 markersCluster.addLayer(marker);
             });
             if (!map.hasLayer(markersCluster)) {
@@ -225,11 +521,31 @@
             updateStatus(`Hiển thị ${records.length} camera.`);
         }
 
+        async function captureMapImage() {
+            try {
+                updateStatus('Đang chụp ảnh bản đồ...');
+                const canvas = await html2canvas(document.getElementById('map'), {
+                    useCORS: true,
+                    allowTaint: false,
+                    backgroundColor: '#ffffff'
+                });
+                const link = document.createElement('a');
+                link.download = 'camera-map.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                updateStatus('Đã chụp ảnh bản đồ. Tải về dưới dạng camera-map.png.');
+            } catch (error) {
+                console.error(error);
+                updateStatus('Không thể chụp ảnh bản đồ: ' + error.message);
+            }
+        }
+
         function fitMapToMarkers() {
             const layers = markersCluster.getLayers();
             if (!layers.length) return;
             const group = L.featureGroup(layers);
             map.fitBounds(group.getBounds().pad(0.15));
+            setTimeout(() => map.invalidateSize(), 100);
         }
 
         function filterMarkers(query) {

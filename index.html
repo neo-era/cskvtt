@@ -636,7 +636,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeExportCadModal()">Hủy</button>
-                    <button type="button" class="btn btn-primary" onclick="confirmExportCad()">Export</button>
+                    <button type="button" class="btn btn-primary" id="exportCadBtn">Export</button>
                 </div>
             </div>
         </div>
@@ -760,7 +760,13 @@
         function confirmExportCad() {
             const type = document.getElementById('exportCadType').value;
             const basename = document.getElementById('exportCadBasename').value.trim();
-            let rows = (type === 'new') ? (Array.isArray(newMarkerRows) ? newMarkerRows : []) : (Array.isArray(loadedData) ? loadedData : []);
+            let rows = [];
+            if (type === 'new') {
+                rows = Array.isArray(newMarkerRows) ? newMarkerRows : [];
+            } else {
+                // loadedData: [header, ...dataRows]
+                rows = (Array.isArray(loadedData) && loadedData.length > 1) ? loadedData.slice(1) : [];
+            }
             if (basename) {
                 const normBase = normalizeMarkerBaseName(basename);
                 rows = rows.filter(row => normalizeMarkerBaseName(row[1] || row[0] || '') === normBase);
@@ -2581,6 +2587,11 @@
                         closeExportCadModal();
                     }
                 });
+            }
+            // Bind Export button in Export to CAD modal
+            const exportCadBtn = document.getElementById('exportCadBtn');
+            if (exportCadBtn) {
+                exportCadBtn.onclick = confirmExportCad;
             }
         };
         // Đặt marker về vị trí hiện tại

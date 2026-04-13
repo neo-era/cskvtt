@@ -623,6 +623,12 @@
                     <label for="markerNameInput">Tên trụ</label>
                     <input id="markerNameInput" type="text" class="form-control" placeholder="Nhập tên trụ" />
                 </div>
+                    <div class="form-group">
+                        <label for="markerBaseSelect">Chọn marker gốc để tính khoảng cách (cùng basename):</label>
+                        <select id="markerBaseSelect" class="form-control">
+                            <option value="">(Mặc định: marker trước đó)</option>
+                        </select>
+                    </div>
                
                 <div class="form-group">
                     <label for="markerCabinetInput">Tên tủ điều khiển</label>
@@ -776,14 +782,22 @@
 
             let distancesHtml = '';
             if (sameNameCount > 1) {
+                // Lấy danh sách marker cùng basename, loại bỏ các marker có trường 'Tên marker gốc' (cột 13 hoặc 14)
+                // row: ['', name, lat, lon, note, '', type, cabinetName, poleType, '', lampType, imageData, updatedAt, baseMarkerName, distanceToBase]
+                const filtered = sameNameMarkers.filter(m => {
+                    // Nếu là row gốc (object), không có cột 13/14, luôn giữ lại
+                    if (!Array.isArray(m)) return true;
+                    // Nếu có cột 13 (baseMarkerName) và nó khác rỗng, loại bỏ khỏi chuỗi nối tiếp
+                    return !m[13];
+                });
                 const segments = [];
                 let totalDistance = 0;
-                for (let i = 1; i < sameNameMarkers.length; i++) {
-                    const prev = sameNameMarkers[i - 1];
-                    const current = sameNameMarkers[i];
-                    const dist = getDistanceMeters(prev.lat, prev.lon, current.lat, current.lon);
+                for (let i = 1; i < filtered.length; i++) {
+                    const prev = filtered[i - 1];
+                    const current = filtered[i];
+                    const dist = getDistanceMeters(prev.lat || parseFloat(prev[2]), prev.lon || parseFloat(prev[3]), current.lat || parseFloat(current[2]), current.lon || parseFloat(current[3]));
                     totalDistance += dist;
-                    segments.push(`<li style="margin-bottom:4px;list-style:disc;">${prev.name || 'Không có tên'} → ${current.name || 'Không có tên'}: ${Math.round(dist)} m</li>`);
+                    segments.push(`<li style="margin-bottom:4px;list-style:disc;">${(prev.name || prev[1] || 'Không có tên')} → ${(current.name || current[1] || 'Không có tên')}: ${Math.round(dist)} m</li>`);
                 }
                 distancesHtml = `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tổng khoảng cách nối tiếp:</strong> ${Math.round(totalDistance)} m<ul style="margin:4px 0 0 16px;padding:0;">${segments.join('')}</ul></div>`;
             }
@@ -1041,6 +1055,7 @@
             const coordsText = document.getElementById('markerCoordsText');
             const preview = document.getElementById('markerImagePreview');
             const fileInput = document.getElementById('markerImageInput');
+            const baseSelect = document.getElementById('markerBaseSelect');
 
             if (!overlay || !nameInput || !noteInput || !cabinetInput || !poleTypeInput || !lampTypeInput || !coordsText || !preview || !fileInput) {
                 displayError('Không thể hiển thị form marker.');
@@ -1056,6 +1071,91 @@
             preview.innerHTML = '';
             fileInput.value = null;
             coordsText.textContent = `Tọa độ: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+
+            // Populate baseSelect with markers of same basename
+            if (baseSelect) {
+                                // Hàm cập nhật lại khoảng cách trên popup khi danh sách marker gốc thay đổi
+                                function updateBaseDistanceInfo() {
+                                    const lat = markerPopupLocation ? markerPopupLocation[0] : null;
+                                    const lon = markerPopupLocation ? markerPopupLocation[1] : null;
+                                    let distanceText = '';
+                                    if (baseSelect.value !== '' && lat !== null && lon !== null && baseSelect.options.length > 0) {
+                                        const baseIdx = parseInt(baseSelect.value, 10);
+                                        const baseMarker = markers[baseIdx];
+                                        // Kiểm tra marker gốc có cùng basename không
+                                        const newName = nameInput.value.trim();
+                                        const baseName = normalizeMarkerBaseName(newName);
+                                        if (baseMarker && normalizeMarkerBaseName(baseMarker.name || '') === baseName) {
+                                            const dist = Math.round(getDistanceMeters(baseMarker.lat, baseMarker.lon, lat, lon));
+                                            distanceText = `Khoảng cách tới marker gốc: <b>${dist} m</b>`;
+                                        }
+                                    }
+                                    let infoDiv = document.getElementById('markerBaseDistanceInfo');
+                                    if (!infoDiv) {
+                                        infoDiv = document.createElement('div');
+                                        infoDiv.id = 'markerBaseDistanceInfo';
+                                        infoDiv.style.margin = '6px 0 0 0';
+                                        infoDiv.style.fontSize = '13px';
+                                        infoDiv.style.color = '#007bff';
+                                        baseSelect.parentNode.appendChild(infoDiv);
+                                    }
+                                    infoDiv.innerHTML = distanceText;
+                                }
+
+                                // Khi thay đổi tên marker, cập nhật lại danh sách marker gốc và khoảng cách
+                                nameInput.oninput = function() {
+                                    const newName = nameInput.value.trim();
+                                    const baseName = normalizeMarkerBaseName(newName);
+                                    const sameBaseMarkers = [];
+                                    markers.forEach((m, idx) => {
+                                        if (normalizeMarkerBaseName(m.name || '') === baseName) {
+                                            sameBaseMarkers.push({ marker: m, realIdx: idx });
+                                        }
+                                    });
+                                    baseSelect.innerHTML = '';
+                                    if (sameBaseMarkers.length > 0) {
+                                        let prevIdx = sameBaseMarkers[sameBaseMarkers.length - 1].realIdx;
+                                        sameBaseMarkers.forEach((item) => {
+                                            const opt = document.createElement('option');
+                                            opt.value = item.realIdx;
+                                            opt.textContent = item.marker.name || 'Không tên';
+                                            if (item.realIdx === prevIdx) opt.selected = true;
+                                            baseSelect.appendChild(opt);
+                                        });
+                                    }
+                                    // Nếu không có marker cùng basename thì dropdown sẽ trống
+                                    updateBaseDistanceInfo();
+                                };
+                // Lấy tên marker dự kiến
+                const newName = nameInput.value.trim();
+                const baseName = normalizeMarkerBaseName(newName);
+                // Lọc các marker cùng basename, lấy index thực trong mảng markers
+                const sameBaseMarkers = [];
+                markers.forEach((m, idx) => {
+                    if (normalizeMarkerBaseName(m.name || '') === baseName) {
+                        sameBaseMarkers.push({ marker: m, realIdx: idx });
+                    }
+                });
+                baseSelect.innerHTML = '';
+                if (sameBaseMarkers.length > 0) {
+                    let prevIdx = sameBaseMarkers[sameBaseMarkers.length - 1].realIdx;
+                    sameBaseMarkers.forEach((item) => {
+                        const opt = document.createElement('option');
+                        opt.value = item.realIdx;
+                        opt.textContent = item.marker.name || 'Không tên';
+                        if (item.realIdx === prevIdx) opt.selected = true;
+                        baseSelect.appendChild(opt);
+                    });
+                } // Nếu không có marker cùng basename thì dropdown sẽ trống
+
+                // Hiển thị khoảng cách từ marker gốc đến marker mới khi chọn
+                baseSelect.onchange = function() {
+                    updateBaseDistanceInfo();
+                };
+                // Gọi khi mở popup để cập nhật luôn nếu có chọn sẵn
+                baseSelect.onchange();
+            }
+
             overlay.style.display = 'flex';
             nameInput.focus();
         }
@@ -1204,6 +1304,7 @@
             try {
                 const nameInput = document.getElementById('markerNameInput');
                 const noteInput = document.getElementById('markerNoteInput');
+                const baseSelect = document.getElementById('markerBaseSelect');
 
                 if (!markerPopupLocation || !Array.isArray(markerPopupLocation) || markerPopupLocation.length !== 2) {
                     displayError('Không có vị trí marker để lưu.');
@@ -1244,6 +1345,23 @@
                     type = 2;
                 }
 
+                // Xác định marker gốc để tính khoảng cách
+                let baseMarkerName = '';
+                let distanceToBase = '';
+                if (baseSelect && baseSelect.value !== '') {
+                    // Lấy marker gốc từ danh sách markers (index thực)
+                    const baseIdx = parseInt(baseSelect.value, 10);
+                    const baseMarker = markers[baseIdx];
+                    if (baseMarker) {
+                        baseMarkerName = baseMarker.name || '';
+                        distanceToBase = Math.round(getDistanceMeters(baseMarker.lat, baseMarker.lon, lat, lon));
+                    }
+                } else {
+                    // Không có marker gốc, không tính khoảng cách
+                    baseMarkerName = '';
+                    distanceToBase = '';
+                }
+
                 const imageData = markerImageDataUrl || '';
                 if (!Array.isArray(loadedData)) {
                     loadedData = [];
@@ -1252,7 +1370,8 @@
                     newMarkerRows = [];
                 }
                 const updatedAt = new Date().toLocaleString('vi-VN');
-                const newRow = ['', name, lat, lon, note, '', type, cabinetName, poleType, '', lampType, imageData, updatedAt];
+                // Thêm 2 trường cuối: tên marker gốc, khoảng cách (m)
+                const newRow = ['', name, lat, lon, note, '', type, cabinetName, poleType, '', lampType, imageData, updatedAt, baseMarkerName, distanceToBase];
                 loadedData.push(newRow);
                 newMarkerRows.push(newRow);
                 markerImageDataUrl = null;
@@ -1540,10 +1659,10 @@
             if (!ExcelJSGlobal) return null;
             const workbook = new ExcelJSGlobal.Workbook();
             const worksheet = workbook.addWorksheet('Sheet1');
-            const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh', 'Thời gian cập nhật'];
+            const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh', 'Thời gian cập nhật', 'Tên marker gốc', 'Khoảng cách (m)'];
             worksheet.addRow(header);
 
-            const columnWidths = [8, 20, 12, 12, 24, 8, 10, 18, 14, 12, 14, 24, 20];
+            const columnWidths = [8, 20, 12, 12, 24, 8, 10, 18, 14, 12, 14, 24, 20, 20, 16];
             columnWidths.forEach((width, index) => {
                 worksheet.getColumn(index + 1).width = width;
             });
@@ -1633,7 +1752,7 @@
                         URL.revokeObjectURL(url);
                     }, 100);
                 } else {
-                    const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh', 'Thời gian cập nhật'];
+                    const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh', 'Thời gian cập nhật', 'Tên marker gốc', 'Khoảng cách (m)'];
                     const exportRows = newMarkerRows.map(row => Array.isArray(row) ? [...row] : []);
                     const exportData = [header, ...exportRows];
                     const worksheet = XLSX.utils.aoa_to_sheet(exportData);

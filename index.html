@@ -32,6 +32,33 @@
     <script src="js/bootstrap.bundle.min.js"></script>
 
     <style>
+        /* Hiệu ứng fade cho modal và nút */
+        .btn, button, .form-control {
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s, border 0.2s;
+        }
+        .btn:active, button:active {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+        }
+        /* Nút về đầu trang */
+        #backToTopBtn {
+            display: none;
+            position: fixed;
+            bottom: 24px;
+            right: 18px;
+            z-index: 4000;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            font-size: 22px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+            cursor: pointer;
+        }
+        #backToTopBtn:active {
+            background: #0056b3;
+        }
         html, body {
             height: 100%;
             margin: 0;
@@ -93,13 +120,13 @@
             background-color: #007bff;
             color: #fff;
             border: none;
-            padding: 8px 16px;
+            padding: 12px 20px;
             cursor: pointer;
-            font-size: 16px;
-            margin: 5px;
+            font-size: 18px;
+            margin: 7px;
+            border-radius: 8px;
         }
-
-        button:hover {
+        button:hover, .btn:hover {
             background-color: #0056b3;
         }
 
@@ -178,7 +205,7 @@
             padding: 8px 10px;
             border: 1px solid #ced4da;
             border-radius: 8px;
-            font-size: 13px;
+            font-size: 16px;
             line-height: 1.4;
         }
 
@@ -407,6 +434,13 @@
 
         /* Responsive Design */
         @media only screen and (max-width: 768px) {
+            /* Ẩn các tính năng phụ trên mobile, chỉ hiện khi bấm nút "Hiện thêm" */
+            .button-group .btn:not(:first-child):not(:nth-child(2)) {
+                display: none;
+            }
+            #showMoreBtn {
+                display: block !important;
+            }
             h1 {
                 font-size: 16px;
                 top: 5px;
@@ -494,6 +528,13 @@
         }
 
         @media only screen and (max-width: 480px) {
+            #backToTopBtn {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+                bottom: 16px;
+                right: 10px;
+            }
             h1 {
                 font-size: 14px;
                 padding: 2px 6px;
@@ -610,6 +651,8 @@
         </div>
     </div>
     <div id="map"></div>
+    <!-- Nút về đầu trang -->
+    <button id="backToTopBtn" title="Về đầu trang">↑</button>
     <!-- Export to CAD Modal -->
     <div class="modal fade" id="exportCadModal" tabindex="-1" role="dialog" aria-labelledby="exportCadModalLabel" aria-hidden="true">
         <div class="modal-dialog" role="document">
@@ -979,6 +1022,13 @@
                     })
                 }).addTo(map);
             }
+            // Lazy load ảnh marker nếu có
+            setTimeout(() => {
+                const imgs = document.querySelectorAll('.marker-image-preview img, .marker-popup-card img');
+                imgs.forEach(img => {
+                    if (!img.hasAttribute('loading')) img.setAttribute('loading', 'lazy');
+                });
+            }, 100);
 
             return marker;
         }
@@ -2520,7 +2570,37 @@
             map = initializeMap();
             loadDefaultFile();
 
-            // Setup modal controls
+            // Nút về đầu trang
+            const backToTopBtn = document.getElementById('backToTopBtn');
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 200) {
+                    backToTopBtn.style.display = 'block';
+                } else {
+                    backToTopBtn.style.display = 'none';
+                }
+            });
+            backToTopBtn.onclick = function() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            // Thêm nút hiện thêm trên mobile cho button-group
+            if (window.innerWidth <= 768) {
+                const btnGroup = document.querySelector('.button-group');
+                if (btnGroup && !document.getElementById('showMoreBtn')) {
+                    const showMoreBtn = document.createElement('button');
+                    showMoreBtn.id = 'showMoreBtn';
+                    showMoreBtn.className = 'btn btn-outline-secondary btn-block';
+                    showMoreBtn.textContent = 'Hiện thêm';
+                    showMoreBtn.style.marginTop = '8px';
+                    showMoreBtn.onclick = function() {
+                        btnGroup.querySelectorAll('.btn').forEach((btn, idx) => {
+                            if (idx > 1) btn.style.display = btn.style.display === 'block' ? 'none' : 'block';
+                        });
+                        showMoreBtn.textContent = showMoreBtn.textContent === 'Hiện thêm' ? 'Ẩn bớt' : 'Hiện thêm';
+                    };
+                    btnGroup.appendChild(showMoreBtn);
+                }
+            }
             console.log('Setting up modal controls...');
             const controlsBtn = document.getElementById('controlsBtn');
             console.log('Controls button:', controlsBtn);
@@ -2601,6 +2681,12 @@
             if (cancelMarkerBtn) {
                 cancelMarkerBtn.addEventListener('click', cancelMarkerPopup);
             }
+            // Lazy load ảnh popup khi mở
+            document.body.addEventListener('click', function(e) {
+                if (e.target && e.target.tagName === 'IMG') {
+                    e.target.setAttribute('loading', 'lazy');
+                }
+            });
 
             const markerPopupHeader = document.querySelector('#markerPopupForm .marker-popup-card header');
             const markerPopupCard = document.querySelector('#markerPopupForm .marker-popup-card');

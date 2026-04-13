@@ -32,6 +32,14 @@
     <script src="js/bootstrap.bundle.min.js"></script>
 
     <style>
+        /* Hiệu ứng fade cho modal và nút */
+        .btn, button, .form-control {
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s, border 0.2s;
+        }
+        .btn:active, button:active {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+        }
+
         html, body {
             height: 100%;
             margin: 0;
@@ -54,17 +62,69 @@
             touch-action: manipulation;
         }
 
+        #controlsBtn {
+            position: fixed;
+            top: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3000;
+            touch-action: manipulation;
+        }
+
+        .save-data-btn {
+            position: fixed;
+            top: 35px;
+            right: 20px;
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            font-size: 14px;
+        }
+
+        .fab-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 999px;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
+            min-width: 46px;
+            min-height: 46px;
+            padding: 0 12px;
+        }
+
+        .fab-text {
+            display: inline-block;
+        }
+
+        .controls-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .button-group .btn {
+            margin: 0;
+        }
 
         button {
             background-color: #007bff;
             color: #fff;
             border: none;
-            padding: 8px 16px;
+            padding: 12px 20px;
             cursor: pointer;
-            font-size: 16px;
-            margin: 5px;
+            font-size: 18px;
+            margin: 7px;
+            border-radius: 8px;
         }
-
         button:hover {
             background-color: #0056b3;
         }
@@ -144,7 +204,7 @@
             padding: 8px 10px;
             border: 1px solid #ced4da;
             border-radius: 8px;
-            font-size: 13px;
+            font-size: 16px;
             line-height: 1.4;
         }
 
@@ -163,8 +223,8 @@
         }
 
         .marker-popup-card .footer button {
-            min-width: 90px;
-            flex: 1 1 42%;
+            min-width: 110px;
+            flex: 1 1 calc(33.333% - 8px);
             font-size: 13px;
         }
 
@@ -238,53 +298,6 @@
             text-decoration: underline;
         }
 
-        #githubContents {
-            margin: 10px auto;
-            font-size: 15px;
-            max-width: 1200px;
-            text-align: left;
-            max-height: 250px;
-            overflow-y: auto;
-        }
-
-        #githubContents ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        #githubContents li {
-            margin: 4px 0;
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #dee2e6;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #fff;
-        }
-
-        #githubContents li:hover {
-            background-color: #f8f9fa;
-        }
-
-        #githubContents .github-path {
-            font-size: 14px;
-            color: #555;
-            margin-bottom: 8px;
-        }
-
-        #githubContents .github-item-name {
-            font-weight: 600;
-            color: #333;
-        }
-
-        #githubContents .github-item-type {
-            font-size: 13px;
-            color: #666;
-        }
-
         .custom-label {
             background: none;
             border: none;
@@ -334,6 +347,9 @@
 
         /* Responsive Design */
         @media only screen and (max-width: 768px) {
+            .button-group .btn:not(:first-child):not(:nth-child(2)) {
+                display: none;
+            }
             h1 {
                 font-size: 16px;
                 top: 5px;
@@ -342,6 +358,13 @@
                 padding: 3px 8px;
             }
 
+            #controlsBtn {
+                top: 5px;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 8px 12px;
+                font-size: 14px;
+            }
 
             .modal-dialog {
                 margin: 10px;
@@ -384,7 +407,7 @@
 
             .marker-popup-card .body input,
             .marker-popup-card .body textarea {
-                font-size: 13px;
+                font-size: 16px;
                 padding: 8px 10px;
             }
 
@@ -396,7 +419,7 @@
 
             .marker-popup-card .footer button {
                 min-width: 100%;
-                font-size: 13px;
+                font-size: 16px;
             }
         }
 
@@ -404,6 +427,11 @@
             h1 {
                 font-size: 14px;
                 padding: 2px 6px;
+            }
+
+            #controlsBtn {
+                padding: 6px 10px;
+                font-size: 12px;
             }
 
             #searchResults {
@@ -456,6 +484,56 @@
 </head>
 <body>
     <h1>DANH SÁCH HỌC VIÊN K76.A11</h1>
+
+    <!-- Controls Button -->
+    <button id="controlsBtn" class="btn btn-primary fab-btn" data-toggle="modal" data-target="#controlsModal">
+        <i class="fa fa-cog"></i>
+        <span class="fab-text">Điều khiển</span>
+    </button>
+    <button id="saveDataBtn" class="btn btn-secondary fab-btn save-data-btn" onclick="saveMarkerData()" title="Lưu dữ liệu">
+        <i class="fa fa-save"></i>
+        <span class="fab-text">Lưu dữ liệu</span>
+    </button>
+
+    <!-- Controls Modal -->
+    <div class="modal fade left" id="controlsModal" tabindex="-1" role="dialog" aria-labelledby="controlsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="controlsModalLabel">Điều khiển bản đồ</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="pageSelector" class="controls-container">
+                        <div class="form-group">
+                            <label for="pages">Chọn Trang:</label>
+                            <select id="pages" class="form-control" onchange="navigateToPage()">
+                                <option value="k76a11.html">K76.A11</option>
+                                <option value="index.html">Trang khảo sát</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="searchInput">Tìm kiếm:</label>
+                            <input type="text" id="searchInput" class="form-control" placeholder="Nhập tên hoặc tọa độ" />
+                        </div>
+
+                        <div class="button-group">
+                            <button onclick="searchMarkers()" class="btn btn-success btn-block">Tìm kiếm</button>
+                            <button onclick="centerOnUserLocation()" class="btn btn-info btn-block">Vị trí của tôi</button>
+                            <button id="addMarkerBtn" onclick="startAddMarker()" class="btn btn-warning btn-block">Thêm marker</button>
+                            <button onclick="saveMarkerData()" class="btn btn-secondary btn-block">Lưu dữ liệu</button>
+                            <button onclick="exportMarkersToCad()" class="btn btn-dark btn-block">Export to CAD</button>
+                        </div>
+                    </div>
+                    <div id="error" class="alert alert-danger" style="display: none; margin-top: 10px;"></div>
+                    <div id="searchResults" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div id="map"></div>
     <div id="markerPopupForm" class="marker-popup-overlay" role="dialog" aria-modal="true">
@@ -528,6 +606,11 @@
                     <button id="markerImageButton" type="button" class="btn btn-outline-primary marker-image-button" onclick="triggerMarkerImageInput()">Chụp / chọn ảnh</button>
                     <input id="markerImageInput" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleMarkerImageFile(event)" />
                 </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn-info btn-block" onclick="setMarkerToCurrentLocation()">
+                        <i class="fa fa-location-arrow"></i> Lấy vị trí hiện tại
+                    </button>
+                </div>
                 <div class="marker-image-preview" id="markerImagePreview"></div>
                 <div id="markerCoordsText" class="coords-info">Tọa độ: -</div>
             </div>
@@ -542,6 +625,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.1/exceljs.min.js"></script>
 
     <script>
         let map;
@@ -566,10 +650,6 @@
         let lastMarkerCabinet = '';
         let lastMarkerPoleType = '';
         let lastMarkerLampType = '';
-        let githubOwner = '';
-        let githubRepo = '';
-        let githubBranch = '';
-        let githubToken = '';
         const MAX_EXCEL_TEXT_LENGTH = 32767;
 
         function getNextMarkerName(previousName) {
@@ -695,12 +775,12 @@
         };
 
         function parseMarkerRow(row) {
-            const id = String(getRowValue(row, rowFieldKeys.id, '')).trim();
-            const name = String(getRowValue(row, rowFieldKeys.name, '')).trim();
-            const latValue = getRowValue(row, rowFieldKeys.latitude, '');
-            const lonValue = getRowValue(row, rowFieldKeys.longitude, '');
-            const north = String(getRowValue(row, rowFieldKeys.north, '')).trim();
-            const east = String(getRowValue(row, rowFieldKeys.east, '')).trim();
+            const id = String(getRowValue(row, rowFieldKeys.id, '') || '').trim();
+            const name = String(getRowValue(row, rowFieldKeys.name, '') || '').trim();
+            const latValue = getRowValue(row, rowFieldKeys.latitude, null);
+            const lonValue = getRowValue(row, rowFieldKeys.longitude, null);
+            const north = String(getRowValue(row, rowFieldKeys.north, '') || '').trim();
+            const east = String(getRowValue(row, rowFieldKeys.east, '') || '').trim();
             const status = String(getRowValue(row, rowFieldKeys.status, '')).trim();
             const homeAddress = String(getRowValue(row, rowFieldKeys.homeAddress, '')).trim();
             const officeAddress = String(getRowValue(row, rowFieldKeys.officeAddress, '')).trim();
@@ -786,10 +866,12 @@
             const imageInfoHtml = imageUrl ? `<div style="margin-top:4px;font-size:11px;color:#666;word-break:break-all;">${imageUrl}</div>` : '';
             const phoneHtml = phone1 || phone2 ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Điện thoại:</strong> ${phone1}${phone1 && phone2 ? '<br>' : ''}${phone2}</div>` : '';
             const facebookHtml = facebook ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Facebook:</strong> ${facebook}</div>` : '';
-            const editButton = Number.isInteger(rowIndex) ? `<div style="margin-top:10px;text-align:center;"><button type="button" class="btn btn-sm btn-secondary" onclick="openMarkerEditPopup(${rowIndex})">Chỉnh sửa</button></div>` : '';
+            const editButton = Number.isInteger(rowIndex) ? `<div style="margin-top:10px;text-align:center;"><button type="button" class="btn btn-sm btn-secondary edit-marker-button" data-marker-index="${rowIndex}" onclick="openMarkerEditPopup(${rowIndex})">Chỉnh sửa</button></div>` : '';
+            const coordsHtml = Number.isFinite(lat) && Number.isFinite(lon) ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tọa độ:</strong> ${lat.toFixed(6)}, ${lon.toFixed(6)}</div>` : `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tọa độ:</strong> Không hợp lệ</div>`;
             return `
                 <div>
                     <strong>Tên: ${name}</strong><br>
+                    ${coordsHtml}
                     <div style="margin-top:4px;font-size:13px;color:#333;"><strong>Trạng thái:</strong> ${status}</div>
                     <div style="margin-top:4px;font-size:13px;color:#333;"><strong>Địa chỉ nhà riêng:</strong> ${homeAddress}</div>
                     <div style="margin-top:4px;font-size:13px;color:#333;"><strong>Địa chỉ cơ quan:</strong> ${officeAddress}</div>
@@ -801,8 +883,8 @@
                     ${distancesHtml}
                     ${imageLabelHtml}
                     ${imageHtml}
-                    
-                    
+                    <div style="margin-top:10px;text-align:center;"><button type="button" class="btn btn-sm btn-primary" onclick="saveMarkerData()">SAVE (Excel)</button></div>
+                    ${editButton}
                 </div>`;
         }
 
@@ -855,18 +937,26 @@
             const icon = createMarkerIcon(parsed);
             const markerIndex = Number.isInteger(rowIndex) ? rowIndex : markers.length;
             const marker = L.marker([lat, lon], { icon: icon });
-            const popupContent = createMarkerPopupContent(row, markerIndex);
+            const markerEntry = { lat, lon, name, note, marker, row, rowIndex: markerIndex, labelMarker: null };
+            const popupContent = createMarkerPopupContent(markerEntry.row, markerIndex);
 
             marker.bindPopup(popupContent);
             marker.on('popupopen', function() {
-                marker.setPopupContent(createMarkerPopupContent(row, markerIndex));
+                marker.setPopupContent(createMarkerPopupContent(markerEntry.row, markerIndex));
+                const popupEl = marker.getPopup().getElement();
+                if (popupEl) {
+                    const editButtonEl = popupEl.querySelector('.edit-marker-button');
+                    if (editButtonEl) {
+                        editButtonEl.addEventListener('click', function() {
+                            openMarkerEditPopup(markerIndex);
+                        });
+                    }
+                }
             });
             marker.on('dblclick', function() {
                 openMarkerEditPopup(markerIndex);
             });
             markersCluster.addLayer(marker);
-
-            const markerEntry = { lat, lon, name, note, marker, row, rowIndex: markerIndex, labelMarker: null };
             if (name) {
                 markerEntry.labelMarker = L.marker([lat, lon], {
                     icon: L.divIcon({
@@ -878,7 +968,7 @@
                 }).addTo(map);
             }
 
-            markers.push(markerEntry);
+            markers[markerIndex] = markerEntry;
             return marker;
         }
 
@@ -940,6 +1030,11 @@
 
             map.addLayer(markersCluster);
             map.addLayer(labelLayerGroup);
+
+            // Close modal when clicking on map
+            map.on('click', function() {
+                $('#controlsModal').modal('hide');
+            });
 
             map.on('click', function(e) {
                 if (!pendingNewMarker) return;
@@ -1059,6 +1154,7 @@
         }
 
         function openMarkerEditPopup(index) {
+            console.log('openMarkerEditPopup', index);
             if (!Array.isArray(loadedData) || index < 0 || index >= loadedData.length) {
                 displayError('Không tìm thấy marker để chỉnh sửa.');
                 return;
@@ -1099,29 +1195,43 @@
             }
 
             if (row) {
-                idInput.value = String(row['ID'] || row['Id'] || row['id'] || '').trim();
-                nameInput.value = String(row['name'] || row['Tên'] || row['tên'] || row['Name'] || '').trim();
-                latInput.value = row['latitude'] != null ? String(row['latitude']) : '';
-                lonInput.value = row['longtitude'] != null ? String(row['longtitude']) : '';
-                northInput.value = String(row['N'] || row['n'] || '').trim();
-                eastInput.value = String(row['E'] || row['e'] || '').trim();
-                statusInput.value = String(row['trạng thái'] || row['status'] || '').trim();
-                homeAddressInput.value = String(row['địa chỉ nhà riêng'] || row['home address'] || '').trim();
-                officeAddressInput.value = String(row['địa chỉ cơ quan'] || row['office address'] || '').trim();
-                companyInput.value = String(row['cơ quan công tác'] || row['company'] || '').trim();
-                phone1Input.value = String(row['điện thoại 1'] || row['phone1'] || '').trim();
-                phone2Input.value = String(row['điện thoại 2'] || row['phone2'] || '').trim();
-                facebookInput.value = String(row['facebook'] || '').trim();
-                titleInput.value = String(row['chức vụ'] || row['title'] || '').trim();
-                markerImageDataUrl = String(row['hình ảnh'] || row['image'] || '').trim();
+                const parsed = parseMarkerRow(row);
+                idInput.value = parsed.id;
+                nameInput.value = parsed.name;
+                latInput.value = Number.isFinite(parsed.lat) ? parsed.lat : '';
+                lonInput.value = Number.isFinite(parsed.lon) ? parsed.lon : '';
+                latInput.oninput = function() {
+                    if (!isNaN(parseFloat(this.value))) markerPopupLocation[0] = parseFloat(this.value);
+                };
+                lonInput.oninput = function() {
+                    if (!isNaN(parseFloat(this.value))) markerPopupLocation[1] = parseFloat(this.value);
+                };
+                northInput.value = parsed.north;
+                eastInput.value = parsed.east;
+                statusInput.value = parsed.status;
+                homeAddressInput.value = parsed.homeAddress;
+                officeAddressInput.value = parsed.officeAddress;
+                companyInput.value = parsed.company;
+                phone1Input.value = parsed.phone1;
+                phone2Input.value = parsed.phone2;
+                facebookInput.value = parsed.facebook;
+                titleInput.value = parsed.title;
+                markerImageDataUrl = parsed.image;
                 markerImagePath = markerImageDataUrl && !/^data:/i.test(markerImageDataUrl) ? normalizeImagePath(markerImageDataUrl) : '';
                 markerImageFileName = markerImagePath ? markerImagePath.split('/').pop() : '';
-                coordsText.textContent = `Tọa độ: ${latInput.value || '-'}, ${lonInput.value || '-'}`;
+                coordsText.textContent = `Tọa độ: ${Number.isFinite(parsed.lat) ? parsed.lat.toFixed(6) : '-'}, ${Number.isFinite(parsed.lon) ? parsed.lon.toFixed(6) : '-'}`;
+                markerPopupLocation = Number.isFinite(parsed.lat) && Number.isFinite(parsed.lon) ? [parsed.lat, parsed.lon] : null;
             } else {
                 idInput.value = '';
                 nameInput.value = lastMarkerName ? getNextMarkerName(lastMarkerName) : '';
-                latInput.value = lat != null ? lat.toFixed(6) : '';
-                lonInput.value = lon != null ? lon.toFixed(6) : '';
+                latInput.value = lat != null ? lat : '';
+                lonInput.value = lon != null ? lon : '';
+                latInput.oninput = function() {
+                    if (!isNaN(parseFloat(this.value))) markerPopupLocation[0] = parseFloat(this.value);
+                };
+                lonInput.oninput = function() {
+                    if (!isNaN(parseFloat(this.value))) markerPopupLocation[1] = parseFloat(this.value);
+                };
                 northInput.value = '';
                 eastInput.value = '';
                 statusInput.value = '';
@@ -1136,12 +1246,34 @@
                 markerImagePath = '';
                 markerImageFileName = '';
                 coordsText.textContent = `Tọa độ: ${lat != null && lon != null ? `${lat.toFixed(6)}, ${lon.toFixed(6)}` : '-'}`;
+                markerPopupLocation = Number.isFinite(lat) && Number.isFinite(lon) ? [lat, lon] : null;
             }
 
             preview.innerHTML = markerImageDataUrl ? `<img src="${markerImageDataUrl}" alt="Ảnh trụ" />` : '';
             fileInput.value = null;
             overlay.style.display = 'flex';
             nameInput.focus();
+        }
+
+        function setMarkerToCurrentLocation() {
+            if (!navigator.geolocation) {
+                displayError('Trình duyệt không hỗ trợ định vị.');
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    markerPopupLocation = [lat, lon];
+                    document.getElementById('markerLatitudeInput').value = lat.toFixed(6);
+                    document.getElementById('markerLongitudeInput').value = lon.toFixed(6);
+                    document.getElementById('markerCoordsText').textContent = `Tọa độ: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+                    displayError('Đã cập nhật tọa độ hiện tại.');
+                },
+                function(error) {
+                    displayError('Không thể lấy vị trí: ' + error.message);
+                }
+            );
         }
 
         function hideMarkerPopup() {
@@ -1559,13 +1691,14 @@
 
         function saveMarkerData() {
             try {
-                if (!newMarkerRows || newMarkerRows.length === 0) {
-                    displayError('Không có marker mới để lưu.');
+                const rowsToExport = Array.isArray(loadedData) ? loadedData : [];
+                if (!rowsToExport || rowsToExport.length === 0) {
+                    displayError('Không có dữ liệu marker để lưu.');
                     return;
                 }
 
                 const header = ['ID', 'name', 'latitude', 'longtitude', 'N', 'E', 'trạng thái', 'địa chỉ nhà riêng', 'địa chỉ cơ quan', 'điện thoại 1', 'điện thoại 2', 'facebook', 'cơ quan công tác', 'chức vụ', 'hình ảnh'];
-                const exportData = [header, ...newMarkerRows.map(rowToArray)];
+                const exportData = [header, ...rowsToExport.map(rowToArray)];
                 const worksheet = XLSX.utils.aoa_to_sheet(exportData);
                 const workbook = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
@@ -1587,244 +1720,24 @@
                     }, 100);
                 }
 
-                displayError('File dữ liệu mới đã được tạo và tải xuống.');
+                displayError(`File dữ liệu đã được tạo và tải xuống (${rowsToExport.length} marker).`);
             } catch (error) {
                 console.error('saveMarkerData error:', error);
                 displayError('Lỗi khi tải file dữ liệu: ' + (error.message || error));
             }
         }
 
-        async function getGitHubFileContent(owner, repo, path, branch, token) {
-            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`;
-            const response = await fetch(apiUrl, {
-                method: 'GET',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    Accept: 'application/vnd.github+json'
-                }
-            });
-
-            if (response.status === 404) {
-                return { sha: null, content: null };
+        document.addEventListener('click', function(event) {
+            const button = event.target.closest('.edit-marker-button');
+            if (!button) return;
+            event.preventDefault();
+            const index = Number(button.dataset.markerIndex);
+            if (!Number.isFinite(index)) {
+                displayError('Chỉ số marker không hợp lệ.');
+                return;
             }
-
-            if (!response.ok) {
-                const text = await response.text();
-                throw new Error(`Không thể đọc file GitHub: ${response.status} ${response.statusText}\n${text}`);
-            }
-
-            const data = await response.json();
-            return {
-                sha: data.sha,
-                content: data.content
-            };
-        }
-
-        async function updateGitHubFile(owner, repo, path, branch, token, contentBase64, sha) {
-            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
-            const body = {
-                message: 'Cập nhật file excel từ bản đồ',
-                content: contentBase64,
-                branch: branch
-            };
-
-            if (sha) {
-                body.sha = sha;
-            }
-
-            const response = await fetch(apiUrl, {
-                method: 'PUT',
-                headers: {
-                    Authorization: `token ${token}`,
-                    Accept: 'application/vnd.github+json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(body)
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`GitHub update failed: ${response.status} ${response.statusText}\n${errorText}`);
-            }
-
-            return await response.json();
-        }
-
-        async function getGitHubRepoContents(owner, repo, path, branch, token) {
-            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`;
-            const response = await fetch(apiUrl, {
-                method: 'GET',
-                headers: {
-                    Authorization: `token ${token}`,
-                    Accept: 'application/vnd.github+json'
-                }
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Không thể tải danh sách GitHub: ${response.status} ${response.statusText}\n${errorText}`);
-            }
-
-            return await response.json();
-        }
-
-        function renderGitHubContents(contents, currentPath) {
-            const contentsDiv = document.getElementById('githubContents');
-            if (!contentsDiv) return;
-            const folderPath = currentPath || '';
-            const labelPath = folderPath ? folderPath : '/';
-            const items = Array.isArray(contents) ? contents : [];
-            let html = `<div class="github-path">Nội dung branch: <strong>${githubOwner}/${githubRepo}@${githubBranch}</strong> — Thư mục hiện tại: <strong>${labelPath}</strong></div>`;
-            html += '<ul>';
-
-            if (folderPath) {
-                const parentPath = folderPath.split('/').slice(0, -1).join('/');
-                html += `<li class="github-item" data-path="${parentPath}"><span class="github-item-name">.. (Lên thư mục cha)</span><span class="github-item-type">folder</span></li>`;
-            }
-
-            items.sort((a, b) => {
-                if (a.type === b.type) {
-                    return a.name.localeCompare(b.name, 'vi', { sensitivity: 'base' });
-                }
-                return a.type === 'dir' ? -1 : 1;
-            });
-
-            items.forEach(item => {
-                const itemPath = folderPath ? `${folderPath}/${item.name}` : item.name;
-                const itemType = item.type === 'dir' ? 'folder' : 'file';
-                html += `<li class="github-item" data-path="${itemPath}" data-type="${itemType}"><span class="github-item-name">${item.name}</span><span class="github-item-type">${itemType}</span></li>`;
-            });
-            html += '</ul>';
-            contentsDiv.innerHTML = html;
-
-            contentsDiv.querySelectorAll('.github-item').forEach(el => {
-                el.addEventListener('click', async () => {
-                    const itemPath = el.getAttribute('data-path');
-                    const itemType = el.getAttribute('data-type');
-
-                    if (itemType === 'folder' || itemPath === '') {
-                        await browseGitHubPath(itemPath || '');
-                    } else {
-                        selectGitHubFilePath(itemPath);
-                    }
-                });
-            });
-        }
-
-        async function browseGitHubPath(path) {
-            try {
-                displayError(`Đang tải nội dung thư mục: ${path || '/'}...`);
-                const contents = await getGitHubRepoContents(githubOwner, githubRepo, path, githubBranch, githubToken);
-                renderGitHubContents(contents, path);
-            } catch (error) {
-                console.error('browseGitHubPath error:', error);
-                displayError('Lỗi khi tải danh sách thư mục GitHub: ' + (error.message || error));
-            }
-        }
-
-        function selectGitHubFilePath(filePath) {
-            const input = document.getElementById('githubPathInput');
-            if (input) {
-                input.value = filePath;
-            }
-            displayError(`Đã chọn file GitHub: ${filePath}`);
-        }
-
-        async function checkGitHubBranchExists(owner, repo, branch, token) {
-            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}`;
-            const response = await fetch(apiUrl, {
-                method: 'GET',
-                headers: {
-                    Authorization: `token ${token}`,
-                    Accept: 'application/vnd.github+json'
-                }
-            });
-
-            return response.ok;
-        }
-
-        function base64ToBinary(base64) {
-            const binaryString = atob(base64.replace(/\s/g, ''));
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            return bytes;
-        }
-
-        async function updateGitHubExcel() {
-            try {
-                if (!newMarkerRows || newMarkerRows.length === 0) {
-                    displayError('Không có marker mới để cập nhật lên GitHub.');
-                    return;
-                }
-
-                if (!githubOwner || !githubRepo || !githubBranch || !githubToken) {
-                    githubOwner = prompt('Nhập GitHub owner (tên người dùng):', 'neo-era');
-                    if (!githubOwner) return;
-                    githubRepo = prompt('Nhập repository name:', 'cskvtt');
-                    if (!githubRepo) return;
-                    githubBranch = prompt('Nhập branch:', 'sub1');
-                    if (!githubBranch) return;
-                    githubToken = prompt('Nhập GitHub personal access token (repo scope):');
-                    if (!githubToken) return;
-                }
-
-                const githubPathInput = document.getElementById('githubPathInput');
-                const path = githubPathInput && githubPathInput.value.trim() ? githubPathInput.value.trim() : '';
-
-                displayError('Đang kiểm tra repo GitHub...');
-
-                const branchExists = await checkGitHubBranchExists(githubOwner, githubRepo, githubBranch, githubToken);
-                if (!branchExists) {
-                    displayError(`Branch '${githubBranch}' không tồn tại hoặc không thể truy cập.`);
-                    return;
-                }
-
-                await browseGitHubPath('');
-
-                if (!path) {
-                    displayError('Đã tải danh sách file/thư mục. Chọn file trong danh sách hoặc nhập đường dẫn vào ô trên cùng.');
-                    return;
-                }
-
-                displayError('Đang cập nhật file trên GitHub...');
-
-                const header = ['ID', 'name', 'latitude', 'longtitude', 'N', 'E', 'trạng thái', 'địa chỉ nhà riêng', 'địa chỉ cơ quan', 'điện thoại 1', 'điện thoại 2', 'facebook', 'cơ quan công tác', 'chức vụ', 'hình ảnh'];
-
-                const fileData = await getGitHubFileContent(githubOwner, githubRepo, path, githubBranch, githubToken);
-                let combinedRows = [header, ...newMarkerRows.map(rowToArray)];
-                let sheetName = 'Sheet1';
-
-                if (fileData.content) {
-                    const workbook = XLSX.read(base64ToBinary(fileData.content), { type: 'array' });
-                    sheetName = workbook.SheetNames[0] || sheetName;
-                    const sheet = workbook.Sheets[sheetName];
-                    const existingRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-
-                    if (existingRows.length > 0) {
-                        const existingHeader = existingRows[0];
-                        const existingDataRows = existingRows.slice(1);
-                        combinedRows = [header, ...existingDataRows, ...newMarkerRows.map(rowToArray)];
-                    }
-                }
-
-                const workbook = XLSX.utils.book_new();
-                const worksheet = XLSX.utils.aoa_to_sheet(combinedRows);
-                XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-                const contentBase64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
-
-                await updateGitHubFile(githubOwner, githubRepo, path, githubBranch, githubToken, contentBase64, fileData.sha);
-                newMarkerRows = [];
-                pendingNewMarker = false;
-                addMarkerMode = false;
-                updateAddMarkerButton();
-                displayError('Đã cập nhật file Excel gốc trên GitHub thành công.');
-            } catch (error) {
-                console.error('updateGitHubExcel error:', error);
-                displayError('Lỗi khi cập nhật GitHub: ' + (error.message || error));
-            }
-        }
+            openMarkerEditPopup(index);
+        });
 
         function loadDefaultFile() {
             fetch('data/danhsach.xlsx')
@@ -2117,6 +2030,12 @@
                     displayError('Không thể lấy vị trí: ' + error.message);
                 }
             );
+        }
+
+        function closeControlsModal() {
+            if (typeof $ !== 'undefined' && $.fn.modal) {
+                $('#controlsModal').modal('hide');
+            }
         }
 
         // Initialize when page loads

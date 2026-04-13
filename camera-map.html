@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bản đồ Camera</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-o9N1j7kZ/9sW8N4NXH1zZ0KhQ+WxB+YW2i7dX3m2LLo=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+            background: #f4f5f7;
+            color: #1f2937;
+        }
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 18px;
+            background: #1f2937;
+            color: #fff;
+        }
+        .topbar h1 {
+            margin: 0;
+            font-size: 20px;
+        }
+        .topbar .controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .topbar input {
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid #374151;
+            background: #111827;
+            color: #fff;
+            min-width: 220px;
+        }
+        .topbar button {
+            border: none;
+            padding: 9px 14px;
+            border-radius: 6px;
+            background: #2563eb;
+            color: #fff;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .topbar button:hover {
+            background: #1d4ed8;
+        }
+        #status {
+            padding: 12px 18px;
+            font-size: 14px;
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+            color: #111827;
+        }
+        #map {
+            width: 100%;
+            height: calc(100% - 110px);
+        }
+        .popup-content {
+            line-height: 1.5;
+        }
+        .popup-content strong {
+            display: block;
+            margin-bottom: 6px;
+            color: #111827;
+        }
+        .popup-content div {
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <h1>Bản đồ thông tin Camera</h1>
+        <div class="controls">
+            <input id="searchInput" type="search" placeholder="Tìm tên, địa chỉ hoặc tuyến" />
+            <button id="searchBtn">Tìm kiếm</button>
+            <button id="resetBtn">Hiển thị tất cả</button>
+        </div>
+    </div>
+    <div id="status">Đang tải dữ liệu từ <strong>data/Camera.xlsx</strong> ...</div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o8CLn9vfs0Y2/K7H8eu4d7x7K0fiZj+estsGQRtWZMI=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        const map = L.map('map').setView([10.776889, 106.700806], 12);
+        const markersCluster = L.markerClusterGroup();
+        let allRecords = [];
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        document.getElementById('searchBtn').addEventListener('click', () => {
+            filterMarkers(document.getElementById('searchInput').value.trim());
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            document.getElementById('searchInput').value = '';
+            renderMarkers(allRecords);
+        });
+
+        async function loadExcel() {
+            try {
+                updateStatus('Tải file Excel...');
+                const response = await fetch('data/Camera.xlsx');
+                if (!response.ok) throw new Error('Không thể tải file Camera.xlsx');
+                const arrayBuffer = await response.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+                if (rows.length < 2) {
+                    updateStatus('File Excel không chứa dữ liệu đủ.');
+                    return;
+                }
+
+                const headerRow = rows[0].map(cell => String(cell || '').trim());
+                const records = rows.slice(1).map(row => {
+                    const record = {};
+                    headerRow.forEach((key, index) => {
+                        record[key || `column${index}`] = row[index] || '';
+                    });
+                    return record;
+                });
+
+                allRecords = records.filter(r => hasValidLatLng(r));
+                if (!allRecords.length) {
+                    updateStatus('Không tìm thấy bản ghi có tọa độ hợp lệ trong file.');
+                    return;
+                }
+
+                renderMarkers(allRecords);
+                updateStatus(`Tải xong ${allRecords.length} camera. Nhập từ khóa để lọc.`);
+                fitMapToMarkers();
+            } catch (error) {
+                console.error(error);
+                updateStatus('Lỗi khi tải dữ liệu: ' + error.message);
+            }
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').innerHTML = message;
+        }
+
+        function normalize(text) {
+            return String(text || '').toLowerCase();
+        }
+
+        function hasValidLatLng(record) {
+            const lat = getLat(record);
+            const lon = getLon(record);
+            return Number.isFinite(lat) && Number.isFinite(lon);
+        }
+
+        function getLat(record) {
+            const keys = Object.keys(record);
+            const latKey = keys.find(k => /lat|latitude|v[ií] trí|tọa độ/i.test(k));
+            if (latKey && record[latKey] !== undefined && record[latKey] !== '') {
+                const num = parseFloat(String(record[latKey]).replace(/[^\d.-]/g, ''));
+                return Number.isFinite(num) ? num : NaN;
+            }
+            return NaN;
+        }
+
+        function getLon(record) {
+            const keys = Object.keys(record);
+            const lonKey = keys.find(k => /lon|long|longitude|tọa độ/i.test(k) && !/lat/i.test(k));
+            if (lonKey && record[lonKey] !== undefined && record[lonKey] !== '') {
+                const num = parseFloat(String(record[lonKey]).replace(/[^\d.-]/g, ''));
+                return Number.isFinite(num) ? num : NaN;
+            }
+            return NaN;
+        }
+
+        function buildPopupHtml(record) {
+            const rows = [];
+            const titleKey = Object.keys(record).find(k => /stt|vị trí|tuyến|địa chỉ|name|id/i.test(k));
+            const titleValue = titleKey ? record[titleKey] : '';
+            rows.push(`<strong>${escapeHtml(titleValue || 'Camera')}</strong>`);
+            Object.entries(record).forEach(([key, value]) => {
+                if (!value) return;
+                if (/lat|long|latitude|longitude|tọa độ/i.test(key)) return;
+                rows.push(`<div><strong>${escapeHtml(key)}:</strong> ${escapeHtml(value)}</div>`);
+            });
+            return `<div class="popup-content">${rows.join('')}</div>`;
+        }
+
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function renderMarkers(records) {
+            markersCluster.clearLayers();
+            records.forEach((record, index) => {
+                const lat = getLat(record);
+                const lon = getLon(record);
+                if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+                const marker = L.marker([lat, lon]);
+                marker.bindPopup(buildPopupHtml(record));
+                markersCluster.addLayer(marker);
+            });
+            if (!map.hasLayer(markersCluster)) {
+                map.addLayer(markersCluster);
+            }
+            updateStatus(`Hiển thị ${records.length} camera.`);
+        }
+
+        function fitMapToMarkers() {
+            const layers = markersCluster.getLayers();
+            if (!layers.length) return;
+            const group = L.featureGroup(layers);
+            map.fitBounds(group.getBounds().pad(0.15));
+        }
+
+        function filterMarkers(query) {
+            const normalized = normalize(query);
+            if (!normalized) {
+                renderMarkers(allRecords);
+                fitMapToMarkers();
+                return;
+            }
+            const filtered = allRecords.filter(record => {
+                return Object.values(record).some(value => normalize(value).includes(normalized));
+            });
+            renderMarkers(filtered);
+            if (filtered.length) fitMapToMarkers();
+            updateStatus(`Tìm thấy ${filtered.length} camera cho: "${escapeHtml(query)}"`);
+        }
+
+        loadExcel();
+    </script>
+</body>
+</html>

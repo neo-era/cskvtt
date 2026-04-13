@@ -511,7 +511,7 @@
 
             .marker-popup-card .body input,
             .marker-popup-card .body textarea {
-                font-size: 13px;
+                font-size: 16px;
                 padding: 8px 10px;
             }
 
@@ -523,7 +523,7 @@
 
             .marker-popup-card .footer button {
                 min-width: 100%;
-                font-size: 13px;
+                font-size: 16px;
             }
         }
 
@@ -591,16 +591,18 @@
                 left: 0;
             }
         }
+        
     </style>
 </head>
 <body>
-    <h1>BẢN ĐỒ KHẢO SÁT HỆ THỐNG CHIẾU SÁNG CÔNG CỘNG</h1>
+   <!-- <h1>BẢN ĐỒ KHẢO SÁT HỆ THỐNG CHIẾU SÁNG CÔNG CỘNG</h1> -->
 
     <!-- Controls Button -->
-    <button id="controlsBtn" class="btn btn-primary">
-        <i class="fa fa-cog"></i> Điều khiển
-    </button>
-
+  <!-- Nút Điều khiển dạng Floating Action Button (FAB) -->
+<button id="controlsBtn" class="btn btn-primary fab-btn">
+    <i class="fa fa-cog"></i>
+    <span class="fab-text">Điều khiển</span>
+</button>
     <!-- Controls Modal -->
     <div class="modal fade left" id="controlsModal" tabindex="-1" role="dialog" aria-labelledby="controlsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">

@@ -55,12 +55,42 @@
         }
 
         #controlsBtn {
-            position: fixed;
-            top: 35px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 3000;
-            touch-action: manipulation;
+            position: fixed !important;
+            right: 18px !important;
+            bottom: 24px !important;
+            left: auto !important;
+            top: auto !important;
+            z-index: 3500 !important;
+            width: 64px !important;
+            height: 64px !important;
+            border-radius: 50% !important;
+            background: #007bff !important;
+            color: #fff !important;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px !important;
+            padding: 0 !important;
+            border: none !important;
+            transition: box-shadow 0.2s, background 0.2s;
+        }
+        #controlsBtn:active, #controlsBtn:focus {
+            background: #0056b3 !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+        }
+        #controlsBtn .fa {
+            font-size: 32px !important;
+        }
+        @media (max-width: 600px) {
+            #controlsBtn {
+                width: 72px !important;
+                height: 72px !important;
+                font-size: 32px !important;
+            }
+            #controlsBtn .fa {
+                font-size: 36px !important;
+            }
         }
 
         .controls-container {
@@ -922,7 +952,7 @@
             }
 
             const imagePath = (typeof imageValue === 'string' && !imageValue.startsWith('data:image/')) ? imageValue : '';
-            const imageHtml = imageValue ? `<div style="margin-top:8px;text-align:center;"><img src="${imageValue}" alt="Ảnh trụ" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : '';
+            const imageHtml = imageValue ? `<div style="margin-top:8px;text-align:center;"><img loading='lazy' src="${imageValue}" alt="Ảnh trụ" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : '';
             const imagePathHtml = imagePath ? `<div style="margin-top:6px;font-size:12px;color:#555;word-break:break-all;text-align:center;">${imagePath}</div>` : '';
             const timestampHtml = updatedAt ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Thời gian cập nhật:</strong> ${updatedAt}</div>` : '';
             return `
@@ -1032,6 +1062,29 @@
                 attribution: '© Google Maps'
             });
 
+            // --- Thêm các layer nền tùy chọn ---
+            // Google Satellite
+            const googleSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                attribution: '© Google Satellite'
+            });
+            // Bing Maps
+            const bingKey = '';
+            const bingLayer = L.tileLayer('https://ecn.t{s}.tiles.virtualearth.net/tiles/a{q}.jpeg?g=1', {
+                subdomains: ['0', '1', '2', '3', '4'],
+                maxZoom: 19,
+                attribution: '© Bing Maps',
+                t: '0',
+                q: '{quadkey}'
+            });
+            // Bản đồ hành chính Quận/Huyện TP.HCM (ví dụ: sử dụng bản đồ nền OSM overlay hoặc WMS nếu có)
+            const hcmcAdmin = L.tileLayer.wms('https://ows.mundialis.de/services/service?', {
+                layers: 'OSM-Overlay-WMS',
+                format: 'image/png',
+                transparent: true,
+                attribution: '© OpenStreetMap, Hành chính HCM demo'
+            });
+
             map = L.map('map', {
                 center: [10.762622, 106.660172],
                 zoom: 13,
@@ -1041,7 +1094,10 @@
 
             L.control.layers({
                 "OpenStreetMap": osm,
-                "Satellite": satellite
+                "Google Satellite": googleSat,
+                "Bing Maps": bingLayer,
+                "Hành chính Q/H TP.HCM": hcmcAdmin,
+                "Satellite (old)": satellite
             }).addTo(map);
 
             // Add zoom display control
@@ -1101,14 +1157,13 @@
             markersCluster.clearLayers();
             labelLayerGroup.clearLayers();
             markers = [];
-
             data.forEach(row => {
                 addMarkerRowToMap(row);
             });
-
             if (markers.length > 0) {
                 map.fitBounds(markersCluster.getBounds().pad(0.1));
             }
+            updateMarkerLabelsVisibility();
         }
 
         function processFile(file) {
@@ -1886,7 +1941,7 @@
         }
 
         async function getGitHubFileContent(owner, repo, path, branch, token) {
-            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`;
+            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
             const response = await fetch(apiUrl, {
                 method: 'GET',
                 headers: {

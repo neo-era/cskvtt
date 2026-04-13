@@ -687,13 +687,32 @@
     <div id="markerPopupForm" class="marker-popup-overlay" role="dialog" aria-modal="true">
         <div class="marker-popup-card">
             <header>Thông tin marker mới</header>
-            <div class="footer">
-                <button id="markerPopupCancel" type="button" class="btn btn-secondary" onclick="cancelMarkerPopup()">Hủy</button>
-                <button id="markerPopupSave" type="button" class="btn btn-primary" onclick="saveMarkerPopup()">Lưu marker</button>
-                <button id="markerImageButton" type="button" class="btn btn-outline-primary marker-image-button" onclick="triggerMarkerImageInput()">Chụp / chọn ảnh</button>
-                <button id="markerCurrentLocationBtn" type="button" class="btn btn-info" style="min-width:120px;margin-top:8px;" onclick="setMarkerToCurrentLocation()">Lấy vị trí hiện tại</button>
-                <button id="markerPickOnMapBtn" type="button" class="btn btn-warning" style="min-width:120px;margin-top:8px;" onclick="setMarkerToPickOnMap()">Chọn trên bản đồ</button>
-            </div>
+           <div class="footer">
+    <!-- Hàng 1: Hủy và Lưu (2 nút chính) -->
+    <div class="footer-main-actions">
+        <button id="markerPopupCancel" type="button" class="btn btn-secondary" onclick="cancelMarkerPopup()">
+            <i class="fa fa-times"></i> Hủy
+        </button>
+        <button id="markerPopupSave" type="button" class="btn btn-primary" onclick="saveMarkerPopup()">
+            <i class="fa fa-check"></i> Lưu marker
+        </button>
+    </div>
+
+    <!-- Hàng 2: Chụp ảnh -->
+    <button id="markerImageButton" type="button" class="btn btn-outline-primary marker-image-button" onclick="triggerMarkerImageInput()">
+        <i class="fa fa-camera"></i> Chụp / chọn ảnh
+    </button>
+
+    <!-- Hàng 3: Vị trí (2 nút ngang) -->
+    <div class="footer-location-actions">
+        <button id="markerCurrentLocationBtn" type="button" class="btn btn-info" onclick="setMarkerToCurrentLocation()">
+            <i class="fa fa-location-arrow"></i> Vị trí hiện tại
+        </button>
+        <button id="markerPickOnMapBtn" type="button" class="btn btn-warning" onclick="setMarkerToPickOnMap()">
+            <i class="fa fa-map-marker"></i> Chọn trên bản đồ
+        </button>
+    </div>
+</div>
             <div class="body">
                 <div class="form-group">
                     <label for="markerNameInput">Tên trụ</label>

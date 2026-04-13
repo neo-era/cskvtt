@@ -591,7 +591,7 @@
                             <button onclick="centerOnUserLocation()" class="btn btn-info btn-block">Vị trí của tôi</button>
                             <button id="addMarkerBtn" onclick="startAddMarker()" class="btn btn-warning btn-block">Thêm marker</button>
                             <button onclick="saveMarkerData()" class="btn btn-secondary btn-block">Lưu dữ liệu</button>
-                            <button onclick="exportMarkersToCad()" class="btn btn-dark btn-block">Export to CAD</button>
+                            <button onclick="showExportCadModal()" class="btn btn-dark btn-block">Export to CAD</button>
                             <button onclick="updateGitHubExcel()" class="btn btn-primary btn-block">Cập nhật GitHub</button>
                         </div>
 
@@ -610,6 +610,37 @@
         </div>
     </div>
     <div id="map"></div>
+    <!-- Export to CAD Modal -->
+    <div class="modal fade" id="exportCadModal" tabindex="-1" role="dialog" aria-labelledby="exportCadModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exportCadModalLabel">Export to CAD</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="closeExportCadModal()">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="exportCadType">Chọn loại marker để xuất:</label>
+                        <select id="exportCadType" class="form-control">
+                            <option value="new">Chỉ marker mới nhập</option>
+                            <option value="all">Tất cả marker</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="exportCadBasename">Chỉ xuất các marker cùng basename:</label>
+                        <input type="text" id="exportCadBasename" class="form-control" placeholder="Nhập basename (ví dụ: T1, T2...)" />
+                    </div>
+                    <div id="exportCadCountInfo" style="font-size:13px;color:#007bff;margin-bottom:8px;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeExportCadModal()">Hủy</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmExportCad()">Export</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="markerPopupForm" class="marker-popup-overlay" role="dialog" aria-modal="true">
         <div class="marker-popup-card">
             <header>Thông tin marker mới</header>
@@ -617,6 +648,8 @@
                 <button id="markerPopupCancel" type="button" class="btn btn-secondary" onclick="cancelMarkerPopup()">Hủy</button>
                 <button id="markerPopupSave" type="button" class="btn btn-primary" onclick="saveMarkerPopup()">Lưu marker</button>
                 <button id="markerImageButton" type="button" class="btn btn-outline-primary marker-image-button" onclick="triggerMarkerImageInput()">Chụp / chọn ảnh</button>
+                <button id="markerCurrentLocationBtn" type="button" class="btn btn-info" style="min-width:120px;margin-top:8px;" onclick="setMarkerToCurrentLocation()">Lấy vị trí hiện tại</button>
+                <button id="markerPickOnMapBtn" type="button" class="btn btn-warning" style="min-width:120px;margin-top:8px;" onclick="setMarkerToPickOnMap()">Chọn trên bản đồ</button>
             </div>
             <div class="body">
                 <div class="form-group">
@@ -663,6 +696,86 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.1/exceljs.min.js"></script>
 
     <script>
+        // --- Export to CAD Modal Logic ---
+        function showExportCadModal() {
+            // Reset modal fields
+            document.getElementById('exportCadType').value = 'new';
+            document.getElementById('exportCadBasename').value = '';
+            updateExportCadCountInfo();
+            // Show modal (jQuery or fallback)
+            if (typeof $ !== 'undefined' && $.fn.modal) {
+                $('#exportCadModal').modal('show');
+            } else {
+                const modal = document.getElementById('exportCadModal');
+                if (modal) {
+                    modal.style.display = 'block';
+                    modal.classList.add('show');
+                    document.body.classList.add('modal-open');
+                    // Add backdrop
+                    const backdrop = document.createElement('div');
+                    backdrop.className = 'modal-backdrop show';
+                    document.body.appendChild(backdrop);
+                    backdrop.onclick = function() {
+                        closeExportCadModal();
+                    };
+                    const closeBtn = modal.querySelector('.close');
+                    if (closeBtn) {
+                        closeBtn.onclick = function() {
+                            closeExportCadModal();
+                        };
+                    }
+                }
+            }
+            // Live update count info
+            document.getElementById('exportCadType').onchange = updateExportCadCountInfo;
+            document.getElementById('exportCadBasename').oninput = updateExportCadCountInfo;
+        }
+
+        function closeExportCadModal() {
+            if (typeof $ !== 'undefined' && $.fn.modal) {
+                $('#exportCadModal').modal('hide');
+            } else {
+                const modal = document.getElementById('exportCadModal');
+                if (modal) {
+                    modal.classList.remove('show');
+                    modal.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) document.body.removeChild(backdrop);
+                }
+            }
+        }
+
+        function updateExportCadCountInfo() {
+            const type = document.getElementById('exportCadType').value;
+            const basename = document.getElementById('exportCadBasename').value.trim();
+            let rows = (type === 'new') ? (Array.isArray(newMarkerRows) ? newMarkerRows : []) : (Array.isArray(loadedData) ? loadedData : []);
+            if (basename) {
+                const normBase = normalizeMarkerBaseName(basename);
+                rows = rows.filter(row => normalizeMarkerBaseName(row[1] || row[0] || '') === normBase);
+            }
+            document.getElementById('exportCadCountInfo').textContent = `Số marker sẽ xuất: ${rows.length}`;
+        }
+
+        function confirmExportCad() {
+            const type = document.getElementById('exportCadType').value;
+            const basename = document.getElementById('exportCadBasename').value.trim();
+            let rows = (type === 'new') ? (Array.isArray(newMarkerRows) ? newMarkerRows : []) : (Array.isArray(loadedData) ? loadedData : []);
+            if (basename) {
+                const normBase = normalizeMarkerBaseName(basename);
+                rows = rows.filter(row => normalizeMarkerBaseName(row[1] || row[0] || '') === normBase);
+            }
+            if (!rows.length) {
+                displayError('Không có marker phù hợp để xuất.');
+                return;
+            }
+            const dxf = createDxfForMarkers(rows);
+            const baseNameForFile = basename ? sanitizeFileName(basename) : (type === 'new' ? 'marker-moi' : 'tat-ca-marker');
+            const fileName = `export-${baseNameForFile}.dxf`;
+            downloadTextFile(fileName, dxf);
+            closeExportCadModal();
+            displayError(`Đã xuất file CAD: ${fileName}`);
+        }
         let map;
         let markersCluster = L.markerClusterGroup();
         let labelLayerGroup = L.layerGroup();
@@ -1014,28 +1127,8 @@
                 disableAddMarkerMode();
                 return;
             }
-
-            const useCurrentLocation = confirm('Sử dụng vị trí hiện tại?\n\nNhấn OK để dùng vị trí hiện tại, nhấn Cancel để chọn trên bản đồ.');
             enableAddMarkerMode();
-            if (useCurrentLocation) {
-                if (!navigator.geolocation) {
-                    displayError('Trình duyệt không hỗ trợ định vị.');
-                    disableAddMarkerMode();
-                    return;
-                }
-
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        const lat = position.coords.latitude;
-                        const lon = position.coords.longitude;
-                        showMarkerPopupAt(lat, lon);
-                    },
-                    function(error) {
-                        displayError('Không thể lấy vị trí: ' + error.message);
-                        disableAddMarkerMode();
-                    }
-                );
-            }
+            displayError('Nhấp vào bản đồ để chọn vị trí marker mới hoặc dùng các nút trong popup để lấy vị trí.');
         }
 
         function showMarkerPopupAt(lat, lon) {
@@ -1238,7 +1331,7 @@
                 height = Math.round(height * scale);
 
                 const ctx = canvas.getContext('2d');
-                const originalMimeMatch = dataUrl.match(/^data:(image\/[^;]+);/i);
+                const originalMimeMatch = dataUrl.match(/^data:(image\/[^;]+);base64,/i);
                 const originalMime = originalMimeMatch ? originalMimeMatch[1].toLowerCase() : 'image/png';
                 const supportedMimes = ['image/png', 'image/jpeg', 'image/webp'];
                 const targetMime = supportedMimes.includes(originalMime) ? originalMime : 'image/png';
@@ -1434,23 +1527,17 @@
             addLine('ENTITIES');
 
             let previousPoint = null;
+            let previousName = '';
             rows.forEach((row, index) => {
                 const name = row[1] || row[0] || `Marker ${index + 1}`;
                 const rawX = parseFloat(row[3]);
                 const rawY = parseFloat(row[2]);
-                const note = row[4] || '';
-                const cabinet = row[7] || '';
-                const poleType = row[8] || '';
-                const lampType = row[10] || '';
                 const label = name.replace(/\r?\n/g, ' ');
-
                 if (!Number.isFinite(rawX) || !Number.isFinite(rawY)) return;
-
                 const vn2000 = convertLatLonToVn2000(rawY, rawX);
                 const x = vn2000.x;
                 const y = vn2000.y;
-
-                // Draw circle marker with diameter 2mm => radius 1.0 in drawing units
+                // Draw circle marker
                 addLine('0');
                 addLine('CIRCLE');
                 addLine('8');
@@ -1463,8 +1550,7 @@
                 addLine('0');
                 addLine('40');
                 addLine('1.0');
-
-                // Draw line from previous marker to current marker
+                // Draw line and distance text from previous marker
                 if (previousPoint) {
                     addLine('0');
                     addLine('LINE');
@@ -1482,8 +1568,28 @@
                     addLine(y.toFixed(6));
                     addLine('31');
                     addLine('0');
+                    // Tính khoảng cách và vẽ text trên line
+                    const dx = x - previousPoint.x;
+                    const dy = y - previousPoint.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    // Vị trí text: trung điểm đoạn thẳng
+                    const midX = (x + previousPoint.x) / 2;
+                    const midY = (y + previousPoint.y) / 2;
+                    addLine('0');
+                    addLine('TEXT');
+                    addLine('8');
+                    addLine('0');
+                    addLine('10');
+                    addLine(midX.toFixed(6));
+                    addLine('20');
+                    addLine(midY.toFixed(6));
+                    addLine('30');
+                    addLine('0');
+                    addLine('40');
+                    addLine('1.0');
+                    addLine('1');
+                    addLine(`${Math.round(dist)}m`);
                 }
-
                 // Draw marker name text inside or near the circle
                 addLine('0');
                 addLine('TEXT');
@@ -1499,8 +1605,8 @@
                 addLine('1.0');
                 addLine('1');
                 addLine(label);
-
                 previousPoint = { x, y };
+                previousName = name;
             });
 
             addLine('0');
@@ -1510,21 +1616,9 @@
             return lines.join('\r\n');
         }
 
+        // Hàm cũ exportMarkersToCad đã thay bằng showExportCadModal
         function exportMarkersToCad() {
-            try {
-                const rowsToExport = (newMarkerRows && newMarkerRows.length > 0) ? newMarkerRows : loadedData.filter(row => Array.isArray(row) && row.length >= 4 && !isNaN(parseFloat(row[2])) && !isNaN(parseFloat(row[3])));
-                if (!rowsToExport || rowsToExport.length === 0) {
-                    displayError('Không có marker để xuất CAD.');
-                    return;
-                }
-
-                const dxf = createDxfForMarkers(rowsToExport);
-                downloadTextFile('markers-export.dxf', dxf);
-                displayError(`Đã xuất ${rowsToExport.length} marker ra file CAD.`);
-            } catch (error) {
-                console.error('exportMarkersToCad error:', error);
-                displayError('Lỗi khi xuất CAD: ' + (error.message || error));
-            }
+            displayError('Vui lòng dùng nút Export to CAD mới để chọn marker và basename!');
         }
 
         function getImageExtensionFromDataUrl(dataUrl) {
@@ -2279,7 +2373,8 @@
                 },
                 function(error) {
                     displayError('Không thể lấy vị trí: ' + error.message);
-                }
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
         }
 
@@ -2383,7 +2478,8 @@
                 },
                 function(error) {
                     displayError('Không thể lấy vị trí: ' + error.message);
-                }
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
         }
 
@@ -2477,7 +2573,71 @@
             const markerPopupHeader = document.querySelector('#markerPopupForm .marker-popup-card header');
             const markerPopupCard = document.querySelector('#markerPopupForm .marker-popup-card');
             makeElementDraggable(markerPopupHeader, markerPopupCard);
+            // Allow closing export modal by clicking backdrop
+            const exportCadModal = document.getElementById('exportCadModal');
+            if (exportCadModal) {
+                exportCadModal.addEventListener('click', function(event) {
+                    if (event.target === exportCadModal) {
+                        closeExportCadModal();
+                    }
+                });
+            }
         };
+        // Đặt marker về vị trí hiện tại
+        function setMarkerToCurrentLocation() {
+            if (!navigator.geolocation) {
+                displayError('Trình duyệt không hỗ trợ định vị.');
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    markerPopupLocation = [lat, lon];
+                    pendingMarkerLocation = [lat, lon];
+                    document.getElementById('markerCoordsText').textContent = `Tọa độ: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+                    displayError('Đã lấy vị trí hiện tại.');
+                },
+                function(error) {
+                    displayError('Không thể lấy vị trí: ' + error.message);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        }
+
+        // Cho phép chọn lại vị trí marker bằng cách click trên bản đồ
+        let pickMarkerMode = false;
+        function setMarkerToPickOnMap() {
+            pickMarkerMode = true;
+            displayError('Nhấp vào bản đồ để chọn vị trí marker mới.');
+        }
+
+        // Hook vào sự kiện click trên bản đồ để cập nhật vị trí marker khi đang chọn
+        if (window.map) {
+            map.on('click', function(e) {
+                if (pickMarkerMode && addMarkerMode && document.getElementById('markerPopupForm').style.display === 'flex') {
+                    markerPopupLocation = [e.latlng.lat, e.latlng.lng];
+                    pendingMarkerLocation = [e.latlng.lat, e.latlng.lng];
+                    document.getElementById('markerCoordsText').textContent = `Tọa độ: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
+                    displayError('Đã chọn vị trí trên bản đồ.');
+                    pickMarkerMode = false;
+                }
+            });
+        } else {
+            window.addEventListener('load', function() {
+                if (window.map) {
+                    map.on('click', function(e) {
+                        if (pickMarkerMode && addMarkerMode && document.getElementById('markerPopupForm').style.display === 'flex') {
+                            markerPopupLocation = [e.latlng.lat, e.latlng.lng];
+                            pendingMarkerLocation = [e.latlng.lat, e.latlng.lng];
+                            document.getElementById('markerCoordsText').textContent = `Tọa độ: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
+                            displayError('Đã chọn vị trí trên bản đồ.');
+                            pickMarkerMode = false;
+                        }
+                    });
+                }
+            });
+        }
     </script>
 </body>
 </html>

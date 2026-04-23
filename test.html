@@ -705,44 +705,17 @@
     <div id="markerPopupForm" class="marker-popup-overlay" role="dialog" aria-modal="true">
         <div class="marker-popup-card">
             <header>Thông tin marker mới</header>
-           <div class="footer">
-    <!-- Hàng 1: Hủy và Lưu (2 nút chính) -->
-    <div class="footer-main-actions">
-        <button id="markerPopupCancel" type="button" class="btn btn-secondary" onclick="cancelMarkerPopup()">
-            <i class="fa fa-times"></i> Hủy
-        </button>
-        <button id="markerPopupSave" type="button" class="btn btn-primary" onclick="saveMarkerPopup()">
-            <i class="fa fa-check"></i> Lưu marker
-        </button>
-    </div>
-
-    <!-- Hàng 2: Chụp ảnh -->
-    <button id="markerImageButton" type="button" class="btn btn-outline-primary marker-image-button" onclick="triggerMarkerImageInput()">
-        <i class="fa fa-camera"></i> Chụp / chọn ảnh
-    </button>
-
-    <!-- Hàng 3: Vị trí (2 nút ngang) -->
-    <div class="footer-location-actions">
-        <button id="markerCurrentLocationBtn" type="button" class="btn btn-info" onclick="setMarkerToCurrentLocation()">
-            <i class="fa fa-location-arrow"></i> Vị trí hiện tại
-        </button>
-        <button id="markerPickOnMapBtn" type="button" class="btn btn-warning" onclick="setMarkerToPickOnMap()">
-            <i class="fa fa-map-marker"></i> Chọn trên bản đồ
-        </button>
-    </div>
-</div>
             <div class="body">
                 <div class="form-group">
                     <label for="markerNameInput">Tên trụ</label>
                     <input id="markerNameInput" type="text" class="form-control" placeholder="Nhập tên trụ" />
                 </div>
-                    <div class="form-group">
-                        <label for="markerBaseSelect">Chọn marker gốc để tính khoảng cách (cùng basename):</label>
-                        <select id="markerBaseSelect" class="form-control">
-                            <option value="">(Mặc định: marker trước đó)</option>
-                        </select>
-                    </div>
-               
+                <div class="form-group">
+                    <label for="markerBaseSelect">Chọn marker gốc để tính khoảng cách (cùng basename):</label>
+                    <select id="markerBaseSelect" class="form-control">
+                        <option value="">(Mặc định: marker trước đó)</option>
+                    </select>
+                </div>
                 <div class="form-group">
                     <label for="markerCabinetInput">Tên tủ điều khiển</label>
                     <input id="markerCabinetInput" type="text" class="form-control" placeholder="Nhập tên tủ điều khiển" />
@@ -755,16 +728,39 @@
                     <label for="markerLampTypeInput">Loại đèn</label>
                     <input id="markerLampTypeInput" type="text" class="form-control" placeholder="Nhập loại đèn" />
                 </div>
-               <div class="form-group">
+                <div class="form-group">
                     <label for="markerNoteInput">Ghi chú</label>
                     <textarea id="markerNoteInput" class="form-control" placeholder="Nhập ghi chú (tùy chọn)"></textarea>
                 </div>
                 <div class="form-group">
-                    
                     <input id="markerImageInput" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleMarkerImageFile(event)" />
                 </div>
                 <div class="marker-image-preview" id="markerImagePreview"></div>
                 <div id="markerCoordsText" class="coords-info">Tọa độ: -</div>
+            </div>
+            <div class="footer">
+                <!-- Hàng 1: Hủy và Lưu (2 nút chính) -->
+                <div class="footer-main-actions">
+                    <button id="markerPopupCancel" type="button" class="btn btn-secondary" onclick="cancelMarkerPopup()">
+                        <i class="fa fa-times"></i> Hủy
+                    </button>
+                    <button id="markerPopupSave" type="button" class="btn btn-primary" onclick="saveMarkerPopup()">
+                        <i class="fa fa-check"></i> Lưu marker
+                    </button>
+                </div>
+                <!-- Hàng 2: Chụp ảnh -->
+                <button id="markerImageButton" type="button" class="btn btn-outline-primary marker-image-button" onclick="triggerMarkerImageInput()">
+                    <i class="fa fa-camera"></i> Chụp / chọn ảnh
+                </button>
+                <!-- Hàng 3: Vị trí (2 nút ngang) -->
+                <div class="footer-location-actions">
+                    <button id="markerCurrentLocationBtn" type="button" class="btn btn-info" onclick="setMarkerToCurrentLocation()">
+                        <i class="fa fa-location-arrow"></i> Vị trí hiện tại
+                    </button>
+                    <button id="markerPickOnMapBtn" type="button" class="btn btn-warning" onclick="setMarkerToPickOnMap()">
+                        <i class="fa fa-map-marker"></i> Chọn trên bản đồ
+                    </button>
+                </div>
             </div>
         </div>
     </div>

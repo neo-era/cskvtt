@@ -174,7 +174,7 @@
         }
 
         .marker-popup-card header {
-            padding: 14px 16px;
+            padding: 10px 12px;
             background: #007bff;
             color: #fff;
             font-size: 15px;
@@ -188,18 +188,18 @@
         }
 
         .marker-popup-card .body {
-            padding: 14px 16px;
+            padding: 10px 12px;
             max-height: calc(100vh - 160px);
             overflow-y: auto;
         }
 
         .marker-popup-card .body .form-group {
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
 
         .marker-popup-card .body label {
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 3px;
             font-weight: 600;
             font-size: 13px;
         }
@@ -207,7 +207,7 @@
         .marker-popup-card .body input,
         .marker-popup-card .body textarea {
             width: 100%;
-            padding: 8px 10px;
+            padding: 6px 8px;
             border: 1px solid #ced4da;
             border-radius: 8px;
             font-size: 16px;
@@ -216,13 +216,13 @@
 
         .marker-popup-card .body textarea {
             resize: vertical;
-            min-height: 80px;
+            min-height: 60px;
         }
 
         .marker-popup-card .footer {
-            padding: 12px 16px 14px;
+            padding: 8px 12px 10px;
             display: flex;
-            gap: 8px;
+            gap: 6px;
             justify-content: space-between;
             flex-wrap: wrap;
             background: #f8f9fa;
@@ -241,14 +241,14 @@
         }
 
         .marker-image-preview {
-            margin-top: 10px;
+            margin-top: 6px;
             display: flex;
             justify-content: center;
         }
 
         .marker-image-preview img {
             max-width: 100%;
-            max-height: 140px;
+            max-height: 100px;
             border-radius: 10px;
             border: 1px solid #dee2e6;
             object-fit: cover;
@@ -256,7 +256,7 @@
 
         .marker-image-button {
             width: 100%;
-            margin-top: 8px;
+            margin-top: 4px;
         }
 
         .leaflet-control-custom {
@@ -501,12 +501,12 @@
             }
 
             .marker-popup-card header {
-                padding: 12px 14px;
+                padding: 8px 10px;
                 font-size: 14px;
             }
 
             .marker-popup-card .body {
-                padding: 12px 12px;
+                padding: 8px 10px;
                 max-height: calc(100vh - 150px);
             }
 
@@ -521,9 +521,9 @@
             }
 
             .marker-popup-card .footer {
-                padding: 10px 12px 12px;
+                padding: 8px 10px 10px;
                 flex-direction: column;
-                gap: 8px;
+                gap: 6px;
             }
 
             .marker-popup-card .footer button {
@@ -567,19 +567,19 @@
             }
 
             .marker-popup-card header {
-                padding: 10px 12px;
+                padding: 8px 10px;
                 font-size: 14px;
             }
 
             .marker-popup-card .body {
-                padding: 12px 12px;
+                padding: 8px 10px;
                 max-height: calc(100vh - 150px);
             }
 
             .marker-popup-card .footer {
-                padding: 10px 12px 12px;
+                padding: 8px 10px 10px;
                 flex-direction: column;
-                gap: 10px;
+                gap: 6px;
             }
 
             .marker-popup-card .footer button {
@@ -1012,6 +1012,27 @@
                 </div>`;
         }
 
+        function updateMarkerCoordinatesInData(markerName, newLat, newLon) {
+            // Update in loadedData array
+            if (Array.isArray(loadedData)) {
+                loadedData.forEach(row => {
+                    if (Array.isArray(row) && (row[1] === markerName || row[0] === markerName)) {
+                        row[2] = newLat;
+                        row[3] = newLon;
+                    }
+                });
+            }
+            // Update in newMarkerRows array
+            if (Array.isArray(newMarkerRows)) {
+                newMarkerRows.forEach(row => {
+                    if (Array.isArray(row) && (row[1] === markerName || row[0] === markerName)) {
+                        row[2] = newLat;
+                        row[3] = newLon;
+                    }
+                });
+            }
+        }
+
         function addMarkerRowToMap(row) {
             const name = row[1] || row[0] || '';
             const lat = parseFloat(row[2]);
@@ -1029,13 +1050,46 @@
 
             const icon = customIcons[type] || customIcons.default;
             const markerIndex = markers.length;
-            const marker = L.marker([lat, lon], { icon: icon });
+            const marker = L.marker([lat, lon], { icon: icon, draggable: true });
             const popupContent = createMarkerPopupContent(row);
 
             marker.bindPopup(popupContent);
             marker.on('popupopen', function() {
                 marker.setPopupContent(createMarkerPopupContent(row));
             });
+            
+            // Enable dragging for newly added markers - update coordinates on drag end
+            marker.on('dragend', function(e) {
+                const newLatLng = e.target.getLatLng();
+                const newLat = newLatLng.lat;
+                const newLon = newLatLng.lng;
+                
+                // Update in markers array
+                const markerData = markers.find(m => m.marker === marker);
+                if (markerData) {
+                    markerData.lat = newLat;
+                    markerData.lon = newLon;
+                }
+                
+                // Update coordinates in data arrays
+                updateMarkerCoordinatesInData(name, newLat, newLon);
+                
+                // Update the popup content with new coordinates
+                marker.setPopupContent(createMarkerPopupContent(row));
+                
+                // Update all labels with the same name (move them to new position)
+                const labelLayers = labelLayerGroup.getLayers();
+                labelLayers.forEach(layer => {
+                    const layerHtml = layer.getIcon().options.html;
+                    if (layerHtml && layerHtml.includes(name)) {
+                        layer.setLatLng([newLat, newLon]);
+                    }
+                });
+                
+                // Show message
+                displayError(`Marker "${name}" đã di chuyển đến (${newLat.toFixed(6)}, ${newLon.toFixed(6)})`);
+            });
+            
             markersCluster.addLayer(marker);
             markers.push({ lat, lon, name, note, marker });
 
@@ -2181,13 +2235,17 @@
                 }
 
                 if (!githubOwner || !githubRepo || !githubBranch || !githubToken) {
-                    githubOwner = prompt('Nhập GitHub owner (tên người dùng):', 'neo-era');
+                    //githubOwner = prompt('Nhập GitHub owner (tên người dùng):', 'neo-era');
+                    githubOwner = 'neo-era';
                     if (!githubOwner) return;
-                    githubRepo = prompt('Nhập repository name:', 'cskvtt');
+                    //githubRepo = prompt('Nhập repository name:', 'cskvtt');
+                    githubRepo = 'cskvtt';
                     if (!githubRepo) return;
-                    githubBranch = prompt('Nhập branch:', 'sub1');
+                   // githubBranch = prompt('Nhập branch:', 'sub1');
+                    githubBranch = 'sub1';
                     if (!githubBranch) return;
-                    githubToken = prompt('Nhập GitHub personal access token (repo scope):');
+                    //githubToken = prompt('Nhập GitHub personal access token (repo scope):', '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');
+                    githubToken = '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';
                     if (!githubToken) return;
                 }
 

@@ -6,6 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#007bff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Lighting System">
+
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Icons cho PWA -->
+    <link rel="icon" href="images/fevicon.png" type="image/gif" />
+    <link rel="apple-touch-icon" href="images/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="images/icon-512.png">
+
     <!-- Site metas -->
     <meta name="author" content="Mai Vũ Lâm">
 
@@ -24,14 +38,11 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
-    <!-- Favicon -->
-    <link rel="icon" href="images/fevicon.png" type="image/gif" />
-
     <!-- Bootstrap JS and jQuery -->
     <script src="js/jquery-3.0.0.min.js"></script>
     <script src="js/bootstrap.bundle.min.js"></script>
 
-    <style>
+  <style>
         /* Hiệu ứng fade cho modal và nút */
         .btn, button, .form-control {
             transition: background 0.2s, color 0.2s, box-shadow 0.2s, border 0.2s;
@@ -600,7 +611,7 @@
     </style>
 </head>
 <body>
-   <!-- <h1>BẢN ĐỒ KHẢO SÁT HỆ THỐNG CHIẾU SÁNG CÔNG CỘNG</h1> -->
+    <!-- <h1>BẢN ĐỒ KHẢO SÁT HỆ THỐNG CHIẾU SÁNG CÔNG CỘNG</h1> -->
 
     <!-- Controls Button -->
   <!-- Nút Điều khiển dạng Floating Action Button (FAB) -->
@@ -757,15 +768,18 @@
             </div>
         </div>
     </div>
+    <!-- ... toàn bộ HTML body cũ của bạn ... -->
 
-      <!-- Scripts -->
+    <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.1/exceljs.min.js"></script>
 
     <script>
-        // --- Export to CAD Modal Logic ---
+        // === TOÀN BỘ JAVASCRIPT CŨ CỦA BẠN (giữ nguyên) ===
+        // ... (paste toàn bộ code JS cũ của bạn vào đây) ...
+  // --- Export to CAD Modal Logic ---
         function showExportCadModal() {
             // Reset modal fields
             document.getElementById('exportCadType').value = 'new';
@@ -2730,8 +2744,56 @@
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
         }
+        // ====================== PWA INTEGRATION ======================
 
-        // Initialize when page loads
+        // Online / Offline notification
+        window.addEventListener('online', () => {
+            displayError('✅ Đã kết nối lại mạng. Có thể cập nhật GitHub.');
+            setTimeout(() => displayError(''), 4000);
+        });
+
+        window.addEventListener('offline', () => {
+            displayError('📴 Bạn đang OFFLINE. Vẫn có thể thêm marker, export file và lưu draft.');
+        });
+
+        // Register Service Worker + Install Prompt
+        let deferredPrompt;
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => {
+                        console.log('✅ Service Worker registered:', reg.scope);
+                    })
+                    .catch(err => {
+                        console.error('❌ Service Worker failed:', err);
+                    });
+
+                // PWA Install Prompt
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    deferredPrompt = e;
+                    console.log('📲 PWA install prompt ready');
+
+                    // Tự động thêm nút "Cài đặt App" vào Controls Modal
+                    const container = document.querySelector('.controls-container');
+                    if (container) {
+                        const installBtn = document.createElement('button');
+                        installBtn.className = 'btn btn-success btn-block mt-2';
+                        installBtn.innerHTML = '<i class="fa fa-download"></i> Cài đặt Lighting System';
+                        installBtn.onclick = () => {
+                            deferredPrompt.prompt();
+                            deferredPrompt.userChoice.then((choice) => {
+                                if (choice.outcome === 'accepted') console.log('User installed PWA');
+                                deferredPrompt = null;
+                            });
+                        };
+                        container.appendChild(installBtn);
+                    }
+                });
+            });
+        }
+
+        // Initialize everything
+       // Initialize when page loads
         window.onload = function() {
             map = initializeMap();
             loadDefaultFile();
@@ -2871,6 +2933,7 @@
             if (exportCadBtn) {
                 exportCadBtn.onclick = confirmExportCad;
             }
+               console.log('🚀 Lighting System V1.1 PWA Ready - Offline Supported');
         };
         // Đặt marker về vị trí hiện tại
         function setMarkerToCurrentLocation() {
@@ -2932,7 +2995,8 @@
                     });
                 }
             });
-        }
+         
+        };
     </script>
 </body>
 </html>

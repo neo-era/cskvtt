@@ -859,6 +859,7 @@
         let newMarkerRows = [];
         let currentLocation = null;
         let currentLocationMarker = null;
+        let tempMarker = null;
         let routeLine = null;
         let pendingNewMarker = false;
         let pendingMarkerLocation = null;
@@ -1387,6 +1388,10 @@
         function hideMarkerPopup() {
             const overlay = document.getElementById('markerPopupForm');
             if (overlay) overlay.style.display = 'none';
+            if (tempMarker) {
+                map.removeLayer(tempMarker);
+                tempMarker = null;
+            }
             markerPopupLocation = null;
             markerImageDataUrl = null;
             const fileInput = document.getElementById('markerImageInput');
@@ -2822,6 +2827,11 @@
                     const lon = position.coords.longitude;
                     markerPopupLocation = [lat, lon];
                     pendingMarkerLocation = [lat, lon];
+                    if (tempMarker) {
+                        tempMarker.setLatLng([lat, lon]);
+                    } else {
+                        tempMarker = L.marker([lat, lon], { icon: customIcons.currentPos }).addTo(map);
+                    }
                     document.getElementById('markerCoordsText').textContent = `Tọa độ: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
                     displayError('Đã lấy vị trí hiện tại.');
                 },
@@ -2845,6 +2855,7 @@
                 if (pickMarkerMode && addMarkerMode && document.getElementById('markerPopupForm').style.display === 'flex') {
                     markerPopupLocation = [e.latlng.lat, e.latlng.lng];
                     pendingMarkerLocation = [e.latlng.lat, e.latlng.lng];
+                    if (tempMarker) tempMarker.setLatLng(e.latlng);
                     document.getElementById('markerCoordsText').textContent = `Tọa độ: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
                     displayError('Đã chọn vị trí trên bản đồ.');
                     pickMarkerMode = false;

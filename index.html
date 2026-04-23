@@ -139,6 +139,11 @@
             left: 0;
         }
 
+        .custom-crosshair-icon {
+            background: transparent;
+            border: none;
+        }
+
         .marker-popup-overlay {
             position: fixed;
             top: 0;
@@ -1040,9 +1045,25 @@
                         html: `<div style="font-size:12px; font-weight:bold;">${name}</div>`,
                         iconSize: [80, 20],
                         iconAnchor: [40, 30]
-                    })
-                }).addTo(map);
+                    }),
+                    interactive: false
+                });
+                labelLayerGroup.addLayer(label);
             }
+                    // Ẩn/hiện label theo zoom
+                    map.on('zoomend', function() {
+                        if (map.getZoom() < 17) {
+                            map.removeLayer(labelLayerGroup);
+                        } else {
+                            map.addLayer(labelLayerGroup);
+                        }
+                    });
+                    // Khởi tạo trạng thái label khi load map
+                    if (map.getZoom() < 17) {
+                        map.removeLayer(labelLayerGroup);
+                    } else {
+                        map.addLayer(labelLayerGroup);
+                    }
             // Lazy load ảnh marker nếu có
             setTimeout(() => {
                 const imgs = document.querySelectorAll('.marker-image-preview img, .marker-popup-card img');
@@ -1088,6 +1109,13 @@
             5: L.icon({ iconUrl: 'images/5.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
             6: L.icon({ iconUrl: 'images/9.png', iconSize: [16, 20], iconAnchor: [8, 10], popupAnchor: [0, -10] }),
             7: L.icon({ iconUrl: 'images/7.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
+            currentPos: L.divIcon({
+                className: 'custom-crosshair-icon',
+                html: '<i class="fa fa-plus" style="color: #007bff; font-size: 20px; text-shadow: 0 0 3px white;"></i>',
+                iconSize: [10, 10],
+                iconAnchor: [5, 5], // Căn giữa chính xác: tâm dấu thập trùng với tọa độ
+                popupAnchor: [0, -10]
+            }),
             default: L.icon({ iconUrl: 'images/8.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] })
         };
 
@@ -2385,15 +2413,49 @@
             errorDiv.style.display = message ? 'block' : 'none';
         }
 
+
+        // --- Tracking vị trí hiện tại ---
+        let currentLocationWatchId = null;
+        function startTrackingCurrentLocation() {
+            if (!navigator.geolocation) {
+                displayError('Trình duyệt không hỗ trợ định vị.');
+                return;
+            }
+            if (currentLocationWatchId !== null) return; // Đã tracking
+            currentLocationWatchId = navigator.geolocation.watchPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    updateCurrentLocationMarker(lat, lon);
+                },
+                function(error) {
+                    displayError('Không thể lấy vị trí: ' + error.message);
+                },
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
+            );
+            displayError('Đang theo dõi vị trí hiện tại...');
+        }
+
+        function stopTrackingCurrentLocation() {
+            if (currentLocationWatchId !== null) {
+                navigator.geolocation.clearWatch(currentLocationWatchId);
+                currentLocationWatchId = null;
+                displayError('Đã dừng theo dõi vị trí.');
+            }
+        }
+
         function updateCurrentLocationMarker(lat, lon) {
             currentLocation = [lat, lon];
-
             if (currentLocationMarker) {
                 currentLocationMarker.setLatLng(currentLocation);
             } else {
-                currentLocationMarker = L.marker(currentLocation, { icon: customIcons.default })
+                currentLocationMarker = L.marker(currentLocation, { icon: customIcons.currentPos })
                     .addTo(map)
                     .bindPopup('Vị trí hiện tại của bạn');
+            }
+            // Tự động pan tới vị trí mới nếu tracking
+            if (currentLocationWatchId !== null) {
+                map.setView(currentLocation, Math.max(map.getZoom(), 17));
             }
         }
 
@@ -2402,12 +2464,32 @@
                 options: {
                     position: 'bottomright'
                 },
-
                 onAdd: function(map) {
                     const container = L.DomUtil.create('div', 'leaflet-control-custom');
                     L.DomEvent.disableClickPropagation(container);
                     L.DomEvent.disableScrollPropagation(container);
 
+                    // Nút tracking vị trí hiện tại
+                    const trackingBtn = L.DomUtil.create('button', '', container);
+                    trackingBtn.type = 'button';
+                    trackingBtn.title = 'Bật/tắt tracking vị trí hiện tại';
+                    trackingBtn.innerHTML = '<i class="fa fa-street-view"></i>';
+                    trackingBtn.style.background = '#28a745';
+                    trackingBtn.style.color = '#fff';
+                    let trackingActive = false;
+                    trackingBtn.onclick = function() {
+                        if (!trackingActive) {
+                            startTrackingCurrentLocation();
+                            trackingBtn.style.background = '#dc3545';
+                            trackingActive = true;
+                        } else {
+                            stopTrackingCurrentLocation();
+                            trackingBtn.style.background = '#28a745';
+                            trackingActive = false;
+                        }
+                    };
+
+                    // Nút về vị trí hiện tại
                     const locateBtn = L.DomUtil.create('button', '', container);
                     locateBtn.type = 'button';
                     locateBtn.title = 'Về vị trí hiện tại';
@@ -2416,6 +2498,7 @@
                         .on(locateBtn, 'click', L.DomEvent.preventDefault)
                         .on(locateBtn, 'click', () => centerOnUserLocation());
 
+                    // Nút dẫn đường
                     const routeBtn = L.DomUtil.create('button', '', container);
                     routeBtn.type = 'button';
                     routeBtn.title = 'Dẫn đường tới trung tâm bản đồ';
@@ -2424,6 +2507,7 @@
                         .on(routeBtn, 'click', L.DomEvent.preventDefault)
                         .on(routeBtn, 'click', () => routeToMapCenter());
 
+                    // Nút xóa lộ trình
                     const clearBtn = L.DomUtil.create('button', '', container);
                     clearBtn.type = 'button';
                     clearBtn.title = 'Xóa lộ trình';
@@ -2435,7 +2519,6 @@
                     return container;
                 }
             });
-
             map.addControl(new CustomControl());
         }
 

@@ -2,7 +2,9 @@
 
 **Author**: Mai Vũ Lâm  
 **Version**: V1.1  
-**Description**: Web app quản lý và hiển thị vị trí hạ tầng chiếu sáng công cộng (TP.HCM) trên bản đồ Leaflet. Hỗ trợ nhập/xuất Excel, thêm/sửa marker, tìm kiếm, định vị GPS, chỉ đường, xuất CAD, đồng bộ GitHub và PWA offline.
+**Description**: Web app quản lý và hiển thị vị trí hạ tầng chiếu sáng công cộng (TP.HCM) trên bản đồ Leaflet. Hỗ trợ nhập/xuất Excel, thêm/sửa marker, tìm kiếm, định vị GPS, chỉ đường, xuất CAD, đồng bộ GitHub và PWA offline. Dùng cho công tác khảo sát hệ thống chiếu sáng công cộng.
+
+
 
 ---
 
@@ -18,7 +20,6 @@ cskvtt/
 ├── css/                # CSS files (Bootstrap 5, Font Awesome, plugins)
 ├── js/                 # JS files (jQuery 3, Bootstrap bundle, plugins)
 ├── images/             # Icons UI, logo, favicon, PWA icons
-├── images1/            # Ảnh marker + bản sao icons UI
 ├── data/               # File Excel (.xlsx) — dữ liệu marker từng quận
 ├── Backup/             # Các phiên bản HTML cũ
 ├── manifest.json       # PWA manifest
@@ -241,6 +242,40 @@ const MAX_EXCEL_TEXT_LENGTH = 32767; // Giới hạn ký tự/ô Excel
 - **Popup form draggable**: dùng Pointer Events API (`pointerdown/move/up`)
 - **MarkerCluster + Label**: label dùng `L.divIcon` thêm vào `labelLayerGroup` riêng (không cluster)
 - **Live Server**: port 5501 (`.vscode/settings.json`)
+- **`row[5]` để trống**: cột này hiện không dùng trong code, dành để mở rộng sau
+- **`test.html`**: bản sao index.html dùng thử nghiệm cục bộ, không dùng trên production
+- **GitHub token trên client**: biến `githubToken` lưu trong bộ nhớ JS (không persist), người dùng nhập mỗi phiên — rủi ro nếu để lộ trong URL hoặc log
+
+---
+
+## Bảo mật
+
+- **GitHub token**: hiện lưu tạm trong biến JS toàn cục `githubToken` — không bao giờ hardcode vào source. Khi nâng cấp lên Apps Script proxy, phải dùng `PropertiesService.getScriptProperties()` thay vì lưu trong code
+- **Scope token tối thiểu**: GitHub PAT chỉ cần scope `contents:write` cho repo đích, không cấp quyền rộng hơn
+- **Không commit token**: đảm bảo `.gitignore` hoặc quy trình không để token lọt vào lịch sử commit
+- **Proxy qua Apps Script**: nếu làm proxy, Apps Script trả về dữ liệu chứ không trả token về browser
+
+---
+
+## Kế hoạch phát triển
+
+### Tối ưu giao diện mobile
+- Kiểm tra và sửa popup form chồng lên bản đồ trên màn hình nhỏ
+- Nút control panel cần đủ lớn và không che tile layer switcher
+- Test trên Android Chrome + iOS Safari (PWA)
+
+### Lưu GitHub token qua Google Apps Script
+- Xây dựng Apps Script làm proxy: nhận request từ app, tự thêm token từ `PropertiesService`
+- Client không còn cần nhập/lưu token — tăng bảo mật đáng kể
+- Cần deploy Apps Script dưới dạng Web App (Execute as: Me, Access: Anyone)
+
+### Google Sheets làm backend dữ liệu marker
+- Thay thế file Excel tĩnh bằng Google Sheets — cho phép nhiều người chỉnh sửa đồng thời
+- **Lưu ý kiến trúc**:
+  - Ảnh base64 vượt giới hạn cell Sheets (50,000 ký tự) → cần lưu ảnh riêng trên Google Drive hoặc GitHub
+  - Dùng Google Sheets API v4 (qua Apps Script hoặc trực tiếp với OAuth)
+  - Cần xử lý conflict khi nhiều người cùng thêm/xóa marker
+  - Sheets có rate limit ~100 req/100s — đủ dùng cho quy mô khảo sát hiện tại
 
 ---
 

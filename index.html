@@ -1065,9 +1065,8 @@
             const icon = customIcons[type] || customIcons.default;
             const markerIndex = markers.length;
             const marker = L.marker([lat, lon], { icon: icon, draggable: true });
-            const popupContent = createMarkerPopupContent(row);
 
-            marker.bindPopup(popupContent);
+            marker.bindPopup('');
             marker.on('popupopen', function() {
                 marker.setPopupContent(createMarkerPopupContent(row));
             });
@@ -2492,12 +2491,13 @@
 
         // --- Tracking vị trí hiện tại ---
         let currentLocationWatchId = null;
+        let lastPanLocation = null;
         function startTrackingCurrentLocation() {
             if (!navigator.geolocation) {
                 displayError('Trình duyệt không hỗ trợ định vị.');
                 return;
             }
-            if (currentLocationWatchId !== null) return; // Đã tracking
+            if (currentLocationWatchId !== null) return;
             currentLocationWatchId = navigator.geolocation.watchPosition(
                 function(position) {
                     const lat = position.coords.latitude;
@@ -2507,7 +2507,7 @@
                 function(error) {
                     displayError('Không thể lấy vị trí: ' + error.message);
                 },
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
+                { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
             );
             displayError('Đang theo dõi vị trí hiện tại...');
         }
@@ -2529,9 +2529,13 @@
                     .addTo(map)
                     .bindPopup('Vị trí hiện tại của bạn');
             }
-            // Tự động pan tới vị trí mới nếu tracking
+            // Chỉ pan khi di chuyển > 15m so với lần pan trước (tiết kiệm pin & render)
             if (currentLocationWatchId !== null) {
-                map.setView(currentLocation, Math.max(map.getZoom(), 17));
+                const moved = !lastPanLocation || getDistanceMeters(lastPanLocation[0], lastPanLocation[1], lat, lon) > 15;
+                if (moved) {
+                    lastPanLocation = [lat, lon];
+                    map.setView(currentLocation, Math.max(map.getZoom(), 17));
+                }
             }
         }
 
@@ -2941,10 +2945,18 @@
                 displayError('Trình duyệt không hỗ trợ định vị.');
                 return;
             }
+            const btn = document.getElementById('markerCurrentLocationBtn');
+            const originalHtml = btn ? btn.innerHTML : null;
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang xác định vị trí...';
+            }
+            displayError('Đang xác định vị trí GPS, vui lòng chờ...');
             navigator.geolocation.getCurrentPosition(
                 function(position) {
                     const lat = position.coords.latitude;
                     const lon = position.coords.longitude;
+                    const acc = position.coords.accuracy ? Math.round(position.coords.accuracy) : null;
                     markerPopupLocation = [lat, lon];
                     pendingMarkerLocation = [lat, lon];
                     if (tempMarker) {
@@ -2952,13 +2964,21 @@
                     } else {
                         tempMarker = L.marker([lat, lon], { icon: customIcons.currentPos }).addTo(map);
                     }
-                    document.getElementById('markerCoordsText').textContent = `Tọa độ: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-                    displayError('Đã lấy vị trí hiện tại.');
+                    document.getElementById('markerCoordsText').textContent = `Tọa độ: ${lat.toFixed(6)}, ${lon.toFixed(6)}` + (acc ? ` (±${acc}m)` : '');
+                    displayError(acc ? `Đã xác định vị trí (độ chính xác ±${acc}m).` : 'Đã xác định vị trí hiện tại.');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = originalHtml;
+                    }
                 },
                 function(error) {
                     displayError('Không thể lấy vị trí: ' + error.message);
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = originalHtml;
+                    }
                 },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
         }
 

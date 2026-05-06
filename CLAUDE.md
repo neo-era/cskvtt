@@ -88,7 +88,7 @@ Toàn bộ logic viết inline trong mỗi file HTML (không có file JS riêng)
 - `processFile(file)` — đọc file Excel bằng SheetJS, lưu vào `loadedData[]`, gọi `addMarkersToMap()`
 
 ### Marker
-- `addMarkerRowToMap(row)` — tạo Leaflet marker (draggable) + label, thêm vào cluster, bind popup
+- `addMarkerRowToMap(row)` — tạo Leaflet marker (draggable) + label, thêm vào cluster; popup HTML chỉ tạo khi mở (`popupopen`), không tạo trước khi load
 - `addMarkersToMap(data)` — clear và load lại toàn bộ marker
 - `createMarkerPopupContent(row)` — tạo HTML nội dung popup (hiển thị trụ cùng tên, khoảng cách)
 - `updateMarkerCoordinatesInData(markerName, newLat, newLon)` — cập nhật tọa độ trong `loadedData` khi kéo marker
@@ -116,9 +116,10 @@ Toàn bộ logic viết inline trong mỗi file HTML (không có file JS riêng)
 - `centerOnUserLocation()` — dùng Geolocation API, setView
 
 ### Định vị & chỉ đường
-- `startTrackingCurrentLocation()` — theo dõi GPS liên tục (watchPosition)
+- `startTrackingCurrentLocation()` — theo dõi GPS liên tục (`watchPosition`, `enableHighAccuracy:true`, `maximumAge:5000`)
 - `stopTrackingCurrentLocation()` — dừng watchPosition
-- `updateCurrentLocationMarker(lat, lon)` — cập nhật marker vị trí hiện tại
+- `updateCurrentLocationMarker(lat, lon)` — cập nhật marker GPS; chỉ `setView` khi di chuyển > 15m so với lần pan trước (`lastPanLocation`)
+- `setMarkerToCurrentLocation()` — lấy vị trí 1 lần (`getCurrentPosition`, `maximumAge:0`, `timeout:15s`); hiện spinner + vô hiệu nút trong lúc chờ; hiện độ chính xác `±Xm` khi xong
 - `createMapControls()` — tạo control panel tùy chỉnh trên bản đồ
 - `routeToMapCenter()` — chỉ đường đến tâm bản đồ
 - `routeToMarker(index)` — chỉ đường đến marker cụ thể (xe máy)
@@ -195,6 +196,7 @@ let githubRepo = '';
 let githubBranch = '';
 let githubToken = '';
 let currentLocationWatchId = null; // ID từ watchPosition
+let lastPanLocation = null;     // [lat, lon] lần pan bản đồ cuối (throttle setView)
 let deferredPrompt;             // PWA install prompt event
 let pickMarkerMode = false;     // Chế độ click-to-pick vị trí marker
 const MAX_EXCEL_TEXT_LENGTH = 32767; // Giới hạn ký tự/ô Excel
@@ -224,7 +226,10 @@ const MAX_EXCEL_TEXT_LENGTH = 32767; // Giới hạn ký tự/ô Excel
 ## PWA
 
 - `manifest.json`: name "Lighting System V1.1", start_url `index.html`, icons 192/512
-- `sw.js`: cache-first strategy, cache key `lighting-map-v1`
+- `sw.js`: 2 cache riêng biệt:
+  - `lighting-system-v1.1` — static assets (HTML, CSS, JS CDN, Font Awesome, `data/khaosat.xlsx`)
+  - `lighting-tiles-v1` — map tiles (OSM + Google), cache-first, giới hạn 200 tile, tự trim khi vượt
+  - `activate` tự xóa các cache version cũ
 - Meta tags: `apple-mobile-web-app-capable`, `theme-color`
 - Install prompt: `deferredPrompt` (BeforeInstallPromptEvent)
 
@@ -241,6 +246,11 @@ const MAX_EXCEL_TEXT_LENGTH = 32767; // Giới hạn ký tự/ô Excel
 - **GitHub sync**: upload Excel + ảnh base64 lên repo qua GitHub REST API (cần token)
 - **Popup form draggable**: dùng Pointer Events API (`pointerdown/move/up`)
 - **MarkerCluster + Label**: label dùng `L.divIcon` thêm vào `labelLayerGroup` riêng (không cluster)
+- **Lazy popup**: `bindPopup('')` khi tạo marker — HTML popup chỉ render khi user mở, giảm tải CPU lúc load file lớn
+- **GPS watchPosition**: `maximumAge:5000` — dùng kết quả GPS cache tối đa 5 giây, giảm ép phần cứng liên tục
+- **GPS getCurrentPosition**: `maximumAge:0` + `timeout:15000` — luôn lấy fresh position, cho 15s để lock tín hiệu; hiện `±Xm` từ `position.coords.accuracy`
+- **setView throttle**: chỉ pan bản đồ khi di chuyển > 15m tính qua `lastPanLocation` + `getDistanceMeters`
+- **Tile cache giới hạn**: SW xóa tile cũ nhất khi vượt 200 tile để tránh chiếm storage
 - **Live Server**: port 5501 (`.vscode/settings.json`)
 - **`row[5]` để trống**: cột này hiện không dùng trong code, dành để mở rộng sau
 - **`test.html`**: bản sao index.html dùng thử nghiệm cục bộ, không dùng trên production

@@ -5,8 +5,8 @@
 **Description**: Web app quản lý, theo dõi và báo cáo sự cố đèn chiếu sáng công cộng bị tắt/hư tại TP.HCM. Hiển thị vị trí đèn trên bản đồ Leaflet với icon màu sắc theo trạng thái. Hỗ trợ nhập/xuất Excel, thêm/sửa marker, tìm kiếm, định vị GPS, tracking vị trí, chỉ đường, đồng bộ Google Sheet qua Apps Script. Dùng cho công tác quản lý và báo cáo đèn tắt hệ thống chiếu sáng công cộng.
 
 **URL triển khai:** `https://neo-era.github.io/cskvtt/Den%20tat/dentat.html`  
-**Google Apps Script URL:** `https://script.google.com/macros/s/AKfycbz_mVOEHikgVeB9dGvGZrfXSaSHJ89yrJOoEccSjG9FnfKKsFuSwj93VfrPT6HHuzC2JQ/exec`  
-**Google Sheet CSV URL:** `https://docs.google.com/spreadsheets/d/e/2PACX-1vSWWGTRtkbcls__sB1VlAcSJZTNvDigroNMJgqmce-1Ug3j181zS8VwyvZZb6jCs_W1tbFSq17YNK3B/pub?output=csv`
+**Google Apps Script URL:** `https://script.google.com/macros/s/AKfycbz0U8ZVjQ_h7glHiXfHU9nBTwOpJs87rFsRNo7MVj49fUAolVoh8GnJcyO043BcgTAAbQ/exec`  
+**Google Sheet CSV URL:** `https://docs.google.com/spreadsheets/d/e/2PACX-1vQC6mnGNSNDjUVzs5C4Se9Q9JQCGF9_YQRTRXewhsJhg0QDAcp6NqtxNsFl-fs8g1yyYBQEUqPhgwBv/pub?output=csv`
 
 ---
 
@@ -70,27 +70,9 @@ File Excel `Danhsachdentat.xlsx` chỉ dùng để backup hoặc import thủ c�
 
 ### Cấu trúc cột (rowFieldKeys — hiện tại)
 
-> **Lưu ý:** Code hiện tại kế thừa schema từ module K76.A11. Cần cập nhật `rowFieldKeys` về schema đèn tắt bên dưới.
+>
 
-| Index | Tên field (code) | Tên cột Sheet | Ghi chú |
-|---|---|---|---|
-| 0 | `id` | ID | Mã định danh đèn/trụ |
-| 1 | `name` | name / Tên | Số trụ — tên chính marker |
-| 2 | `latitude` | latitude | WGS84 |
-| 3 | `longitude` | longitude / longtitude | WGS84 (giữ lỗi chính tả để tương thích) |
-| 4 | `north` | N | Tọa độ VN2000 X (Northing) |
-| 5 | `east` | E | Tọa độ VN2000 Y (Easting) |
-| 6 | `status` | trạng thái | Mã trạng thái đèn: 1/3/4/5/7 |
-| 7 | `homeAddress` | địa chỉ nhà riêng | → dùng làm trường **Đường** |
-| 8 | `officeAddress` | địa chỉ cơ quan | → dùng làm trường **Phường** |
-| 9 | `phone1` | điện thoại 1 | → dùng làm **Ngày phát hiện** |
-| 10 | `phone2` | điện thoại 2 | → dùng làm **Ngày sửa** |
-| 11 | `facebook` | facebook | → dùng làm **Vật tư sửa** |
-| 12 | `company` | cơ quan công tác | → dùng làm **Loại đèn** |
-| 13 | `title` | chức vụ | → dùng làm **Công suất** |
-| 14 | `image` | hình ảnh | Đường dẫn ảnh trong `Den tat/images/` |
-
-### Schema đèn tắt mục tiêu (cần cập nhật rowFieldKeys)
+### Schema đèn tắt (cần cập nhật rowFieldKeys)
 
 | Index | Tên field | Tên cột Sheet | Ghi chú |
 |---|---|---|---|
@@ -109,6 +91,8 @@ File Excel `Danhsachdentat.xlsx` chỉ dùng để backup hoặc import thủ c�
 | 12 | `vatTuSua` | Vật tư sửa | Danh sách linh kiện thay thế |
 | 13 | `hinhAnh` | Hình ảnh | Đường dẫn trong `Den tat/images/` |
 | 14 | `ghiChu` | Ghi chú | Ghi chú tự do |
+| 15 | `Nguoiphathien` | Người phát hiện | Lấy từ tên Đăng nhập |
+| 16 | `Nguoisuachua` | Người sửa chữa | Lấy từ tên Đăng nhập |
 | 15 | `vn2000x` | VN2000X | Tọa độ VN2000 Easting |
 | 16 | `vn2000y` | VN2000Y | Tọa độ VN2000 Northing |
 
@@ -243,6 +227,7 @@ let ghPendingLon = null;
 ## Lưu ý kỹ thuật
 
 - **Nguồn dữ liệu chính là Google Sheet**: `loadDataFromSheet()` fetch CSV, parse bằng SheetJS `XLSX.read(csvText, {type:'string'})`
+- **
 - **Không dùng file data GitHub**: File Excel local chỉ dùng để import thủ công qua input file
 - **Backend proxy GAS**: Mọi thao tác ghi (thêm/sửa marker) đều đi qua Google Apps Script — không gọi GitHub API trực tiếp từ browser
 - **`action: "full_update"`**: Khi lưu form chỉnh sửa, payload phải có `action: "full_update"` để GAS phân biệt với request chỉ cập nhật tọa độ GPS
@@ -267,9 +252,9 @@ let ghPendingLon = null;
 
 ---
 
-## Kế hoạch phát triển
+## Thực hiện phát triển
 
-### Cập nhật schema dữ liệu đèn tắt
+### Cập nhật schema dữ liệu đèn tắt nếu còn
 - Đổi `rowFieldKeys` từ schema K76.A11 (tên/điện thoại/facebook) sang schema đèn tắt (số trụ, loại đèn, trạng thái, ngày phát hiện, ngày sửa, vật tư)
 - Cập nhật `parseMarkerRow()`, `fillMarkerPopupForm()`, `createMarkerPopupContent()` theo schema mới
 - Cập nhật `rowToArray()` và header Excel khi xuất
@@ -277,6 +262,10 @@ let ghPendingLon = null;
 ### Reverse geocode tự động
 - Khi thêm marker mới, tự động gọi Nominatim API lấy tên đường và phường từ tọa độ GPS
 - Điền vào trường `duong` và `phuong` thay vì nhập tay
+### 
+- Lấy tên Đăng nhập điền vào trường `Nguoiphathien` khi báo đèn HPS hoặc đèn LED đang hư.
+- Lấy tên Đăng nhập điền vào trường `Nguoisuachua` khi sửa chữa.
+
 
 ### Xuất báo cáo hàng ngày
 - Thêm chức năng lọc marker theo ngày phát hiện
@@ -285,6 +274,9 @@ let ghPendingLon = null;
 ### Bộ lọc theo trạng thái
 - Thêm UI lọc marker: chỉ hiện đèn hư / đèn đã sửa / đèn hư quá 10 ngày
 - Đếm số lượng theo từng trạng thái trên UI
+- Khi nhấn vào từng trạng thái trên UI sẽ hiển thị danh sách marker, và có thể chọn tới marker trên bản đồ khi click vào marker trong danh sách.
+
+
 
 ### Nâng cấp PWA offline
 - ✅ Đã có `manifest.json` và `sw.js`
@@ -293,7 +285,9 @@ let ghPendingLon = null;
 ### Tối ưu giao diện mobile
 - Nút thao tác đủ lớn cho màn hình nhỏ (ngón tay)
 - Test trên Android Chrome + iOS Safari
+- Tăng fontsize text input cho phù hợp để không bị zoom khi nhập dữ liệu
 
+### Log lịch sử cập nhật app
 ---
 
 ## Chạy local

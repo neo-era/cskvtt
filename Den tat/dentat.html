@@ -455,6 +455,7 @@
       <button class="sb-btn" onclick="centerOnUserLocation();closeSidebar()"><span class="bi">📍</span>Vị trí hiện tại</button>
       <button class="sb-btn" onclick="startAddMarker();closeSidebar()"><span class="bi">➕</span>Thêm đèn mới</button>
       <button class="sb-btn" onclick="loadDataFromSheet();closeSidebar()"><span class="bi">🔄</span>Tải lại từ Google Sheet</button>
+      <button class="sb-btn" onclick="document.getElementById('importFileInput').click();closeSidebar()"><span class="bi">📂</span>Nhập từ file Excel</button>
       <button class="sb-btn" onclick="saveMarkerData();closeSidebar()"><span class="bi">💾</span>Xuất Excel</button>
       <button class="sb-btn" onclick="exportMarkersToCad();closeSidebar()"><span class="bi">📐</span>Xuất CAD (.dxf)</button>
       <button class="sb-btn" onclick="openReportModal();closeSidebar()"><span class="bi">📊</span>Báo cáo hàng ngày</button>
@@ -520,7 +521,11 @@
       <div class="mpop-section-title">Sự cố</div>
       <div class="form-row">
         <div class="fg"><label>Ngày phát hiện</label><input id="fNgayPhatHien" type="date"></div>
+        <div class="fg"><label>Người phát hiện</label><input id="fNguoiPhatHien" type="text" placeholder="Tên người báo cáo"></div>
+      </div>
+      <div class="form-row">
         <div class="fg"><label>Ngày sửa xong</label><input id="fNgaySua" type="date"></div>
+        <div class="fg"><label>Người sửa</label><input id="fNguoiSua" type="text" placeholder="Tên người sửa chữa"></div>
       </div>
       <div class="fg"><label>Vật tư sử dụng</label><textarea id="fVatTuSua" placeholder="VD: Bóng đèn LED 250W, dây cáp 5m..."></textarea></div>
       <div class="fg"><label>Ghi chú</label><textarea id="fGhiChu" placeholder="Ghi chú thêm..."></textarea></div>
@@ -569,6 +574,8 @@
   <div class="sl-body" id="slBody"></div>
 </div>
 
+<input id="importFileInput" type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="processFile(event)">
+
 <!-- ── SCRIPTS ── -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
@@ -577,7 +584,7 @@
 <script>
 'use strict';
 // ── CONSTANTS ──
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzLC52b6lW7iGEiQADya8gf24P4dPgF4vOtc6piXVW6i2aavoW_46Ow0daOEukUWrc_wQ/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbygHZRMQa6cC6-7mXIMgzHaRFg4b2t_QjM0kMooVXt9GqX7chK-knxwwiYjhBVzwKPM7Q/exec';
 const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQC6mnGNSNDjUVzs5C4Se9Q9JQCGF9_YQRTRXewhsJhg0QDAcp6NqtxNsFl-fs8g1yyYBQEUqPhgwBv/pub?output=csv';
 const MAX_IMG_LEN = 32767;
 
@@ -644,54 +651,76 @@ document.addEventListener('click', e => { if (!e.target.closest('#searchDrop') &
 
 // ── HELPERS ──
 function normalizeText(t) { return (t||'').toString().normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase(); }
-function normalizeKey(v) { return (v||'').toString().trim().toLowerCase(); }
+function normalizeKey(v) { return (v||'').toString().normalize('NFD').replace(/\p{Diacritic}/gu,'').trim().toLowerCase(); }
 function getDistanceMeters(la1,lo1,la2,lo2) {
   const R=6371e3, r=x=>x*Math.PI/180;
   const a=Math.sin(r(la2-la1)/2)**2+Math.cos(r(la1))*Math.cos(r(la2))*Math.sin(r(lo2-lo1)/2)**2;
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
-function daysBetween(dateStr) {
+// Parse dd/mm/yyyy hoặc yyyy-mm-dd → Date object theo giờ local (không bị lệch timezone)
+function parseViDate(dateStr) {
   if (!dateStr) return null;
-  const parts = dateStr.includes('/') ? dateStr.split('/') : dateStr.split('-');
-  let d;
-  if (parts[0].length === 4) d = new Date(dateStr);
-  else d = new Date(`${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`);
-  if (isNaN(d)) return null;
-  return Math.floor((Date.now() - d) / 86400000);
+  const s = String(dateStr).trim();
+  if (!s) return null;
+  let day, month, year;
+  if (s.includes('/')) {
+    const p = s.split('/');
+    if (p.length < 3) return null;
+    if (p[0].length === 4) { [year, month, day] = p; }   // yyyy/mm/dd (hiếm)
+    else { [day, month, year] = p; }                       // dd/mm/yyyy
+  } else if (s.includes('-')) {
+    const p = s.split('-');
+    if (p.length < 3) return null;
+    if (p[0].length === 4) { [year, month, day] = p; }   // yyyy-mm-dd (ISO)
+    else { [day, month, year] = p; }                       // dd-mm-yyyy
+  } else return null;
+  const d = new Date(+year, +month - 1, +day);
+  return isNaN(d) ? null : d;
 }
-function todayStr() { return new Date().toLocaleDateString('vi-VN'); }
+function daysBetween(dateStr) {
+  const d = parseViDate(dateStr);
+  if (!d) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.floor((today - d) / 86400000);
+}
+function todayStr() {
+  const n = new Date();
+  return `${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')}/${n.getFullYear()}`;
+}
 function toInputDate(vn) {
   if (!vn) return '';
-  if (vn.includes('-') && vn.indexOf('-') === 4) return vn;
-  const p = vn.split('/');
-  if (p.length === 3) return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
-  return '';
+  const d = parseViDate(vn);
+  if (!d) return '';
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 function fromInputDate(iso) {
   if (!iso) return '';
-  const p = iso.split('-');
-  return `${p[2]}/${p[1]}/${p[0]}`;
+  const d = parseViDate(iso);
+  if (!d) return '';
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 }
 
 // ── ROW SCHEMA ──
 const FIELDS = {
-  id:          [0,'ID','id'],
-  soTru:       [1,'Số trụ','so tru','name','Name'],
-  tenTu:       [2,'Tên tủ','ten tu'],
-  latitude:    [3,'latitude','lat'],
-  longitude:   [4,'longitude','lon','longtitude','lontitude'],
-  loaiDen:     [5,'Loại đèn','loai den'],
-  congSuat:    [6,'Công suất','cong suat'],
-  trangThai:   [7,'Trạng thái','trang thai','status'],
-  duong:       [8,'Đường','duong','road'],
-  phuong:      [9,'Phường','phuong'],
-  ngayPhatHien:[10,'Ngày phát hiện','ngay phat hien'],
-  ngaySua:     [11,'Ngày sửa','ngay sua'],
-  vatTuSua:    [12,'Vật tư sửa','vat tu sua'],
-  hinhAnh:     [13,'Hình ảnh','hinh anh','image'],
-  ghiChu:      [14,'Ghi chú','ghi chu'],
-  vn2000x:     [15,'VN2000X','vn2000x','VN2000-X','vn2000-x'],
-  vn2000y:     [16,'VN2000Y','vn2000y','VN2000-Y','vn2000-y'],
+  id:             [0,  'ID','id'],
+  soTru:          [1,  'Số trụ','so tru','soTru'],
+  tenTu:          [2,  'Tên tủ','ten tu','tenTu'],
+  latitude:       [3,  'latitude','lat'],
+  longitude:      [4,  'lontitude','longitude','lon','longtitude'],
+  loaiDen:        [5,  'Loại đèn','loai den','loaiDen'],
+  congSuat:       [6,  'Công suất','cong suat','congSuat'],
+  trangThai:      [7,  'Trang thai','Trạng thái','trang thai','status','trangThai'],
+  duong:          [8,  'Đường','duong'],
+  phuong:         [9,  'Phường','phuong'],
+  ngayPhatHien:   [10, 'Ngày phát hiện','ngay phat hien','ngayPhatHien'],
+  nguoiPhatHien:  [11, 'Người phát hiện','nguoi phat hien','nguoiPhatHien'],
+  ngaySua:        [12, 'Ngày sửa','ngay sua','ngaySua'],
+  nguoiSua:       [13, 'Người sửa','nguoi sua','nguoiSua'],
+  vatTuSua:       [14, 'Vật tư sửa','vat tu sua','vatTuSua'],
+  hinhAnh:        [15, 'HÌnh ảnh','Hình ảnh','hinh anh','image','hinhAnh'],
+  ghiChu:         [16, 'Ghi chú','ghi chu','ghiChu'],
+  vn2000x:        [17, 'VN2000-X','VN2000X','vn2000x'],
+  vn2000y:        [18, 'VN2000-Y','VN2000Y','vn2000y'],
 };
 
 function getVal(row, keys, fb = '') {
@@ -718,16 +747,40 @@ function parseRow(row) {
     lon: parseFloat(getVal(row, FIELDS.longitude, null)),
     loaiDen: g('loaiDen'), congSuat: g('congSuat'), trangThai: g('trangThai'),
     duong: g('duong'), phuong: g('phuong'),
-    ngayPhatHien: g('ngayPhatHien'), ngaySua: g('ngaySua'),
+    ngayPhatHien: g('ngayPhatHien'), nguoiPhatHien: g('nguoiPhatHien'),
+    ngaySua: g('ngaySua'), nguoiSua: g('nguoiSua'),
     vatTuSua: g('vatTuSua'), hinhAnh: g('hinhAnh'), ghiChu: g('ghiChu'),
     vn2000x: g('vn2000x'), vn2000y: g('vn2000y'),
   };
 }
 function parseMarkerRow(row) { return parseRow(row); }
 
+// Cập nhật field vào row, đồng thời ghi đè key gốc của Sheet (dùng FIELDS aliases để map)
+// đảm bảo GAS đọc theo tên cột nào cũng nhận được giá trị mới
+function applyFieldsToRow(row, updates) {
+  const norm = {};
+  Object.keys(row).forEach(k => { norm[normalizeKey(k)] = k; });
+  for (const [field, value] of Object.entries(updates)) {
+    row[field] = value;
+    // Tìm key gốc qua FIELDS aliases (xử lý camelCase vs 'So tru' không cùng normalizeKey)
+    const fieldDef = FIELDS[field];
+    if (fieldDef) {
+      for (const alias of fieldDef) {
+        if (typeof alias !== 'string') continue;
+        const na = normalizeKey(alias);
+        if (norm[na] && norm[na] !== field) { row[norm[na]] = value; break; }
+      }
+    } else {
+      const nk = normalizeKey(field);
+      if (norm[nk] && norm[nk] !== field) row[norm[nk]] = value;
+    }
+  }
+}
+
 function rowToArray(row) {
   const p = parseRow(row);
-  return [p.id,p.soTru,p.tenTu,p.lat,p.lon,p.loaiDen,p.congSuat,p.trangThai,p.duong,p.phuong,p.ngayPhatHien,p.ngaySua,p.vatTuSua,p.hinhAnh,p.ghiChu,p.vn2000x,p.vn2000y];
+  return [p.id,p.soTru,p.tenTu,p.lat,p.lon,p.loaiDen,p.congSuat,p.trangThai,p.duong,p.phuong,
+          p.ngayPhatHien,p.nguoiPhatHien,p.ngaySua,p.nguoiSua,p.vatTuSua,p.hinhAnh,p.ghiChu,p.vn2000x,p.vn2000y];
 }
 
 function normalizeImagePath(img) {
@@ -760,7 +813,8 @@ function createPopupContent(row, rowIndex) {
   if (p.loaiDen || p.congSuat) rows.push(`<div class="pc-row"><span class="pi">💡</span><span class="pk">Loại:</span><span class="pv">${[p.loaiDen, p.congSuat ? p.congSuat+'W' : ''].filter(Boolean).join(' — ')}</span></div>`);
   if (p.tenTu) rows.push(`<div class="pc-row"><span class="pi">🗄</span><span class="pk">Tủ:</span><span class="pv">${p.tenTu}</span></div>`);
   if (p.duong || p.phuong) rows.push(`<div class="pc-row"><span class="pi">📍</span><span class="pk">Địa chỉ:</span><span class="pv">${[p.duong, p.phuong].filter(Boolean).join(', ')}</span></div>`);
-  if (p.ngayPhatHien) rows.push(`<div class="pc-row"><span class="pi">🗓</span><span class="pk">Phát hiện:</span><span class="pv">${p.ngayPhatHien}</span></div>`);
+  if (p.ngayPhatHien || p.nguoiPhatHien) rows.push(`<div class="pc-row"><span class="pi">🗓</span><span class="pk">Phát hiện:</span><span class="pv">${[p.ngayPhatHien, p.nguoiPhatHien].filter(Boolean).join(' — ')}</span></div>`);
+  if (p.ngaySua || p.nguoiSua) rows.push(`<div class="pc-row"><span class="pi">✅</span><span class="pk">Đã sửa:</span><span class="pv">${[p.ngaySua, p.nguoiSua].filter(Boolean).join(' — ')}</span></div>`);
   if (p.vatTuSua) rows.push(`<div class="pc-row"><span class="pi">🔧</span><span class="pk">Vật tư:</span><span class="pv">${p.vatTuSua}</span></div>`);
   if (p.ghiChu) rows.push(`<div class="pc-row"><span class="pi">📝</span><span class="pk">Ghi chú:</span><span class="pv">${p.ghiChu}</span></div>`);
   if (p.vn2000x || p.vn2000y) rows.push(`<div class="pc-row"><span class="pi">🗺</span><span class="pk">VN2000:</span><span class="pv" style="font-family:monospace">X:${p.vn2000x||'—'} Y:${p.vn2000y||'—'}</span></div>`);
@@ -818,12 +872,14 @@ function initializeMap() {
 // ── ADD MARKER TO MAP ──
 function addMarkerRow(row, idx) {
   const p = parseRow(row);
-  if (!Number.isFinite(p.lat) || !Number.isFinite(p.lon)) return null;
+  if (!Number.isFinite(p.lat) || !Number.isFinite(p.lon)) {
+    if (idx < 3) console.warn('[dentat] Row', idx, 'invalid coords — lat:', p.lat, 'lon:', p.lon, 'keys:', Object.keys(row).slice(0,8));
+    return null;
+  }
   const icon = createStatusIcon(p.trangThai);
   const marker = L.marker([p.lat, p.lon], { icon });
   const entry = { lat: p.lat, lon: p.lon, name: p.soTru, marker, row, rowIndex: idx, labelMarker: null };
-  marker.bindPopup('', { maxWidth: 320, minWidth: 250 });
-  marker.on('popupopen', () => marker.setPopupContent(createPopupContent(entry.row, idx)));
+  marker.bindPopup(() => createPopupContent(entry.row, idx), { maxWidth: 320, minWidth: 250 });
   marker.on('dblclick', () => openEditPopup(idx));
   markersCluster.addLayer(marker);
   if (p.soTru) {
@@ -838,12 +894,14 @@ function addMarkerRow(row, idx) {
 function addMarkersToMap(data) {
   markersCluster.clearLayers(); labelLayerGroup.clearLayers(); markers = [];
   data.forEach((row, i) => addMarkerRow(row, i));
+  const validCount = markers.filter(Boolean).length;
+  console.log('[dentat] Markers on map:', validCount, '/', data.length);
   applyFilter();
   updateStats();
   buildFilterChips();
   buildLegend();
-  if (markers.filter(Boolean).length > 0) {
-    try { map.fitBounds(markersCluster.getBounds().pad(.1)); } catch(e) {}
+  if (validCount > 0) {
+    try { map.fitBounds(markersCluster.getBounds().pad(.1)); } catch(e) { console.warn('[dentat] fitBounds error:', e); }
   }
 }
 
@@ -952,6 +1010,30 @@ function flyToEntry(index) {
   setTimeout(() => entry.marker.openPopup(), 380);
 }
 
+// ── IMPORT LOCAL FILE ──
+function processFile(event) {
+  const file = event.target.files && event.target.files[0];
+  event.target.value = null;
+  if (!file) return;
+  showToast('⏳ Đang đọc file...');
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const wb = XLSX.read(ev.target.result, { type: 'array' });
+      let data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+      data = data.filter(r => r && Object.values(r).some(v => v !== null && v !== ''));
+      if (!data.length) { showToast('❌ File không có dữ liệu hợp lệ'); return; }
+      loadedData = data;
+      addMarkersToMap(loadedData);
+      showToast(`✅ Đã nhập ${data.length} đèn từ ${file.name}`);
+    } catch(e) {
+      showToast('❌ Không đọc được file: ' + e.message);
+    }
+  };
+  reader.onerror = () => showToast('❌ Lỗi đọc file');
+  reader.readAsArrayBuffer(file);
+}
+
 // ── LOAD DATA ──
 async function loadDataFromSheet() {
   showToast('⏳ Đang tải dữ liệu từ Google Sheet...');
@@ -962,10 +1044,17 @@ async function loadDataFromSheet() {
     const wb = XLSX.read(csv, { type: 'string' });
     let data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
     data = data.filter(r => r && Object.values(r).some(v => v !== null && v !== ''));
+    console.log('[dentat] Sheet headers:', data[0] ? Object.keys(data[0]) : 'no data');
+    console.log('[dentat] Loaded rows:', data.length);
+    if (data[0]) {
+      const sample = parseRow(data[0]);
+      console.log('[dentat] Sample row parsed:', sample);
+    }
     loadedData = data;
     addMarkersToMap(loadedData);
     showToast(`✅ Đã tải ${data.length} đèn từ Google Sheet`);
   } catch(e) {
+    console.error('[dentat] Load error:', e);
     showToast('❌ Không tải được dữ liệu: ' + e.message);
   }
 }
@@ -1024,14 +1113,16 @@ function fillForm(row, lat, lon) {
     document.getElementById('fDuong').value = p.duong;
     document.getElementById('fPhuong').value = p.phuong;
     document.getElementById('fNgayPhatHien').value = toInputDate(p.ngayPhatHien);
+    document.getElementById('fNguoiPhatHien').value = p.nguoiPhatHien;
     document.getElementById('fNgaySua').value = toInputDate(p.ngaySua);
+    document.getElementById('fNguoiSua').value = p.nguoiSua;
     document.getElementById('fVatTuSua').value = p.vatTuSua;
     document.getElementById('fGhiChu').value = p.ghiChu;
     document.getElementById('fCoordsText').textContent = Number.isFinite(p.lat) ? `Tọa độ: ${p.lat.toFixed(6)}, ${p.lon.toFixed(6)}` : 'Tọa độ: —';
     markerImageDataUrl = p.hinhAnh; markerImagePath = normalizeImagePath(p.hinhAnh);
     document.getElementById('fImagePreview').innerHTML = markerImageDataUrl ? `<img src="${markerImageDataUrl}" style="max-height:80px;border-radius:8px">` : '';
   } else {
-    ['fId','fSoTru','fTenTu','fCongSuat','fDuong','fPhuong','fVatTuSua','fGhiChu'].forEach(id => document.getElementById(id).value = '');
+    ['fId','fSoTru','fTenTu','fCongSuat','fDuong','fPhuong','fNguoiPhatHien','fNguoiSua','fVatTuSua','fGhiChu'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('fLoaiDen').value = '';
     document.getElementById('fTrangThai').value = '1';
     document.getElementById('fLat').value = lat ?? '';
@@ -1125,7 +1216,9 @@ async function saveMarkerPopup() {
     duong: document.getElementById('fDuong').value.trim(),
     phuong: document.getElementById('fPhuong').value.trim(),
     ngayPhatHien: fromInputDate(document.getElementById('fNgayPhatHien').value),
+    nguoiPhatHien: document.getElementById('fNguoiPhatHien').value.trim(),
     ngaySua: fromInputDate(document.getElementById('fNgaySua').value),
+    nguoiSua: document.getElementById('fNguoiSua').value.trim(),
     vatTuSua: document.getElementById('fVatTuSua').value.trim(),
     hinhAnh: markerImagePath || (markerImageDataUrl && markerImageDataUrl.startsWith('data:') ? markerImageDataUrl : ''),
     ghiChu: document.getElementById('fGhiChu').value.trim(),
@@ -1136,17 +1229,22 @@ async function saveMarkerPopup() {
   const orig = btn.textContent;
   btn.disabled = true; btn.textContent = '⌛ Đang lưu...';
   try {
-    await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rowData) });
+    // Khi edit: merge vào row gốc để giữ key tên cột Sheet gốc, GAS đọc đúng cột
+    const payload = editingIndex !== null
+      ? (() => { const r = { ...loadedData[editingIndex] }; applyFieldsToRow(r, rowData); return r; })()
+      : rowData;
+    console.log('[GAS payload]', JSON.stringify(payload, null, 2));
+    await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (editingIndex !== null) {
-      loadedData[editingIndex] = rowData;
+      loadedData[editingIndex] = payload;
       const entry = markers[editingIndex];
       if (entry && Number.isFinite(lat) && Number.isFinite(lon)) {
-        entry.row = rowData; entry.lat = lat; entry.lon = lon; entry.name = soTru;
+        entry.row = payload; entry.lat = lat; entry.lon = lon; entry.name = soTru;
         markersCluster.removeLayer(entry.marker);
         if (entry.labelMarker) labelLayerGroup.removeLayer(entry.labelMarker);
         const newIcon = createStatusIcon(trangThai);
         entry.marker.setLatLng([lat, lon]); entry.marker.setIcon(newIcon);
-        entry.marker.setPopupContent(createPopupContent(rowData, editingIndex));
+        entry.marker.setPopupContent(createPopupContent(payload, editingIndex));
         markersCluster.addLayer(entry.marker);
         if (soTru) {
           entry.labelMarker = L.marker([lat, lon], {
@@ -1174,10 +1272,9 @@ async function quickFix(index) {
   const p = parseRow(loadedData[index]);
   const newStatus = p.loaiDen === 'HPS' ? '4' : '3';
   const today = todayStr();
-  const rowData = { ...loadedData[index], trangThai: newStatus, ngaySua: today, action: 'full_update' };
-  if (typeof rowData === 'object' && !Array.isArray(rowData)) {
-    rowData.trangThai = newStatus; rowData.ngaySua = today;
-  }
+  const rowData = { ...loadedData[index] };
+  applyFieldsToRow(rowData, { trangThai: newStatus, ngaySua: today });
+  rowData.action = 'full_update';
   loadedData[index] = rowData;
   const entry = markers[index];
   if (entry) {
@@ -1188,6 +1285,7 @@ async function quickFix(index) {
   applyFilter(); updateStats(); buildFilterChips();
   showToast(`✅ Đã đánh dấu ${p.soTru} sửa xong hôm nay`);
   try {
+    console.log('[GAS quickFix payload]', JSON.stringify(rowData, null, 2));
     await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rowData) });
   } catch(e) {}
 }
@@ -1358,28 +1456,6 @@ function exportMarkersToCad() {
 }
 
 // ── DRAGGABLE POPUP ──
-function makeElementDraggable(handle, target) {
-  if (!handle || !target) return;
-  let dragging = false, startX = 0, startY = 0, origLeft = 0, origTop = 0;
-  handle.style.touchAction = 'none';
-  handle.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-    dragging = true;
-    const r = target.getBoundingClientRect();
-    origLeft = r.left; origTop = r.top; startX = e.clientX; startY = e.clientY;
-    try { target.setPointerCapture(e.pointerId); } catch(ex) {}
-    handle.classList.add('dragging'); e.preventDefault();
-  });
-  handle.addEventListener('pointermove', e => {
-    if (!dragging) return;
-    target.style.left = `${origLeft + e.clientX - startX}px`;
-    target.style.top = `${origTop + e.clientY - startY}px`;
-    target.style.transform = 'none';
-  });
-  const end = e => { if (!dragging) return; dragging = false; try { target.releasePointerCapture(e.pointerId); } catch(ex) {} handle.classList.remove('dragging'); };
-  handle.addEventListener('pointerup', end);
-  handle.addEventListener('pointercancel', end);
-}
 
 // ── SERVICE WORKER ──
 if ('serviceWorker' in navigator) {
@@ -1395,8 +1471,7 @@ window.onload = () => {
   initializeMap();
   buildFilterChips();
   buildLegend();
-  makeElementDraggable(document.getElementById('mpopHeader'), document.getElementById('mpopCard'));
-  document.getElementById('reportModal').addEventListener('click', e => { if (e.target === document.getElementById('reportModal')) closeReportModal(); });
+document.getElementById('reportModal').addEventListener('click', e => { if (e.target === document.getElementById('reportModal')) closeReportModal(); });
   loadDataFromSheet();
 };
 </script>

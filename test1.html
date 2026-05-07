@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhà Của Giang - Nền Tảng Bất Động Sản Việt Nam</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Playfair+Display:wght@700&display=swap');
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        .heading-font {
+            font-family: 'Playfair Display', sans-serif;
+        }
+        .hero-bg {
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.85) 0%, rgba(14, 165, 233, 0.75) 100%),
+                        url('https://picsum.photos/id/1015/2000/1200') center/cover no-repeat;
+        }
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+        .nav-link {
+            position: relative;
+        }
+        .nav-link:after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -2px;
+            left: 0;
+            background-color: #f97316;
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover:after {
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-zinc-50 text-zinc-800">
+    <!-- Navbar -->
+    <nav class="bg-white border-b sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-orange-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">🏠</div>
+                <div>
+                    <span class="heading-font text-2xl font-bold tracking-tight text-orange-600">Nhà Của Giang</span>
+                </div>
+            </div>
+            
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium">
+                <a href="#" class="nav-link text-zinc-600 hover:text-orange-600">Mua nhà</a>
+                <a href="#" class="nav-link text-zinc-600 hover:text-orange-600">Thuê nhà</a>
+                <a href="#" class="nav-link text-zinc-600 hover:text-orange-600">Đầu tư</a>
+                <a href="#" class="nav-link text-zinc-600 hover:text-orange-600">Dự án</a>
+                <a href="#" class="nav-link text-zinc-600 hover:text-orange-600">Tin tức</a>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <button onclick="document.getElementById('search-modal').classList.remove('hidden')" 
+                        class="flex items-center gap-2 px-5 py-2.5 bg-zinc-100 hover:bg-zinc-200 rounded-3xl text-sm font-medium transition">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span>Tìm kiếm</span>
+                </button>
+                <button class="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-3xl text-sm font-semibold transition flex items-center gap-2">
+                    <i class="fa-solid fa-user"></i>
+                    Đăng nhập
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <header class="hero-bg h-screen flex items-center relative text-white">
+        <div class="max-w-7xl mx-auto px-6 pt-20">
+            <div class="max-w-2xl">
+                <h1 class="heading-font text-6xl md:text-7xl font-bold leading-tight mb-6">
+                    Tìm Ngôi Nhà<br>Mơ Ước Của Bạn Ngay
+                </h1>
+                <p class="text-xl text-white/90 mb-10">
+                    Hàng ngàn bất động sản chất lượng tại TP.HCM, Hà Nội và toàn quốc. 
+                    Mua - Thuê - Đầu tư dễ dàng hơn bao giờ hết.
+                </p>
+                
+                <div class="flex flex-wrap gap-4">
+                    <button onclick="alert('Đang chuyển hướng đến trang tìm kiếm...')" 
+                            class="px-10 py-4 bg-white text-orange-600 hover:bg-orange-50 rounded-3xl text-lg font-semibold flex items-center gap-3 group">
+                        Bắt đầu tìm kiếm
+                        <i class="fa-solid fa-arrow-right group-active:translate-x-1 transition"></i>
+                    </button>
+                    
+                    <button onclick="document.getElementById('services').scrollIntoView({ behavior: 'smooth' })" 
+                            class="px-8 py-4 border-2 border-white/80 hover:bg-white/10 rounded-3xl text-lg font-medium transition">
+                        Khám phá dịch vụ
+                    </button>
+                </div>
+                
+                <div class="mt-12 flex items-center gap-8 text-sm">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-check text-green-400"></i>
+                        <span>15.000+ bất động sản</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-check text-green-400"></i>
+                        <span>98% khách hàng hài lòng</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating modern house image -->
+        <div class="hidden lg:block absolute bottom-12 right-12 bg-white rounded-3xl shadow-2xl overflow-hidden w-80">
+            <img src="https://picsum.photos/id/1015/800/600" alt="Nhà hiện đại" 
+                 class="w-full h-56 object-cover">
+            <div class="p-5">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="font-semibold text-zinc-800">Vinhomes Grand Park</p>
+                        <p class="text-sm text-zinc-500">Quận 9, TP.HCM • 3PN • 120m²</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-orange-600 font-bold text-xl">4.2 tỷ</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
+            <div class="text-xs tracking-widest mb-2 opacity-75">CUỘN XUỐNG ĐỂ KHÁM PHÁ</div>
+            <i class="fa-solid fa-chevron-down animate-bounce text-2xl"></i>
+        </div>
+    </header>
+
+    <!-- SERVICES SECTION -->
+    <section id="services" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <span class="px-4 py-1.5 bg-orange-100 text-orange-600 text-sm font-medium rounded-full">DỊCH VỤ CỦA CHÚNG TÔI</span>
+                <h2 class="heading-font text-5xl font-bold mt-4">Bạn muốn gì hôm nay?</h2>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Mua -->
+                <div class="card-hover bg-white border border-zinc-100 rounded-3xl p-8 group">
+                    <div class="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center text-4xl mb-6 group-hover:scale-110 transition">🏠</div>
+                    <h3 class="text-2xl font-semibold mb-3">Mua Nhà</h3>
+                    <p class="text-zinc-600 mb-8">Tìm ngôi nhà hoàn hảo với giá tốt nhất. Hỗ trợ vay vốn, pháp lý minh bạch.</p>
+                    <button class="text-orange-600 font-medium flex items-center gap-2 group-hover:gap-3 transition">
+                        Khám phá ngay <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+                
+                <!-- Thuê -->
+                <div class="card-hover bg-white border border-zinc-100 rounded-3xl p-8 group">
+                    <div class="w-16 h-16 bg-sky-100 rounded-2xl flex items-center justify-center text-4xl mb-6 group-hover:scale-110 transition">🔑</div>
+                    <h3 class="text-2xl font-semibold mb-3">Thuê Nhà</h3>
+                    <p class="text-zinc-600 mb-8">Căn hộ, nhà phố, biệt thự cho thuê ngắn &amp; dài hạn. Đa dạng lựa chọn.</p>
+                    <button class="text-orange-600 font-medium flex items-center gap-2 group-hover:gap-3 transition">
+                        Tìm nhà thuê <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+                
+                <!-- Đầu tư -->
+                <div class="card-hover bg-white border border-zinc-100 rounded-3xl p-8 group">
+                    <div class="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center text-4xl mb-6 group-hover:scale-110 transition">📈</div>
+                    <h3 class="text-2xl font-semibold mb-3">Đầu Tư</h3>
+                    <p class="text-zinc-600 mb-8">Cơ hội đầu tư sinh lời cao. Phân tích thị trường và tư vấn chuyên sâu.</p>
+                    <button class="text-orange-600 font-medium flex items-center gap-2 group-hover:gap-3 transition">
+                        Xem cơ hội <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURED PROPERTIES -->
+    <section class="py-20 bg-zinc-100">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex justify-between items-end mb-12">
+                <div>
+                    <h2 class="heading-font text-4xl font-bold">Bất động sản nổi bật</h2>
+                    <p class="text-zinc-600">Được khách hàng yêu thích nhất tuần này</p>
+                </div>
+                <a href="#" class="text-orange-600 hover:underline font-medium flex items-center gap-2">
+                    Xem tất cả <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+            
+            <div class="grid md:grid-cols-4 gap-6">
+                <div class="bg-white rounded-3xl overflow-hidden card-hover">
+                    <img src="https://picsum.photos/id/1015/600/400" class="w-full h-56 object-cover">
+                    <div class="p-5">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-emerald-600 font-medium">Bán</span>
+                            <span class="text-zinc-500">Quận 2 • HCM</span>
+                        </div>
+                        <p class="font-semibold mt-1 line-clamp-2">Căn hộ 2PN view sông, đầy đủ nội thất</p>
+                        <p class="text-2xl font-bold text-orange-600 mt-4">3.85 tỷ</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-3xl overflow-hidden card-hover">
+                    <img src="https://picsum.photos/id/106/600/400" class="w-full h-56 object-cover">
+                    <div class="p-5">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-sky-600 font-medium">Thuê</span>
+                            <span class="text-zinc-500">Thủ Đức • HCM</span>
+                        </div>
+                        <p class="font-semibold mt-1 line-clamp-2">Nhà phố 4PN, gần trường quốc tế</p>
+                        <p class="text-2xl font-bold text-orange-600 mt-4">28 triệu/tháng</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-3xl overflow-hidden card-hover">
+                    <img src="https://picsum.photos/id/201/600/400" class="w-full h-56 object-cover">
+                    <div class="p-5">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-amber-600 font-medium">Đầu tư</span>
+                            <span class="text-zinc-500">Bình Dương</span>
+                        </div>
+                        <p class="font-semibold mt-1 line-clamp-2">Shophouse khu đô thị mới</p>
+                        <p class="text-2xl font-bold text-orange-600 mt-4">5.9 tỷ</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-3xl overflow-hidden card-hover">
+                    <img src="https://picsum.photos/id/870/600/400" class="w-full h-56 object-cover">
+                    <div class="p-5">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-emerald-600 font-medium">Bán</span>
+                            <span class="text-zinc-500">Hà Nội</span>
+                        </div>
+                        <p class="font-semibold mt-1 line-clamp-2">Biệt thự nghỉ dưỡng ven hồ</p>
+                        <p class="text-2xl font-bold text-orange-600 mt-4">18.5 tỷ</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TESTIMONIALS SLIDER -->
+    <section class="py-24 bg-white">
+        <div class="max-w-5xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="heading-font text-4xl font-bold">Khách hàng nói gì về chúng tôi</h2>
+            </div>
+            
+            <div id="testimonial-slider" class="relative overflow-hidden">
+                <div class="flex transition-transform duration-700 ease-in-out" id="slides">
+                    <!-- Slide 1 -->
+                    <div class="min-w-full px-4">
+                        <div class="bg-zinc-50 rounded-3xl p-10 flex flex-col md:flex-row gap-10 items-center">
+                            <img src="https://picsum.photos/id/64/300/300" class="w-28 h-28 rounded-2xl object-cover shadow-md">
+                            <div>
+                                <p class="text-xl italic text-zinc-600">"Nhờ Nhà Của Giang, vợ chồng tôi đã tìm được căn nhà mơ ước chỉ sau 2 tuần. Đội ngũ tư vấn rất chuyên nghiệp và nhiệt tình."</p>
+                                <div class="mt-8">
+                                    <p class="font-semibold">Anh Minh &amp; Chị Lan</p>
+                                    <p class="text-sm text-zinc-500">Quận 7, TP.HCM</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Slide 2 -->
+                    <div class="min-w-full px-4">
+                        <div class="bg-zinc-50 rounded-3xl p-10 flex flex-col md:flex-row gap-10 items-center">
+                            <img src="https://picsum.photos/id/91/300/300" class="w-28 h-28 rounded-2xl object-cover shadow-md">
+                            <div>
+                                <p class="text-xl italic text-zinc-600">"Tôi đầu tư shophouse qua nền tảng này và rất hài lòng với lợi nhuận. Thông tin minh bạch, cập nhật liên tục."</p>
+                                <div class="mt-8">
+                                    <p class="font-semibold">Chị Thu Hương</p>
+                                    <p class="text-sm text-zinc-500">Nhà đầu tư tại Bình Dương</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Controls -->
+            <div class="flex justify-center gap-4 mt-10">
+                <button onclick="prevSlide()" class="w-12 h-12 border border-zinc-300 hover:border-orange-300 rounded-2xl flex items-center justify-center text-xl transition">
+                    ←
+                </button>
+                <button onclick="nextSlide()" class="w-12 h-12 border border-zinc-300 hover:border-orange-300 rounded-2xl flex items-center justify-center text-xl transition">
+                    →
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-zinc-900 text-zinc-400">
+        <div class="max-w-7xl mx-auto px-6 py-20 grid md:grid-cols-4 gap-12">
+            <div>
+                <div class="flex items-center gap-3 text-white mb-6">
+                    <div class="w-9 h-9 bg-orange-500 rounded-2xl flex items-center justify-center text-3xl">🏠</div>
+                    <span class="heading-font text-3xl font-bold">Nhà Của Giang</span>
+                </div>
+                <p class="text-sm">Nền tảng bất động sản đáng tin cậy<br>tại Việt Nam.</p>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold text-white mb-4">Sản phẩm</h4>
+                <div class="space-y-2 text-sm">
+                    <p>Mua bán nhà đất</p>
+                    <p>Cho thuê căn hộ</p>
+                    <p>Dự án đầu tư</p>
+                </div>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold text-white mb-4">Công ty</h4>
+                <div class="space-y-2 text-sm">
+                    <p>Về chúng tôi</p>
+                    <p>Tin tức</p>
+                    <p>Liên hệ</p>
+                    <p>Blog</p>
+                </div>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold text-white mb-4">Liên hệ</h4>
+                <div class="space-y-3 text-sm">
+                    <p class="flex items-center gap-3"><i class="fa-solid fa-phone"></i> 1900 1234</p>
+                    <p class="flex items-center gap-3"><i class="fa-solid fa-envelope"></i> hotro@nhacuaigiang.vn</p>
+                    <p class="flex items-center gap-3"><i class="fa-solid fa-location-dot"></i> 123 Nguyễn Huệ, Quận 1, TP.HCM</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="border-t border-zinc-800 py-6 text-center text-xs">
+            © 2026 Nhà Của Giang. Tất cả quyền được bảo lưu.
+        </div>
+    </footer>
+
+    <!-- Simple search modal -->
+    <div id="search-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[100]">
+        <div class="bg-white rounded-3xl w-full max-w-lg mx-4 overflow-hidden">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="font-semibold text-xl">Tìm kiếm bất động sản</h3>
+                <button onclick="document.getElementById('search-modal').classList.add('hidden')" class="text-3xl leading-none">&times;</button>
+            </div>
+            <div class="p-6">
+                <input type="text" placeholder="Nhập từ khóa (ví dụ: căn hộ Quận 7)" 
+                       class="w-full border rounded-2xl px-5 py-4 outline-none focus:border-orange-400">
+                <div class="grid grid-cols-2 gap-4 mt-6">
+                    <select class="border rounded-2xl px-5 py-4">
+                        <option>Mua</option>
+                        <option>Thuê</option>
+                    </select>
+                    <select class="border rounded-2xl px-5 py-4">
+                        <option>TP.HCM</option>
+                        <option>Hà Nội</option>
+                        <option>Đà Nẵng</option>
+                    </select>
+                </div>
+            </div>
+            <div class="p-6 border-t flex justify-end">
+                <button onclick="alert('Tìm kiếm đang được thực hiện...'); document.getElementById('search-modal').classList.add('hidden')" 
+                        class="px-10 py-4 bg-orange-500 text-white rounded-3xl font-medium">
+                    Tìm ngay
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tailwind script already loaded via CDN
+        let currentSlide = 0;
+        const totalSlides = 2;
+        
+        function updateSlider() {
+            const slidesContainer = document.getElementById('slides');
+            slidesContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
+        }
+        
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % totalSlides;
+            updateSlider();
+        }
+        
+        function prevSlide() {
+            currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+            updateSlider();
+        }
+        
+        // Auto slide every 6 seconds
+        setInterval(() => {
+            nextSlide();
+        }, 6000);
+        
+        // Close modal when pressing ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === "Escape") {
+                const modal = document.getElementById('search-modal');
+                if (!modal.classList.contains('hidden')) modal.classList.add('hidden');
+            }
+        });
+        
+        console.log('%cWebsite Nhà Của Giang đã sẵn sàng!', 'color: #f97316; font-size: 14px; font-weight: bold');
+    </script>
+</body>
+</html>

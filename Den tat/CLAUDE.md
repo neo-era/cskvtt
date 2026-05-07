@@ -1,11 +1,11 @@
 # CSKVTT — Quản Lý Đèn Tắt Hệ Thống Chiếu Sáng Công Cộng
 
 **Author**: Mai Vũ Lâm  
-**Version**: V1.0  
-**Description**: Web app quản lý, theo dõi và báo cáo sự cố đèn chiếu sáng công cộng bị tắt/hư tại TP.HCM. Hiển thị vị trí đèn trên bản đồ Leaflet với icon màu sắc theo trạng thái. Hỗ trợ nhập/xuất Excel, thêm/sửa marker, tìm kiếm, định vị GPS, tracking vị trí, chỉ đường, đồng bộ Google Sheet qua Apps Script. Dùng cho công tác quản lý và báo cáo đèn tắt hệ thống chiếu sáng công cộng.
+**Version**: V1.2  
+**Description**: Web app quản lý, theo dõi và báo cáo sự cố đèn chiếu sáng công cộng bị tắt/hư tại TP.HCM. Hiển thị vị trí đèn trên bản đồ Leaflet với dot icon màu sắc theo trạng thái, pulse animation cho đèn hư. Có trang đăng nhập xác thực qua Google Sheet. Hỗ trợ nhập/xuất Excel, thêm/sửa marker, tìm kiếm, định vị GPS, reverse geocode, chỉ đường, xuất CAD, báo cáo hàng ngày, lọc theo trạng thái. Ghi dữ liệu qua Google Apps Script → Google Sheet.
 
 **URL triển khai:** `https://neo-era.github.io/cskvtt/Den%20tat/dentat.html`  
-**Google Apps Script URL:** `https://script.google.com/macros/s/AKfycbz0U8ZVjQ_h7glHiXfHU9nBTwOpJs87rFsRNo7MVj49fUAolVoh8GnJcyO043BcgTAAbQ/exec`  
+**Google Apps Script URL:** `https://script.google.com/macros/s/AKfycbygHZRMQa6cC6-7mXIMgzHaRFg4b2t_QjM0kMooVXt9GqX7chK-knxwwiYjhBVzwKPM7Q/exec`  
 **Google Sheet CSV URL:** `https://docs.google.com/spreadsheets/d/e/2PACX-1vQC6mnGNSNDjUVzs5C4Se9Q9JQCGF9_YQRTRXewhsJhg0QDAcp6NqtxNsFl-fs8g1yyYBQEUqPhgwBv/pub?output=csv`
 
 ---
@@ -15,36 +15,34 @@
 ```
 cskvtt/Den tat/
 ├── dentat.html          # File chính — bản đồ quản lý đèn tắt
+├── gas.js               # Mã nguồn Google Apps Script (reference, không chạy ở browser)
 ├── CLAUDE.md            # Tài liệu dự án này
+├── manifest.json        # PWA manifest
+├── sw.js                # Service Worker
 ├── data/
 │   ├── Danhsachdentat.xlsx      # File Excel dữ liệu đèn (backup local)
+│   ├── bangron.xlsx             # Dữ liệu bảng rộng (dự phòng)
 │   ├── Camera.xlsx              # Dữ liệu camera (dự phòng)
 │   └── thietbitichhop.xlsx      # Dữ liệu thiết bị tích hợp (dự phòng)
 └── images/
-    ├── 1.png            # Icon: Đèn LED đang hư
-    ├── 3.png            # Icon: Đèn LED sáng bình thường
-    ├── 4.png            # Icon: Đèn HPS sáng bình thường
-    ├── 5.png            # Icon: Đèn hư quá 10 ngày
-    ├── 7.png            # Icon: Đèn HPS đang hư
-    ├── 8.png            # Icon: Marker mặc định (vị trí hiện tại)
     ├── icon-192.png     # PWA icon 192×192
     ├── icon-512.png     # PWA icon 512×512
-    └── ...              # Ảnh chụp đèn sự cố (tên tự động theo marker)
+    └── *.jpeg           # Ảnh chụp hiện trường đèn sự cố
 ```
 
 ---
 
-## Trạng thái đèn — Mã icon
+## Trạng thái đèn — STATUS_CONFIG
 
-| Mã số | File icon | Ý nghĩa |
-|---|---|---|
-| `1` | `images/1.png` | Đèn LED đang hư |
-| `3` | `images/3.png` | Đèn LED sáng bình thường |
-| `4` | `images/4.png` | Đèn HPS sáng bình thường |
-| `5` | `images/5.png` | Đèn hư quá 10 ngày |
-| `7` | `images/7.png` | Đèn HPS đang hư |
+| Mã | Màu | Ý nghĩa | Pulse |
+|---|---|---|---|
+| `1` | `#ef4444` (đỏ) | Đèn LED đang hư | ✓ |
+| `7` | `#f97316` (cam) | Đèn HPS đang hư | ✓ |
+| `5` | `#7c3aed` (tím) | Đèn hư quá 10 ngày | ✓ |
+| `3` | `#10b981` (xanh lá) | Đèn LED sáng bình thường | ✗ |
+| `4` | `#0ea5e9` (xanh dương) | Đèn HPS sáng bình thường | ✗ |
 
-Icon được chọn tự động dựa theo giá trị trường `trạng thái` của mỗi marker.
+Marker dùng `L.divIcon` với CSS class `den-dot` — dot tròn màu theo trạng thái, có `den-pulse` animation cho đèn hư.
 
 ---
 
@@ -54,147 +52,206 @@ Icon được chọn tự động dựa theo giá trị trường `trạng thái
 |---|---|---|
 | Leaflet | 1.9.4 | Bản đồ tương tác |
 | Leaflet MarkerCluster | 1.5.3 | Gom nhóm marker |
-| XLSX (SheetJS) | 0.18.5 | Đọc/ghi file Excel, parse CSV từ Google Sheet |
-| Bootstrap | 5 (bundle) | UI responsive |
-| jQuery | 3.0.0 | DOM & modal |
-| Font Awesome | 4.0.3 | Icons UI |
+| XLSX (SheetJS) | 0.18.5 | Đọc file Excel, parse CSV từ Google Sheet |
 | Google Fonts (Inter) | — | Font chữ giao diện |
-| Google Apps Script | — | Backend proxy: đọc/ghi Google Sheet, cập nhật GitHub |
+| Nominatim OSM | — | Reverse geocode (tên đường/phường từ tọa độ) |
+| OSRM | — | Routing (chỉ đường lái xe) |
+
+---
+
+## Đăng nhập (Authentication)
+
+### Luồng xác thực
+1. Trang tải → `window.onload` → `checkAuth()` → kiểm tra `localStorage('dt_user')`
+2. Nếu có phiên hợp lệ → ẩn login overlay → `loadDataFromSheet()`
+3. Nếu không có → hiện login overlay, ẩn loading spinner
+4. Người dùng nhập username/password → `doLogin()` → POST GAS `action: 'login'`
+5. GAS tra cứu sheet **TaiKhoan** → trả về `{status: 'ok', user: {...}}` hoặc `{status: 'error', message: '...'}`
+6. Thành công → lưu `currentUser` vào `localStorage('dt_user')` → ẩn overlay → tải dữ liệu
+7. Đăng xuất → `logout()` → xóa `localStorage('dt_user')` → hiện overlay lại
+
+### Sheet TaiKhoan (cần tạo thủ công)
+Tab mới trong cùng Google Sheet, tên tab: `TaiKhoan`, cấu trúc:
+
+| Cột A | Cột B | Cột C | Cột D |
+|---|---|---|---|
+| `tenDangNhap` | `matKhau` | `hoTen` | `vaiTro` |
+| nguyenvana | 123456 | Nguyễn Văn A | user |
+| admin | adminpass | Quản trị viên | admin |
+
+- `vaiTro`: `admin` hoặc `quanly` → hiện icon 👑; khác → 👷
+- Mật khẩu lưu plaintext (đủ cho công cụ nội bộ)
+
+### State người dùng
+```js
+let currentUser = null; // { username, displayName, role }
+// Lưu vào localStorage key: 'dt_user'
+```
+
+### Hàm auth
+- `checkAuth()` — kiểm tra localStorage; nếu có phiên → show app + tải dữ liệu; nếu không → show login
+- `doLogin()` — gọi GAS với `action: 'login'`; dùng `Content-Type: text/plain` để tránh CORS preflight
+- `logout()` — xóa localStorage, clear markers/data, hiện login overlay
+- `updateSidebarUser()` — cập nhật tên + vai trò hiển thị trong sidebar
 
 ---
 
 ## Dữ liệu
 
 Nguồn dữ liệu chính: **Google Sheet** (tải về qua URL CSV `pub?output=csv`), không dùng file Excel local.  
-File Excel `Danhsachdentat.xlsx` chỉ dùng để backup hoặc import thủ công.
+Ghi dữ liệu: qua **Google Apps Script** (`gas.js` deploy thành Web App).
 
-### Cấu trúc cột (rowFieldKeys — hiện tại)
+### Schema cột FIELDS (index trong code)
 
->
-
-### Schema đèn tắt (cần cập nhật rowFieldKeys)
-
-| Index | Tên field | Tên cột Sheet | Ghi chú |
+| Index | Key | Tên cột Sheet | Ghi chú |
 |---|---|---|---|
-| 0 | `id` | ID | Mã định danh |
-| 1 | `soTru` | Số trụ | Tên chính marker |
-| 2 | `tenTu` | Tên tủ | Tủ điều khiển quản lý đèn |
-| 3 | `latitude` | latitude | WGS84 |
-| 4 | `longitude` | longitude | WGS84 |
-| 5 | `loaiDen` | Loại đèn | `LED` hoặc `HPS` |
-| 6 | `congSuat` | Công suất | Đơn vị W |
-| 7 | `trangThai` | Trạng thái | Mã số: 1/3/4/5/7 |
-| 8 | `duong` | Đường | Tên đường — tự động từ reverse geocode |
-| 9 | `phuong` | Phường | Tên phường — tự động từ reverse geocode |
-| 10 | `ngayPhatHien` | Ngày phát hiện | Định dạng `dd/mm/yyyy` |
-| 11 | `ngaySua` | Ngày sửa | Định dạng `dd/mm/yyyy` |
-| 12 | `vatTuSua` | Vật tư sửa | Danh sách linh kiện thay thế |
-| 13 | `hinhAnh` | Hình ảnh | Đường dẫn trong `Den tat/images/` |
-| 14 | `ghiChu` | Ghi chú | Ghi chú tự do |
-| 15 | `Nguoiphathien` | Người phát hiện | Lấy từ tên Đăng nhập |
-| 16 | `Nguoisuachua` | Người sửa chữa | Lấy từ tên Đăng nhập |
-| 15 | `vn2000x` | VN2000X | Tọa độ VN2000 Easting |
-| 16 | `vn2000y` | VN2000Y | Tọa độ VN2000 Northing |
+| 0 | `id` | `ID` | Mã định danh |
+| 1 | `soTru` | `Số trụ` | Tên chính marker |
+| 2 | `tenTu` | `Tên tủ` | Tủ điều khiển quản lý đèn |
+| 3 | `latitude` | `latitude` | WGS84 |
+| 4 | `longitude` | `lontitude` | WGS84 — **tên cột Sheet là `lontitude` (sai chính tả, giữ nguyên)** |
+| 5 | `loaiDen` | `Loại đèn` | `LED` hoặc `HPS` |
+| 6 | `congSuat` | `Công suất` | Đơn vị W |
+| 7 | `trangThai` | `Trang thai` | Mã: 1/3/4/5/7 |
+| 8 | `duong` | `Đường` | Tự động từ reverse geocode |
+| 9 | `phuong` | `Phường` | Tự động từ reverse geocode |
+| 10 | `ngayPhatHien` | `Ngày phát hiện` | Định dạng `dd/mm/yyyy` |
+| 11 | `nguoiPhatHien` | `Người phát hiện` | Tự động điền từ `currentUser.displayName` khi thêm mới |
+| 12 | `ngaySua` | `Ngày sửa` | Định dạng `dd/mm/yyyy` |
+| 13 | `nguoiSua` | `Người sửa` | |
+| 14 | `vatTuSua` | `Vật tư sửa` | Danh sách linh kiện |
+| 15 | `hinhAnh` | `HÌnh ảnh` | Đường dẫn trong `Den tat/images/` (**tên cột có lỗi 'Ì' thay 'ì'**) |
+| 16 | `ghiChu` | `Ghi chú` | |
+| 17 | `vn2000x` | `VN2000-X` | Tọa độ VN2000 Easting |
+| 18 | `vn2000y` | `VN2000-Y` | Tọa độ VN2000 Northing |
 
 ---
 
-## Kiến trúc JavaScript (trong HTML)
-
-Toàn bộ logic viết inline trong `dentat.html` (không có file JS riêng).
+## Kiến trúc JavaScript (inline trong dentat.html)
 
 ### Khởi tạo
-- `initializeMap()` — khởi tạo Leaflet map, tile layers (OSM, Google Satellite), layer control
-- `loadDataFromSheet()` — fetch CSV từ Google Sheet, parse bằng XLSX, gọi `addMarkersToMap()`
-- `window.onload` — gọi `initializeMap()`, `loadDataFromSheet()`, setup draggable popup, đóng GitHub modal khi click ngoài
+- `initializeMap()` — khởi tạo Leaflet map, tile layers (OSM, Google Satellite), layer control, đăng ký sự kiện click bản đồ
+- `loadDataFromSheet()` — fetch CSV từ Google Sheet, parse bằng SheetJS, gọi `addMarkersToMap()`
+- `window.onload` — gọi `initializeMap()`, `buildFilterChips()`, `buildLegend()`, `checkAuth()`; **không gọi `loadDataFromSheet()` trực tiếp** — checkAuth quyết định khi nào tải dữ liệu
+
+### Xác thực
+- `checkAuth()` — kiểm tra localStorage, quyết định show login hay load app
+- `doLogin()` — POST GAS `action:'login'`, xử lý response, lưu session
+- `logout()` — xóa session, reset state, hiện login
+- `updateSidebarUser()` — render tên + vai trò trong chip user sidebar
 
 ### Xử lý dữ liệu
-- `processFile(file)` — đọc file Excel local bằng SheetJS (import thủ công), gọi `applyCoordOverrides()`
-- `parseMarkerRow(row)` — parse hàng dữ liệu (array hoặc object) thành object chuẩn
-- `getRowValue(row, keys, fallback)` — trích xuất giá trị từ hàng theo nhiều tên cột khác nhau
-- `rowToArray(row)` — chuyển object marker → array để xuất Excel
+- `processFile(event)` — đọc file Excel local bằng SheetJS (import thủ công)
+- `parseRow(row)` — parse hàng dữ liệu (array hoặc object) thành object chuẩn; xử lý ngày qua `parseDate()`
+- `parseMarkerRow(row)` — alias của `parseRow()`
+- `getVal(row, keys, fb)` — trích xuất giá trị từ hàng theo nhiều tên cột khác nhau
+- `applyFieldsToRow(row, updates)` — merge updates vào row gốc, giữ nguyên key tên cột Sheet gốc
+- `rowToArray(row)` — chuyển object marker → array 19 phần tử để xuất Excel
+
+### Ngày tháng
+- `excelSerialToViDate(serial)` — chuyển Excel serial number → chuỗi `dd/mm/yyyy`
+- `parseDate(val)` — chuẩn hóa giá trị ngày: serial number → `dd/mm/yyyy`, hoặc giữ nguyên nếu là string
+- `parseViDate(dateStr)` — parse `dd/mm/yyyy` hoặc `yyyy-mm-dd` → Date object (không lệch timezone)
+- `daysBetween(dateStr)` — số ngày từ ngày đến hôm nay
+- `todayStr()` — trả về hôm nay dạng `dd/mm/yyyy`
+- `toInputDate(vn)` — `dd/mm/yyyy` → `yyyy-mm-dd` cho `<input type="date">`
+- `fromInputDate(iso)` — `yyyy-mm-dd` → `dd/mm/yyyy` để lưu vào Sheet
 
 ### Marker
-- `addMarkerRowToMap(row, rowIndex)` — tạo Leaflet marker + label, thêm vào cluster; icon chọn theo `status`
-- `addMarkersToMap(data)` — clear và load lại toàn bộ marker
-- `createMarkerPopupContent(row, rowIndex)` — tạo HTML popup hiển thị thông tin đèn
-- `createMarkerIcon(parsed)` — tạo icon từ đường dẫn ảnh hoặc dùng icon mặc định
-- `enableAddMarkerMode()` / `disableAddMarkerMode()` — bật/tắt chế độ click-to-add
-- `startAddMarker()` — toggle chế độ thêm marker (GPS hoặc click bản đồ)
-- `showMarkerPopupAt(lat, lon)` — mở form nhập marker mới tại tọa độ
-- `openMarkerEditPopup(index)` — mở form chỉnh sửa marker theo index
-- `fillMarkerPopupForm(row, lat, lon)` — điền dữ liệu vào form popup
-- `saveMarkerPopup()` — lưu form → gửi `POST` đến GAS (action: `full_update`), cập nhật local map
-- `cancelMarkerPopup()` / `hideMarkerPopup()` — đóng form popup
-- `updateAddMarkerButton()` — cập nhật trạng thái nút thêm marker
+- `addMarkerRow(row, idx)` — tạo Leaflet marker (dot icon) + label, thêm vào cluster; lazy popup callback
+- `addMarkersToMap(data)` — clear và load lại toàn bộ marker, gọi `applyFilter()`, `updateStats()`, v.v.
+- `createPopupContent(row, rowIndex)` — HTML popup: tính số ngày hư, nút "Đã sửa" (quickFix), nút chỉ đường
+- `createStatusIcon(trangThai)` — `L.divIcon` dot tròn màu theo trạng thái, có pulse animation
 
-### Tìm kiếm & điều hướng
-- `searchMarkers()` — tìm theo tên (normalize không dấu) hoặc nhảy đến tọa độ
-- `normalizeText(text)` — bỏ dấu tiếng Việt, lowercase
-- `normalizeMarkerBaseName(name)` — tách phần gốc tên (bỏ số cuối)
-- `getDistanceMeters(lat1, lon1, lat2, lon2)` — tính khoảng cách Haversine (m)
+### Lọc & thống kê
+- `toggleFilter(status)` — ẩn/hiện marker theo trạng thái
+- `applyFilter()` — áp dụng `hiddenFilters` lên cluster và labelLayerGroup
+- `updateStats()` — cập nhật đếm số đèn theo từng trạng thái
+- `buildFilterChips()` — render filter chips trong sidebar
+- `buildLegend()` — render chú thích màu trong sidebar
 
-### Định vị & chỉ đường
-- `centerOnUserLocation()` — lấy GPS một lần, setView đến vị trí
-- `setMarkerToCurrentLocation()` — lấy GPS một lần (`maximumAge:0`, `timeout:15000`), điền vào form
-- `makeElementDraggable(handle, target)` — drag popup bằng Pointer Events API
+### Status List Panel
+- `openStatusList(status)` — mở panel trượt từ dưới, liệt kê đèn theo trạng thái
+- `closeStatusList()` — đóng panel
+- `flyToEntry(index)` — nhảy bản đồ đến marker theo index, mở popup
 
-### Lưu & xuất
-- `saveMarkerData()` — xuất `loadedData[]` ra file Excel bằng SheetJS
-- `convertLatLonToVn2000(lat, lon)` — chuyển WGS84 → VN2000 (UTM zone tự động, GRS80)
+### Tìm kiếm
+- `searchMarkers()` — tìm theo số trụ, đường, phường, tên tủ; 1 kết quả → fly to, nhiều → dropdown
+- `normalizeText(t)` / `normalizeKey(v)` — bỏ dấu tiếng Việt, lowercase
+
+### Sidebar
+- `openSidebar()` / `closeSidebar()` — mở/đóng sidebar drawer
+
+### Form thêm/sửa
+- `showFormAt(lat, lon)` — mở form thêm mới tại tọa độ, gọi `reverseGeocode()`, tự điền `fNguoiPhatHien = currentUser.displayName`
+- `openEditPopup(index)` — mở form chỉnh sửa marker theo index
+- `fillForm(row, lat, lon)` — điền dữ liệu vào form; nếu `row = null` → thêm mới (đặt ngày hôm nay, trạng thái `1`, tự điền người phát hiện từ `currentUser`)
+- `hideForm()` / `cancelMarkerPopup()` — đóng form
+- `saveMarkerPopup()` — đọc form → payload → POST GAS; merge với `applyFieldsToRow()` khi edit
+
+### Chế độ thêm marker
+- `startAddMarker()` — toggle; hỏi GPS hay click bản đồ
+- `enableAddMode()` / `disableAddMode()` — bật/tắt `pendingNewMarker`, cập nhật nút
+
+### Định vị & Reverse Geocode
+- `setMarkerToCurrentLocation()` — GPS (`enableHighAccuracy:true`, `maximumAge:0`, `timeout:15000`); spinner; điền lat/lon vào form; gọi `reverseGeocode()`
+- `centerOnUserLocation()` — GPS + setView + marker GPS xanh
+- `reverseGeocode(lat, lon)` — Nominatim API lấy tên đường/phường, điền vào form
+
+### Chỉ đường
+- `routeToMarker(index)` — lấy GPS hiện tại, gọi `fetchRoute()`
+- `fetchRoute(origin, dest)` — OSRM API, vẽ polyline route, hiện khoảng cách + thời gian
+
+### Quick Fix
+- `quickFix(index)` — đánh dấu đèn đã sửa: đổi trạng thái (LED→3, HPS→4), `ngaySua = hôm nay`, gửi GAS
+
+### Báo cáo
+- `openReportModal()` / `closeReportModal()`
+- `getReportRows()` — lọc theo khoảng ngày phát hiện
+- `updateReportPreview()` — preview tóm tắt theo trạng thái
+- `exportReport()` — xuất Excel báo cáo chi tiết (có cột "Số ngày hư")
+
+### Lưu & Xuất
+- `saveMarkerData()` — xuất `loadedData[]` ra file Excel (⚠️ xem bug bên dưới)
 - `exportMarkersToCad()` — xuất DXF (AutoCAD) với tọa độ VN2000
-- `downloadFileFromDataUrl(dataUrl, filename)` — tải file từ data URI
-
-### Google Apps Script (backend)
-- `saveMarkerPopup()` — gửi `POST` với `action: "full_update"` → GAS ghi vào Sheet + cập nhật GitHub
-- `submitGitHubUpdate()` — gửi `POST` chỉ với `{name, lat, lon}` → GAS chỉ cập nhật tọa độ trên Sheet
-- `handleFullUpdate(index)` — gửi đầy đủ thông tin marker lên GAS (dùng khi cần sync thủ công)
-- `applyCoordOverrides()` — tải `data/coords-override.json` từ GitHub, áp dụng tọa độ ghi đè
-
-### GitHub modal
-- `openGitHubModal()` / `closeGitHubModal()` — mở/đóng modal cập nhật tọa độ GPS
-- `getGPSForGitHub()` — lấy GPS cho modal cập nhật
-- `setGhStatus(msg, isErr)` — hiển thị trạng thái trong modal
-- `openGHSettings()` / `saveGHToken()` — cài đặt và lưu GitHub token vào localStorage
+- `convertLatLonToVn2000(lat, lon)` — WGS84 → VN2000 (UTM zone tự động, GRS80)
 
 ### Ảnh
-- `handleMarkerImageFile(event)` — đọc file ảnh → resize → base64
-- `triggerMarkerImageInput()` — kích hoạt input file ảnh
-- `resizeImageDataUrl(dataUrl, callback)` — resize ảnh max 400px, giữ < 32767 chars
-- `normalizeImagePath(image)` — chuẩn hóa đường dẫn ảnh (xử lý `images/`, `data:`, URL)
+- `triggerImageInput()` — kích hoạt input file (có `capture="environment"` → mở camera)
+- `handleImageFile(e)` — đọc file ảnh → `resizeImage()` → preview
+- `resizeImage(dataUrl, cb)` — resize max 800px, giảm quality rồi kích thước cho đến khi ≤ `MAX_IMG_LEN`
+- `normalizeImagePath(img)` — chuẩn hóa đường dẫn ảnh
+
+### Google Apps Script (gas.js)
+- `doPost(e)` — nhận POST; nếu `action: 'login'` → `handleLogin()`; nếu `action: 'full_update'` → `findRowNum()` → `updateRow()` hoặc `appendRow()`; ngược lại → GPS-only update
+- `handleLogin(username, password)` — tra cứu sheet **TaiKhoan**, so sánh plaintext, trả `{status, user}`
+- `findRowNum()` — tìm hàng theo ID (ưu tiên) hoặc Số trụ, so sánh normalize
+- `updateRow()` / `updateRowFields()` — ghi từng ô theo `hIdx`
+- `appendRow()` — thêm hàng mới theo đúng thứ tự cột
+- `buildFieldValues(data)` — chuyển payload camelCase → tên cột Sheet qua `FIELD_MAP`
+- `doGet(e)` — health check (trả `{status: 'ok', message: 'Den tat GAS v3 — login ready'}`)
 
 ---
 
 ## Trạng thái toàn cục (global state)
 
 ```js
-const GH_OWNER = 'neo-era';
-const GH_REPO  = 'cskvtt';
-const GH_BRANCH = 'sub1';
-const GH_COORDS_PATH = 'data/coords-override.json';
-const MAX_EXCEL_TEXT_LENGTH = 32767;
-const GOOGLE_SCRIPT_URL = '...';       // URL Google Apps Script proxy
-const GOOGLE_SHEET_CSV_URL = '...';    // URL Google Sheet CSV public
+const GOOGLE_SCRIPT_URL = '...';
+const GOOGLE_SHEET_CSV_URL = '...';
+const MAX_IMG_LEN = 32767;
 
-let map;                        // Leaflet map instance
-let markersCluster;             // L.markerClusterGroup({ maxClusterRadius: 40 })
-let labelLayerGroup;            // L.layerGroup() cho nhãn tên
+let map, markersCluster, labelLayerGroup;
 let markers = [];               // [{lat, lon, name, marker, row, rowIndex, labelMarker}]
-let loadedData = [];            // Mảng dữ liệu từ Sheet/Excel
-let newMarkerRows = [];         // Marker thêm mới trong session
-let currentLocation = null;     // [lat, lon] vị trí GPS hiện tại
-let currentLocationMarker = null;
-let routeLine = null;           // Polyline route đang hiển thị
-let pendingNewMarker = false;
-let pendingMarkerLocation = null;
-let markerPopupLocation = null;
-let markerImageDataUrl = null;  // base64 ảnh đang chọn
-let markerImageFileName = '';
-let markerImagePath = '';
-let editingMarkerIndex = null;  // Index marker đang chỉnh sửa (null = thêm mới)
+let loadedData = [];
+let editingIndex = null;
 let addMarkerMode = false;
-let lastMarkerName = '';
-let ghPendingLat = null;        // Tọa độ GPS chờ gửi lên GitHub
-let ghPendingLon = null;
+let pendingNewMarker = false;
+let markerImageDataUrl = '', markerImagePath = '';
+let currentLocationMarker = null;
+let routeLine = null;
+let hiddenFilters = new Set();
+let toastTimer;
+let currentUser = null;         // { username, displayName, role } — lưu trong localStorage 'dt_user'
 ```
 
 ---
@@ -202,92 +259,82 @@ let ghPendingLon = null;
 ## Tile layers
 
 ```js
-// OpenStreetMap (mặc định)
 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-
-// Google Satellite
 'https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'  // subdomains: mt0–mt3
 ```
+
+---
+
+## Google Apps Script (gas.js) — FIELD_MAP
+
+| Key JS | Tên cột Sheet |
+|---|---|
+| `soTru` | `Số trụ` |
+| `lat` / `latitude` | `latitude` |
+| `lon` / `longitude` / `lontitude` | `lontitude` |
+| `trangThai` | `Trang thai` |
+| `hinhAnh` | `HÌnh ảnh` |
+| `vn2000x` / `vn2000y` | `VN2000-X` / `VN2000-Y` |
+
+Tìm hàng: ưu tiên theo `ID`, fallback theo `Số trụ` (cả hai đều normalize trước khi so sánh).
 
 ---
 
 ## PWA
 
 - `manifest.json`: name "Quản Lý Đèn Tắt CSCC", short_name "Đèn Tắt", start_url `./dentat.html`, icons 192/512, theme `#0ea5e9`
-- `sw.js`: 2 cache riêng biệt:
-  - `dentat-static-v1` — static assets (HTML, manifest, Leaflet CSS/JS, XLSX, Google Fonts)
-  - `dentat-tiles-v1` — map tiles (OSM + Google), cache-first, giới hạn 200 tile, tự trim khi vượt
-  - `activate` tự xóa các cache version cũ
-- **Không cache**: Google Sheet CSV và Apps Script URL (luôn fetch mới để có dữ liệu realtime)
-- Meta tags: `apple-mobile-web-app-capable`, `theme-color`, `apple-touch-icon`
-- Service Worker đăng ký trong `window.addEventListener('load', ...)` (trước `window.onload`)
+- `sw.js`: 2 cache: `dentat-static-v1` (assets), `dentat-tiles-v1` (map tiles, giới hạn 200)
+- **Không cache**: Google Sheet CSV, Apps Script URL, Nominatim, OSRM
+- Meta: `theme-color: #0f172a` (navy trong header)
+
+---
+
+## Hướng dẫn thiết lập tài khoản
+
+1. Mở Google Sheet của dự án
+2. Tạo tab mới, đặt tên chính xác: `TaiKhoan` (phân biệt hoa thường)
+3. Hàng 1 (header): `tenDangNhap` | `matKhau` | `hoTen` | `vaiTro`
+4. Thêm tài khoản từ hàng 2 trở đi
+5. **Không publish tab này** — chỉ GAS đọc nội bộ (Execute as: Me)
+6. Deploy lại GAS sau khi copy gas.js mới (version `v3`)
 
 ---
 
 ## Lưu ý kỹ thuật
 
-- **Nguồn dữ liệu chính là Google Sheet**: `loadDataFromSheet()` fetch CSV, parse bằng SheetJS `XLSX.read(csvText, {type:'string'})`
-- **
-- **Không dùng file data GitHub**: File Excel local chỉ dùng để import thủ công qua input file
-- **Backend proxy GAS**: Mọi thao tác ghi (thêm/sửa marker) đều đi qua Google Apps Script — không gọi GitHub API trực tiếp từ browser
-- **`action: "full_update"`**: Khi lưu form chỉnh sửa, payload phải có `action: "full_update"` để GAS phân biệt với request chỉ cập nhật tọa độ GPS
-- **Icon theo trạng thái**: `createMarkerIcon()` đọc trường `status` → chọn file icon `images/{status}.png`
-- **VN2000**: tính theo UTM zone tự động từ kinh độ, dùng ellipsoid GRS80
-- **Giới hạn ảnh**: 32767 ký tự/ô Excel — `resizeImageDataUrl()` tự scale xuống
-- **MarkerCluster + Label**: label dùng `L.divIcon` thêm vào `labelLayerGroup` riêng (không cluster)
-- **Lazy popup**: `bindPopup('')` khi tạo marker — HTML popup chỉ render khi mở, giảm tải CPU lúc load
-- **GPS getCurrentPosition**: `maximumAge:0` + `timeout:15000` — luôn lấy vị trí mới, hiện spinner chờ
-- **GitHub token**: lưu trong `localStorage` key `'gh_token_k76a11'`, người dùng nhập mỗi phiên
-- **`coords-override.json`**: file JSON trên GitHub ghi đè tọa độ từ Sheet (dùng khi học viên/kỹ thuật viên cập nhật GPS từ điện thoại)
-- **Live Server**: port 5501 (`.vscode/settings.json`)
+- **Login dùng `text/plain` không dùng `no-cors`**: Khác với các POST ghi dữ liệu đèn (`mode:'no-cors'`), login cần đọc response → dùng `Content-Type: text/plain;charset=utf-8` để tránh CORS preflight, GAS xử lý và trả về JSON.
+- **Phiên đăng nhập lưu localStorage**: Key `'dt_user'`, không có expiry — phiên tồn tại đến khi đăng xuất hoặc xóa cache.
+- **Auto-fill người phát hiện**: Khi mở form thêm mới, `fNguoiPhatHien` tự điền `currentUser.displayName` (hoặc username nếu không có displayName).
+- **Cột `lontitude`**: Tên cột Sheet sai chính tả, giữ nguyên để tương thích GAS.
+- **Tên cột `HÌnh ảnh`**: Có lỗi chữ 'Ì' hoa — đã map trong gas.js và FIELDS.
+- **⚠️ Bug xuất Excel**: `saveMarkerData()` header 17 cột nhưng `rowToArray()` trả về 19 → thiếu `Người phát hiện` và `Người sửa` trong header → dữ liệu lệch cột từ cột 11.
+- **Mật khẩu plaintext**: Lưu plaintext trong Sheet vì đây là công cụ nội bộ, không phải hệ thống công khai. Sheet `TaiKhoan` không được publish CSV.
+- **mode: 'no-cors' cho ghi đèn**: Response opaque, không đọc được — fire-and-forget; lỗi GAS chỉ thấy trong Apps Script logs.
+- **Lazy popup**: callback `() => createPopupContent(...)` — HTML chỉ render khi mở popup.
+- **GPS**: `enableHighAccuracy:true`, `maximumAge:0`, `timeout:15000`; hiện spinner khi chờ.
 
 ---
 
-## Bảo mật
+## Kế hoạch phát triển
 
-- **GitHub token**: lưu tạm trong `localStorage`, không hardcode vào source. GAS proxy sẽ dùng `PropertiesService.getScriptProperties()` khi nâng cấp
-- **Scope token tối thiểu**: PAT chỉ cần `contents:write` cho repo `neo-era/cskvtt`
-- **Không commit token**: `.gitignore` hoặc quy trình CI không được để token lọt vào lịch sử commit
-- **GAS là proxy an toàn**: client gửi dữ liệu đến GAS, GAS tự thêm credentials khi gọi GitHub API
+### Sửa bug xuất Excel
+- Thêm `Người phát hiện` và `Người sửa` vào header array trong `saveMarkerData()`
 
----
+### Bảo mật login nâng cao
+- Hash mật khẩu phía GAS (SHA-256) thay vì plaintext
+- Hoặc dùng Google Workspace OAuth nếu tổ chức có Google Workspace
 
-## Thực hiện phát triển
+### Session expiry
+- Lưu `loggedAt` trong `currentUser`, kiểm tra khi `checkAuth()`: nếu > 24h → yêu cầu đăng nhập lại
 
-### Cập nhật schema dữ liệu đèn tắt nếu còn
-- Đổi `rowFieldKeys` từ schema K76.A11 (tên/điện thoại/facebook) sang schema đèn tắt (số trụ, loại đèn, trạng thái, ngày phát hiện, ngày sửa, vật tư)
-- Cập nhật `parseMarkerRow()`, `fillMarkerPopupForm()`, `createMarkerPopupContent()` theo schema mới
-- Cập nhật `rowToArray()` và header Excel khi xuất
+### Giới hạn chỉnh sửa theo vai trò
+- `admin/quanly`: full access (thêm/sửa/xóa)
+- `user`: chỉ báo cáo đèn mới, không sửa đèn của người khác
 
-### Reverse geocode tự động
-- Khi thêm marker mới, tự động gọi Nominatim API lấy tên đường và phường từ tọa độ GPS
-- Điền vào trường `duong` và `phuong` thay vì nhập tay
-### 
-- Lấy tên Đăng nhập điền vào trường `Nguoiphathien` khi báo đèn HPS hoặc đèn LED đang hư.
-- Lấy tên Đăng nhập điền vào trường `Nguoisuachua` khi sửa chữa.
-
-
-### Xuất báo cáo hàng ngày
-- Thêm chức năng lọc marker theo ngày phát hiện
-- Xuất Excel báo cáo các đèn hư trong ngày với đầy đủ thông tin sự cố
-
-### Bộ lọc theo trạng thái
-- Thêm UI lọc marker: chỉ hiện đèn hư / đèn đã sửa / đèn hư quá 10 ngày
-- Đếm số lượng theo từng trạng thái trên UI
-- Khi nhấn vào từng trạng thái trên UI sẽ hiển thị danh sách marker, và có thể chọn tới marker trên bản đồ khi click vào marker trong danh sách.
-
-
-
-### Nâng cấp PWA offline
-- ✅ Đã có `manifest.json` và `sw.js`
-- Có thể pre-cache tile vùng TP.HCM khi install để dùng hoàn toàn offline ngoài thực địa
-
-### Tối ưu giao diện mobile
-- Nút thao tác đủ lớn cho màn hình nhỏ (ngón tay)
+### Tối ưu mobile
+- Font size input 16px để tránh auto-zoom iOS
 - Test trên Android Chrome + iOS Safari
-- Tăng fontsize text input cho phù hợp để không bị zoom khi nhập dữ liệu
 
-### Log lịch sử cập nhật app
 ---
 
 ## Chạy local

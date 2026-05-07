@@ -2,7 +2,8 @@
 // Deploy: Extensions → Apps Script → Deploy as Web App
 // Execute as: Me | Who has access: Anyone
 
-const SHEET_NAME = 'DanhSachDen'; // ← Kiểm tra đúng tên tab Sheet
+const SHEET_NAME  = 'DanhSachDen';  // ← Tab chứa dữ liệu đèn
+const USERS_SHEET = 'TaiKhoan';     // ← Tab tài khoản: tenDangNhap | matKhau | hoTen | vaiTro
 
 // Map camelCase JS → tên cột Sheet chính xác
 const FIELD_MAP = {
@@ -30,8 +31,14 @@ const FIELD_MAP = {
   'vn2000y':       'VN2000-Y',
 };
 
+// ── UTILS ──────────────────────────────────────────────────────────────────
+
 function getSheet() {
   return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+}
+
+function getUsersSheet() {
+  return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(USERS_SHEET);
 }
 
 // Chuẩn hóa chuỗi để so sánh (NFC + trim + lowercase)
@@ -46,9 +53,67 @@ function buildHeaderIndex(headers) {
   return idx;
 }
 
+function jsonResponse(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ── LOGIN ──────────────────────────────────────────────────────────────────
+
+function handleLogin(username, password) {
+  const sheet = getUsersSheet();
+  if (!sheet) {
+    return jsonResponse({ status: 'error', message: 'Sheet "TaiKhoan" chưa được tạo. Admin cần tạo tab này trong Google Sheet.' });
+  }
+
+  const allData = sheet.getDataRange().getValues();
+  if (allData.length < 2) {
+    return jsonResponse({ status: 'error', message: 'Chưa có tài khoản nào trong Sheet TaiKhoan.' });
+  }
+
+  const headers = allData[0].map(h => norm(String(h)));
+  const colUser = headers.indexOf(norm('tenDangNhap'));
+  const colPass = headers.indexOf(norm('matKhau'));
+  const colName = headers.indexOf(norm('hoTen'));
+  const colRole = headers.indexOf(norm('vaiTro'));
+
+  if (colUser === -1 || colPass === -1) {
+    return jsonResponse({ status: 'error', message: 'Sheet TaiKhoan thiếu cột "tenDangNhap" hoặc "matKhau".' });
+  }
+
+  const usernameNorm = norm(username);
+  for (let i = 1; i < allData.length; i++) {
+    const row = allData[i];
+    const rowUser = norm(String(row[colUser] || ''));
+    const rowPass = String(row[colPass] || '');
+    if (rowUser === usernameNorm && rowPass === String(password)) {
+      return jsonResponse({
+        status: 'ok',
+        user: {
+          username:    String(row[colUser]).trim(),
+          displayName: colName >= 0 ? String(row[colName] || '').trim() || username : username,
+          role:        colRole >= 0 ? norm(String(row[colRole] || ''))             : 'user',
+        }
+      });
+    }
+  }
+
+  return jsonResponse({ status: 'error', message: 'Sai tên đăng nhập hoặc mật khẩu.' });
+}
+
+// ── MAIN HANDLER ───────────────────────────────────────────────────────────
+
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
+
+    // Login
+    if (data.action === 'login') {
+      return handleLogin(data.username || '', data.password || '');
+    }
+
+    // Ghi dữ liệu đèn
     const sheet = getSheet();
     if (!sheet) throw new Error('Không tìm thấy sheet: ' + SHEET_NAME);
 
@@ -75,15 +140,13 @@ function doPost(e) {
       }
     }
 
-    return ContentService
-      .createTextOutput(JSON.stringify({ status: 'ok' }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return jsonResponse({ status: 'ok' });
   } catch (err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ status: 'error', message: err.message }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return jsonResponse({ status: 'error', message: err.message });
   }
 }
+
+// ── MARKER CRUD ────────────────────────────────────────────────────────────
 
 // Tìm số hàng theo ID (ưu tiên) hoặc Số trụ
 function findRowNum(sheet, headers, hIdx, data) {
@@ -128,7 +191,6 @@ function updateRowFields(sheet, hIdx, rowNum, fieldValues) {
 function appendRow(sheet, headers, hIdx, data) {
   const fieldValues = buildFieldValues(data);
   const row = headers.map(h => {
-    const col = hIdx[norm(h)];
     return fieldValues[h] !== undefined ? fieldValues[h] : '';
   });
   sheet.appendRow(row);
@@ -139,7 +201,6 @@ function buildFieldValues(data) {
   const result = {};
   for (const [key, value] of Object.entries(data)) {
     if (key === 'action') continue;
-    // Map camelCase → header, hoặc giữ nguyên nếu đã là tên cột
     const header = FIELD_MAP[key] || key;
     if (value !== undefined && value !== null && value !== '') {
       result[header] = value;
@@ -148,8 +209,8 @@ function buildFieldValues(data) {
   return result;
 }
 
+// ── HEALTH CHECK ───────────────────────────────────────────────────────────
+
 function doGet(e) {
-  return ContentService
-    .createTextOutput(JSON.stringify({ status: 'ok', message: 'Den tat GAS v2' }))
-    .setMimeType(ContentService.MimeType.JSON);
+  return jsonResponse({ status: 'ok', message: 'Den tat GAS v3 — login ready' });
 }

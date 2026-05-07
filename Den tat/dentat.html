@@ -68,6 +68,20 @@
       color: #fff; cursor: pointer; font-size: 14px;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
+    #topbarUser {
+      display: flex; align-items: center; gap: 7px; flex-shrink: 0;
+      background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14);
+      border-radius: 999px; padding: 4px 12px 4px 6px;
+      cursor: pointer; transition: background .18s; user-select: none;
+    }
+    #topbarUser:hover { background: rgba(255,255,255,.16); }
+    .topbar-av {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--orange), #dc2626);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; flex-shrink: 0;
+    }
+    .topbar-uname { color: #fff; font-size: 12px; font-weight: 600; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     /* ── STATS STRIP ── */
     #statsStrip {
@@ -375,9 +389,82 @@
     .sl-arrow { color: var(--text-light); font-size: 18px; flex-shrink: 0; }
     .sl-empty { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
     .sl-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 10px auto 0; flex-shrink: 0; }
+
+    /* ── LOGIN ── */
+    #loginOverlay {
+      position: fixed; inset: 0; z-index: 99000;
+      background: linear-gradient(135deg, var(--navy) 0%, #1e3a5f 100%);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .login-card {
+      background: var(--white); border-radius: 22px; width: min(380px, 100%);
+      box-shadow: 0 24px 60px rgba(0,0,0,.4); overflow: hidden;
+    }
+    .login-head {
+      background: linear-gradient(135deg, var(--navy), #1e3a5f);
+      padding: 28px 24px 22px; text-align: center; color: #fff;
+    }
+    .login-icon { font-size: 42px; margin-bottom: 10px; }
+    .login-appname { font-size: 17px; font-weight: 800; letter-spacing: .02em; margin-bottom: 4px;
+      background: linear-gradient(135deg,#fbbf24,#f97316); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .login-sub { font-size: 12px; opacity: .65; }
+    .login-body { padding: 22px 22px 24px; }
+    .login-body .fg { margin-bottom: 14px; }
+    .login-body .fg label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; display: block; margin-bottom: 5px; }
+    .login-body .fg input {
+      width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: 15px; font-family: inherit; color: var(--text); outline: none;
+      transition: border-color .2s; background: var(--bg);
+    }
+    .login-body .fg input:focus { border-color: var(--orange); background: #fff; box-shadow: 0 0 0 3px rgba(249,115,22,.1); }
+    #loginError { min-height: 20px; font-size: 13px; color: var(--red); margin-bottom: 10px; text-align: center; }
+    .login-btn {
+      width: 100%; padding: 13px; border-radius: 12px; border: none;
+      background: linear-gradient(135deg, var(--orange), #dc2626); color: #fff;
+      font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit;
+      transition: opacity .2s; box-shadow: 0 4px 16px rgba(249,115,22,.4);
+    }
+    .login-btn:hover { opacity: .9; }
+    .login-btn:disabled { opacity: .6; cursor: not-allowed; }
+    /* User chip in sidebar */
+    #sbUserChip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 16px; border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg,#fff7ed,#fff);
+    }
+    .sb-user-av { width: 36px; height: 36px; border-radius: 50%; background: var(--orange); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .sb-user-name { font-size: 13px; font-weight: 700; color: var(--text); }
+    .sb-user-role { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .sb-btn.logout { color: var(--red); border-color: #fee2e2; }
+    .sb-btn.logout:hover { background: #fee2e2; border-color: var(--red); color: var(--red); }
   </style>
 </head>
 <body>
+
+<!-- ── LOGIN OVERLAY ── -->
+<div id="loginOverlay">
+  <div class="login-card">
+    <div class="login-head">
+      <div class="login-icon">💡</div>
+      <div class="login-appname">QUẢN LÝ ĐÈN TẮT CSCC</div>
+      <div class="login-sub">Đăng nhập để tiếp tục</div>
+    </div>
+    <div class="login-body">
+      <div class="fg">
+        <label>Tên đăng nhập</label>
+        <input id="lUsername" type="text" placeholder="Nhập tên đăng nhập" autocomplete="username"
+          onkeydown="if(event.key==='Enter')document.getElementById('lPassword').focus()">
+      </div>
+      <div class="fg">
+        <label>Mật khẩu</label>
+        <input id="lPassword" type="password" placeholder="Nhập mật khẩu" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div id="loginError"></div>
+      <button class="login-btn" id="loginBtn" onclick="doLogin()">Đăng nhập</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── TOP BAR ── -->
 <header id="topBar">
@@ -386,6 +473,10 @@
     <input type="text" id="searchInput" placeholder="Tìm số trụ, đường, phường..." autocomplete="off"
       onkeydown="if(event.key==='Enter')searchMarkers()">
     <button onclick="searchMarkers()">🔍</button>
+  </div>
+  <div id="topbarUser" onclick="logout()" title="Nhấn để đăng xuất">
+    <div class="topbar-av" id="topbarAv">👤</div>
+    <span class="topbar-uname" id="topbarUname">—</span>
   </div>
 </header>
 
@@ -445,6 +536,13 @@
     <div class="sb-header-title">💡 Quản lý đèn tắt</div>
     <button class="sb-close" onclick="closeSidebar()">✕</button>
   </div>
+  <div id="sbUserChip">
+    <div class="sb-user-av" id="sbUserAv">👤</div>
+    <div>
+      <div class="sb-user-name" id="sbUserName">—</div>
+      <div class="sb-user-role" id="sbUserRole"></div>
+    </div>
+  </div>
   <div class="sb-body">
     <div class="sb-section">
       <div class="sb-section-title">Lọc theo trạng thái</div>
@@ -459,6 +557,7 @@
       <button class="sb-btn" onclick="saveMarkerData();closeSidebar()"><span class="bi">💾</span>Xuất Excel</button>
       <button class="sb-btn" onclick="exportMarkersToCad();closeSidebar()"><span class="bi">📐</span>Xuất CAD (.dxf)</button>
       <button class="sb-btn" onclick="openReportModal();closeSidebar()"><span class="bi">📊</span>Báo cáo hàng ngày</button>
+      <button class="sb-btn logout" onclick="logout()"><span class="bi">🚪</span>Đăng xuất</button>
     </div>
     <div class="sb-section">
       <div class="sb-section-title">Chú thích</div>
@@ -584,7 +683,7 @@
 <script>
 'use strict';
 // ── CONSTANTS ──
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbygHZRMQa6cC6-7mXIMgzHaRFg4b2t_QjM0kMooVXt9GqX7chK-knxwwiYjhBVzwKPM7Q/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvhDTfytL8aKx2bGP_QWZkrDDZ0_riQ3_cF3VsRqk51Wtylw2IXhaH0qpx0bLkBT-gFw/exec';
 const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQC6mnGNSNDjUVzs5C4Se9Q9JQCGF9_YQRTRXewhsJhg0QDAcp6NqtxNsFl-fs8g1yyYBQEUqPhgwBv/pub?output=csv';
 const MAX_IMG_LEN = 32767;
 
@@ -608,6 +707,83 @@ let currentLocationMarker = null;
 let routeLine = null;
 let hiddenFilters = new Set();
 let toastTimer;
+let currentUser = null; // { username, displayName, role }
+
+// ── AUTH ──
+function checkAuth() {
+  let u = null;
+  try { u = JSON.parse(localStorage.getItem('dt_user') || 'null'); } catch(e) {}
+  if (u && u.username) {
+    currentUser = u;
+    document.getElementById('loginOverlay').style.display = 'none';
+    updateSidebarUser();
+    loadDataFromSheet();
+    return;
+  }
+  localStorage.removeItem('dt_user');
+  document.getElementById('loginOverlay').style.display = 'flex';
+  setTimeout(() => { const el = document.getElementById('lUsername'); if (el) el.focus(); }, 150);
+}
+
+async function doLogin() {
+  const username = (document.getElementById('lUsername').value || '').trim();
+  const password = document.getElementById('lPassword').value || '';
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+  errEl.textContent = '';
+  if (!username) { errEl.textContent = 'Vui lòng nhập tên đăng nhập'; return; }
+  if (!password) { errEl.textContent = 'Vui lòng nhập mật khẩu'; return; }
+  btn.disabled = true; btn.textContent = '⏳ Đang kiểm tra...';
+  try {
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'login', username, password })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.status === 'ok') {
+      currentUser = data.user;
+      localStorage.setItem('dt_user', JSON.stringify(currentUser));
+      document.getElementById('loginOverlay').style.display = 'none';
+      updateSidebarUser();
+      loadDataFromSheet();
+    } else {
+      errEl.textContent = data.message || 'Sai tên đăng nhập hoặc mật khẩu';
+    }
+  } catch(e) {
+    errEl.textContent = 'Lỗi kết nối: ' + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Đăng nhập';
+  }
+}
+
+function logout() {
+  if (!confirm('Bạn có muốn đăng xuất không?')) return;
+  localStorage.removeItem('dt_user');
+  currentUser = null;
+  loadedData = []; markers = [];
+  if (markersCluster) markersCluster.clearLayers();
+  if (labelLayerGroup) labelLayerGroup.clearLayers();
+  closeSidebar();
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('lPassword').value = '';
+  document.getElementById('loginError').textContent = '';
+  updateStats();
+  setTimeout(() => { const u = document.getElementById('lUsername'); if (u) u.focus(); }, 150);
+}
+
+function updateSidebarUser() {
+  if (!currentUser) return;
+  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'quanly';
+  const av = isAdmin ? '👑' : '👷';
+  const name = currentUser.displayName || currentUser.username;
+  document.getElementById('sbUserAv').textContent = av;
+  document.getElementById('sbUserName').textContent = name;
+  document.getElementById('sbUserRole').textContent = isAdmin ? 'Quản trị viên' : 'Nhân viên';
+  document.getElementById('topbarAv').textContent = av;
+  document.getElementById('topbarUname').textContent = name;
+}
 
 // ── TOAST ──
 function showToast(msg, dur = 3000) {
@@ -1146,6 +1322,7 @@ function fillForm(row, lat, lon) {
     document.getElementById('fNgayPhatHien').value = new Date().toISOString().split('T')[0];
     document.getElementById('fNgaySua').value = '';
     document.getElementById('fCoordsText').textContent = lat != null ? `Tọa độ: ${lat.toFixed(6)}, ${lon.toFixed(6)}` : 'Tọa độ: —';
+    if (currentUser) document.getElementById('fNguoiPhatHien').value = currentUser.displayName || currentUser.username;
     markerImageDataUrl = ''; markerImagePath = '';
     document.getElementById('fImagePreview').innerHTML = '';
     if (Number.isFinite(lat) && Number.isFinite(lon)) reverseGeocode(lat, lon);
@@ -1487,8 +1664,8 @@ window.onload = () => {
   initializeMap();
   buildFilterChips();
   buildLegend();
-document.getElementById('reportModal').addEventListener('click', e => { if (e.target === document.getElementById('reportModal')) closeReportModal(); });
-  loadDataFromSheet();
+  document.getElementById('reportModal').addEventListener('click', e => { if (e.target === document.getElementById('reportModal')) closeReportModal(); });
+  checkAuth();
 };
 </script>
 </body>

@@ -657,6 +657,20 @@ function getDistanceMeters(la1,lo1,la2,lo2) {
   const a=Math.sin(r(la2-la1)/2)**2+Math.cos(r(la1))*Math.cos(r(la2))*Math.sin(r(lo2-lo1)/2)**2;
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
+// Chuyển Excel serial number (vd: 46208.xxx) → chuỗi dd/mm/yyyy
+function excelSerialToViDate(serial) {
+  if (!serial || typeof serial !== 'number' || serial < 1) return '';
+  const ms = Math.round((serial - 25569) * 86400000); // 25569 = ngày chênh Excel→JS epoch
+  const d = new Date(ms);
+  return `${String(d.getUTCDate()).padStart(2,'0')}/${String(d.getUTCMonth()+1).padStart(2,'0')}/${d.getUTCFullYear()}`;
+}
+// Chuẩn hóa giá trị ngày: serial number → dd/mm/yyyy, hoặc giữ nguyên nếu đã là string
+function parseDate(val) {
+  if (val === null || val === undefined || val === '') return '';
+  if (typeof val === 'number' && val > 40000) return excelSerialToViDate(val);
+  return String(val).trim();
+}
+
 // Parse dd/mm/yyyy hoặc yyyy-mm-dd → Date object theo giờ local (không bị lệch timezone)
 function parseViDate(dateStr) {
   if (!dateStr) return null;
@@ -747,8 +761,10 @@ function parseRow(row) {
     lon: parseFloat(getVal(row, FIELDS.longitude, null)),
     loaiDen: g('loaiDen'), congSuat: g('congSuat'), trangThai: g('trangThai'),
     duong: g('duong'), phuong: g('phuong'),
-    ngayPhatHien: g('ngayPhatHien'), nguoiPhatHien: g('nguoiPhatHien'),
-    ngaySua: g('ngaySua'), nguoiSua: g('nguoiSua'),
+    ngayPhatHien: parseDate(getVal(row, FIELDS.ngayPhatHien, '')),
+    nguoiPhatHien: g('nguoiPhatHien'),
+    ngaySua: parseDate(getVal(row, FIELDS.ngaySua, '')),
+    nguoiSua: g('nguoiSua'),
     vatTuSua: g('vatTuSua'), hinhAnh: g('hinhAnh'), ghiChu: g('ghiChu'),
     vn2000x: g('vn2000x'), vn2000y: g('vn2000y'),
   };

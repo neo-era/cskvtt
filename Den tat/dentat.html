@@ -219,8 +219,8 @@
     .pc-row .pk { color: var(--text-muted); font-weight: 600; white-space: nowrap; min-width: 60px; }
     .pc-row .pv { color: var(--text); line-height: 1.4; }
     .pc-coords { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 10px; color: var(--text-muted); font-family: monospace; margin-top: 8px; }
-    .pc-photo { margin: 8px 14px; }
-    .pc-photo img { width: 100%; border-radius: 10px; max-height: 140px; object-fit: cover; }
+    .pc-photo { padding: 6px 14px 2px; }
+    .pc-photo img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; cursor: pointer; border: 2px solid var(--border); }
     .pc-actions { display: flex; gap: 6px; padding: 10px 14px 14px; }
     .pc-btn {
       flex: 1; padding: 8px 4px; border-radius: 8px; border: 1.5px solid var(--border);
@@ -711,7 +711,7 @@
 <script>
 'use strict';
 // ── CONSTANTS ──
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbycD0L6zeMMDul1jUBKIE7jkDHXCdMdvmsb8uvkGXGITt8ssre9D5ZwGd94ilY8SCD_XQ/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyNtO-Q8KPuRRgx0VacIEDF3VXeMfvAUsg-t2nJEqfVxzSlRGCyxjB4_kLMP7AqP9mu/exec';
 const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQC6mnGNSNDjUVzs5C4Se9Q9JQCGF9_YQRTRXewhsJhg0QDAcp6NqtxNsFl-fs8g1yyYBQEUqPhgwBv/pub?output=csv';
 const MAX_IMG_LEN = 32767;
 
@@ -1008,47 +1008,48 @@ function rowToArray(row) {
           p.ngayPhatHien,p.nguoiPhatHien,p.ngaySua,p.nguoiSua,p.vatTuSua,p.hinhAnh,p.ghiChu,p.vn2000x,p.vn2000y];
 }
 
+const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/neo-era/cskvtt/sub1/Den%20tat/';
 function normalizeImagePath(img) {
   if (!img || typeof img !== 'string') return '';
   const t = img.trim();
   if (!t) return '';
-  if (/^data:/i.test(t) || /^https?:\/\//i.test(t)) return t;
+  if (/^data:/i.test(t)) return t;
+  if (/^https?:\/\//i.test(t)) return t;
   const n = t.replace(/\\/g, '/');
   const ip = n.toLowerCase().indexOf('images/');
-  if (ip !== -1) return n.slice(ip);
-  if (!/\//.test(n)) return `images/${n}`;
-  return n;
+  if (ip !== -1) return GITHUB_RAW_BASE + n.slice(ip);
+  if (!/\//.test(n)) return GITHUB_RAW_BASE + 'images/' + n;
+  return GITHUB_RAW_BASE + n;
 }
 
-// ── GITHUB IMAGE UPLOAD (qua GAS — token lưu server-side) ──
+// ── GITHUB IMAGE UPLOAD (qua GAS proxy — token lưu trong Script Properties) ──
 function getBase64FromDataUrl(dataUrl) {
   return dataUrl.replace(/^data:image\/[^;]+;base64,/, '');
 }
 function getImageExtFromDataUrl(dataUrl) {
-  const m = dataUrl.match(/^data:image\/(\w+);/);
+  const m = dataUrl.match(/^data:image\/(\w+)/);
   if (!m) return 'jpg';
-  return m[1].toLowerCase() === 'jpeg' ? 'jpg' : m[1].toLowerCase();
+  const t = m[1].toLowerCase();
+  if (t === 'jpeg' || t === 'jpg') return 'jpg';
+  if (t === 'png') return 'jpg';
+  if (t === 'webp') return 'webp';
+  return 'jpg';
 }
 async function uploadImageViaGas(dataUrl, soTru) {
-  const payload = {
-    action: 'upload_image',
-    imageBase64: getBase64FromDataUrl(dataUrl),
-    ext: getImageExtFromDataUrl(dataUrl),
-    soTru: soTru || 'img'
-  };
-  console.log('[uploadImageViaGas] Sending to GAS, soTru=', soTru, 'ext=', payload.ext, 'base64 length=', payload.imageBase64.length);
   const res = await fetch(GOOGLE_SCRIPT_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify({
+      action: 'upload_image',
+      imageBase64: getBase64FromDataUrl(dataUrl),
+      ext: getImageExtFromDataUrl(dataUrl),
+      soTru: soTru || 'img'
+    })
   });
-  console.log('[uploadImageViaGas] HTTP status:', res.status, res.statusText);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const text = await res.text();
-  console.log('[uploadImageViaGas] Response text:', text);
   let data;
   try { data = JSON.parse(text); } catch(e) { throw new Error('GAS trả về không phải JSON: ' + text.slice(0, 200)); }
-  console.log('[uploadImageViaGas] Parsed response:', data);
   if (data.status !== 'ok') throw new Error(data.message || 'Upload thất bại');
   return data.path;
 }
@@ -1059,7 +1060,7 @@ function createPopupContent(row, rowIndex) {
   const cfg = STATUS_CONFIG[p.trangThai] || { label: 'Không xác định', color: '#94a3b8', bg: '#f1f5f9', emoji: '?' };
   const imgUrl = normalizeImagePath(p.hinhAnh);
   const avatarHtml = imgUrl
-    ? `<img class="pc-avatar" src="${imgUrl}" onerror="this.style.display='none'">`
+    ? `<img class="pc-avatar" src="${imgUrl}" onclick="window.open('${imgUrl}','_blank')" style="cursor:pointer" title="Nhấn để xem ảnh đầy đủ" onerror="this.outerHTML='<div class=\\'pc-avatar-ph\\'>💡</div>'">`
     : `<div class="pc-avatar-ph">💡</div>`;
   const days = daysBetween(p.ngayPhatHien);
   const broken = ['1','5','7'].includes(p.trangThai);
@@ -1090,7 +1091,6 @@ function createPopupContent(row, rowIndex) {
         ${daysHtml}
       </div>
     </div>
-    ${imgUrl ? `<div class="pc-photo"><img src="${imgUrl}" onerror="this.parentNode.style.display='none'"></div>` : ''}
     <div class="pc-body">${rows.join('')}<div class="pc-coords">📡 WGS84: ${coordStr}</div></div>
     <div class="pc-actions">${routeBtn}${editBtn}${fixBtn}</div>
   </div>`;
@@ -1623,7 +1623,7 @@ function resizeImage(dataUrl, cb) {
     const sc = Math.min(1, 800 / Math.max(w, h));
     w = Math.round(w*sc); h = Math.round(h*sc);
     let q = 0.88;
-    const render = () => { canvas.width=w; canvas.height=h; ctx.drawImage(img,0,0,w,h); return canvas.toDataURL('image/jpeg',q); };
+    const render = () => { canvas.width=w; canvas.height=h; ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h); return canvas.toDataURL('image/jpeg',q); };
     let r = render();
     while (r.length > MAX_IMG_LEN && q > 0.1) { q -= .08; r = render(); }
     while (r.length > MAX_IMG_LEN && Math.max(w,h) > 100) { w=Math.round(w*.85); h=Math.round(h*.85); r=render(); }

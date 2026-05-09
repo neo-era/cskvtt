@@ -1,4 +1,4 @@
-const CACHE_STATIC = 'dentat-static-v8';
+const CACHE_STATIC = 'dentat-static-v9';
 const CACHE_TILES  = 'dentat-tiles-v1';
 const MAX_TILES    = 200;
 

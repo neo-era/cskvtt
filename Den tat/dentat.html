@@ -711,7 +711,7 @@
 <script>
 'use strict';
 // ── CONSTANTS ──
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvhDTfytL8aKx2bGP_QWZkrDDZ0_riQ3_cF3VsRqk51Wtylw2IXhaH0qpx0bLkBT-gFw/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyC3WDoMS8q3bMtUd964eUdxr7Ds72uJP5TVC6KBazaPvrpUQ8yKtCWHl1xvtx-zzTb/exec';
 const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQC6mnGNSNDjUVzs5C4Se9Q9JQCGF9_YQRTRXewhsJhg0QDAcp6NqtxNsFl-fs8g1yyYBQEUqPhgwBv/pub?output=csv';
 const MAX_IMG_LEN = 32767;
 
@@ -1018,6 +1018,32 @@ function normalizeImagePath(img) {
   if (ip !== -1) return n.slice(ip);
   if (!/\//.test(n)) return `images/${n}`;
   return n;
+}
+
+// ── GITHUB IMAGE UPLOAD (qua GAS — token lưu server-side) ──
+function getBase64FromDataUrl(dataUrl) {
+  return dataUrl.replace(/^data:image\/[^;]+;base64,/, '');
+}
+function getImageExtFromDataUrl(dataUrl) {
+  const m = dataUrl.match(/^data:image\/(\w+);/);
+  if (!m) return 'jpg';
+  return m[1].toLowerCase() === 'jpeg' ? 'jpg' : m[1].toLowerCase();
+}
+async function uploadImageViaGas(dataUrl, soTru) {
+  const res = await fetch(GOOGLE_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({
+      action: 'upload_image',
+      imageBase64: getBase64FromDataUrl(dataUrl),
+      ext: getImageExtFromDataUrl(dataUrl),
+      soTru: soTru || 'img'
+    })
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if (data.status !== 'ok') throw new Error(data.message || 'Upload thất bại');
+  return data.path;
 }
 
 // ── POPUP CONTENT ──
@@ -1474,6 +1500,23 @@ async function saveMarkerPopup() {
   const trangThai = document.getElementById('fTrangThai').value;
   if (!soTru) { showToast('Vui lòng nhập số trụ'); return; }
   if (!trangThai) { showToast('Vui lòng chọn trạng thái'); return; }
+  const btn = document.getElementById('mpopSaveBtn');
+  const orig = btn.textContent;
+
+  // 1. Upload ảnh lên GitHub nếu có base64 mới
+  let finalImagePath = markerImagePath;
+  if (markerImageDataUrl && markerImageDataUrl.startsWith('data:image/')) {
+    btn.disabled = true; btn.textContent = '⏳ Đang upload ảnh...';
+    try {
+      const uploaded = await uploadImageViaGas(markerImageDataUrl, soTru);
+      if (uploaded) { finalImagePath = uploaded; showToast('✅ Upload ảnh thành công'); }
+    } catch(e) {
+      showToast('⚠️ Không upload được ảnh: ' + e.message);
+    }
+    btn.disabled = false; btn.textContent = orig;
+  }
+
+  // 2. Build rowData
   const lat = parseFloat(document.getElementById('fLat').value);
   const lon = parseFloat(document.getElementById('fLon').value);
   const vn = (Number.isFinite(lat) && Number.isFinite(lon)) ? convertLatLonToVn2000(lat, lon) : { x: '', y: '' };
@@ -1493,13 +1536,12 @@ async function saveMarkerPopup() {
     ngaySua: fromInputDate(document.getElementById('fNgaySua').value),
     nguoiSua: document.getElementById('fNguoiSua').value.trim(),
     vatTuSua: document.getElementById('fVatTuSua').value.trim(),
-    hinhAnh: markerImagePath || (markerImageDataUrl && markerImageDataUrl.startsWith('data:') ? markerImageDataUrl : ''),
+    hinhAnh: finalImagePath || '',
     ghiChu: document.getElementById('fGhiChu').value.trim(),
     vn2000x: vn.x ? Math.round(vn.x) : '',
     vn2000y: vn.y ? Math.round(vn.y) : '',
   };
-  const btn = document.getElementById('mpopSaveBtn');
-  const orig = btn.textContent;
+
   btn.disabled = true; btn.textContent = '⌛ Đang lưu...';
   try {
     // Khi edit: merge vào row gốc để giữ key tên cột Sheet gốc, GAS đọc đúng cột

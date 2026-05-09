@@ -102,6 +102,44 @@ function handleLogin(username, password) {
   return jsonResponse({ status: 'error', message: 'Sai tên đăng nhập hoặc mật khẩu.' });
 }
 
+// ── GITHUB IMAGE UPLOAD ────────────────────────────────────────────────────
+
+function handleImageUpload(imageBase64, soTru, ext) {
+  const token = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
+  if (!token) {
+    return jsonResponse({ status: 'error', message: 'GITHUB_TOKEN chưa được cài trong Script Properties của GAS.' });
+  }
+
+  const ts = Utilities.formatDate(new Date(), 'UTC', "yyyy-MM-dd'T'HH-mm-ss") + 'Z';
+  const safeName = (soTru || 'img').replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+  const fileName = safeName + '-' + ts + '.' + (ext || 'jpg');
+  const filePath = 'Den tat/images/' + fileName;
+
+  const apiUrl = 'https://api.github.com/repos/neo-era/cskvtt/contents/'
+    + filePath.split('/').map(encodeURIComponent).join('/');
+
+  const res = UrlFetchApp.fetch(apiUrl, {
+    method: 'put',
+    headers: {
+      'Authorization': 'token ' + token,
+      'Accept': 'application/vnd.github+json',
+      'Content-Type': 'application/json'
+    },
+    payload: JSON.stringify({
+      message: 'Upload ảnh đèn tắt: ' + fileName,
+      content: imageBase64,
+      branch: 'sub1'
+    }),
+    muteHttpExceptions: true
+  });
+
+  const code = res.getResponseCode();
+  if (code !== 200 && code !== 201) {
+    return jsonResponse({ status: 'error', message: 'GitHub API lỗi ' + code + ': ' + res.getContentText() });
+  }
+  return jsonResponse({ status: 'ok', path: 'images/' + fileName });
+}
+
 // ── MAIN HANDLER ───────────────────────────────────────────────────────────
 
 function doPost(e) {
@@ -111,6 +149,11 @@ function doPost(e) {
     // Login
     if (data.action === 'login') {
       return handleLogin(data.username || '', data.password || '');
+    }
+
+    // Upload ảnh lên GitHub qua GAS (token lưu trong Script Properties)
+    if (data.action === 'upload_image') {
+      return handleImageUpload(data.imageBase64 || '', data.soTru || '', data.ext || 'jpg');
     }
 
     // Ghi dữ liệu đèn

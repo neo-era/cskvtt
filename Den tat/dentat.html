@@ -1631,7 +1631,7 @@ function handleImageFile(e) {
   const reader = new FileReader();
   reader.onload = ev => resizeImage(ev.target.result, (res, err) => {
     if (res) {
-      markerImageDataUrl = res; markerImagePath = `images/${file.name}`;
+      markerImageDataUrl = res; markerImagePath = '';
       document.getElementById('fImagePreview').innerHTML = `<img src="${res}" style="max-height:80px;border-radius:8px">`;
       showToast('✅ Ảnh sẵn sàng');
     } else { showToast('❌ ' + (err || 'Lỗi ảnh')); }
@@ -1642,7 +1642,7 @@ function handleImageFile(e) {
 // ── EXPORT EXCEL ──
 function saveMarkerData() {
   if (!loadedData.length) { showToast('Không có dữ liệu để lưu'); return; }
-  const header = ['ID','Số trụ','Tên tủ','latitude','longitude','Loại đèn','Công suất','Trạng thái','Đường','Phường','Ngày phát hiện','Ngày sửa','Vật tư sửa','Hình ảnh','Ghi chú','VN2000X','VN2000Y'];
+  const header = ['ID','Số trụ','Tên tủ','latitude','lontitude','Loại đèn','Công suất','Trang thai','Đường','Phường','Ngày phát hiện','Người phát hiện','Ngày sửa','Người sửa','Vật tư sửa','HÌnh ảnh','Ghi chú','VN2000-X','VN2000-Y'];
   const ws = XLSX.utils.aoa_to_sheet([header, ...loadedData.map(rowToArray)]);
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Danh sách đèn');
   XLSX.writeFile(wb, `dentat-${new Date().toLocaleDateString('vi-VN').replace(/\//g,'-')}.xlsx`);

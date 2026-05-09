@@ -394,8 +394,9 @@
     #loginOverlay {
       position: fixed; inset: 0; z-index: 99000;
       background: linear-gradient(135deg, var(--navy) 0%, #1e3a5f 100%);
-      display: flex; align-items: center; justify-content: center; padding: 20px;
+      display: none; align-items: center; justify-content: center; padding: 20px;
     }
+    #loginOverlay.visible { display: flex; }
     .login-card {
       background: var(--white); border-radius: 22px; width: min(380px, 100%);
       box-shadow: 0 24px 60px rgba(0,0,0,.4); overflow: hidden;
@@ -479,6 +480,18 @@
     <span class="topbar-uname" id="topbarUname">—</span>
   </div>
 </header>
+<script>
+(function() {
+  try {
+    var u = JSON.parse(localStorage.getItem('dt_user') || 'null');
+    if (u && u.username) {
+      var isAdmin = u.role === 'admin' || u.role === 'quanly';
+      document.getElementById('topbarAv').textContent = isAdmin ? '👑' : '👷';
+      document.getElementById('topbarUname').textContent = u.displayName || u.username;
+    }
+  } catch(e) {}
+})();
+</script>
 
 <!-- ── STATS STRIP ── -->
 <div id="statsStrip">
@@ -715,13 +728,13 @@ function checkAuth() {
   try { u = JSON.parse(localStorage.getItem('dt_user') || 'null'); } catch(e) {}
   if (u && u.username) {
     currentUser = u;
-    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('loginOverlay').classList.remove('visible');
     updateSidebarUser();
     loadDataFromSheet();
     return;
   }
   localStorage.removeItem('dt_user');
-  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('loginOverlay').classList.add('visible');
   setTimeout(() => { const el = document.getElementById('lUsername'); if (el) el.focus(); }, 150);
 }
 
@@ -745,7 +758,7 @@ async function doLogin() {
     if (data.status === 'ok') {
       currentUser = data.user;
       localStorage.setItem('dt_user', JSON.stringify(currentUser));
-      document.getElementById('loginOverlay').style.display = 'none';
+      document.getElementById('loginOverlay').classList.remove('visible');
       updateSidebarUser();
       loadDataFromSheet();
     } else {
@@ -766,7 +779,7 @@ function logout() {
   if (markersCluster) markersCluster.clearLayers();
   if (labelLayerGroup) labelLayerGroup.clearLayers();
   closeSidebar();
-  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('loginOverlay').classList.add('visible');
   document.getElementById('lPassword').value = '';
   document.getElementById('loginError').textContent = '';
   updateStats();

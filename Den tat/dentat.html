@@ -35,16 +35,19 @@
       --shadow: 0 4px 20px rgba(0,0,0,.10);
       --shadow-lg: 0 8px 40px rgba(0,0,0,.18);
       --topbar-h: 56px; --stats-h: 48px; --bottomnav-h: 64px;
+      --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
     html, body { height: 100%; width: 100%; font-family: 'Inter', system-ui, sans-serif; overflow: hidden; background: var(--navy); color: var(--text); }
 
     /* ── TOP BAR ── */
     #topBar {
-      position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-h);
+      position: fixed; top: 0; left: 0; right: 0;
+      height: calc(var(--topbar-h) + var(--safe-top));
+      padding-top: var(--safe-top);
       background: rgba(15,23,42,.95); backdrop-filter: blur(14px);
       border-bottom: 1px solid rgba(255,255,255,.07);
-      display: flex; align-items: center; gap: 10px; padding: 0 12px; z-index: 3000;
+      display: flex; align-items: center; gap: 10px; padding-left: 12px; padding-right: 12px; z-index: 3000;
     }
     .topbar-brand {
       font-size: 14px; font-weight: 800; white-space: nowrap; flex-shrink: 0;
@@ -85,7 +88,7 @@
 
     /* ── STATS STRIP ── */
     #statsStrip {
-      position: fixed; top: var(--topbar-h); left: 0; right: 0; height: var(--stats-h);
+      position: fixed; top: calc(var(--topbar-h) + var(--safe-top)); left: 0; right: 0; height: var(--stats-h);
       background: rgba(15,23,42,.92); backdrop-filter: blur(10px);
       border-bottom: 1px solid rgba(255,255,255,.06);
       display: flex; align-items: center; gap: 6px; padding: 0 10px;
@@ -107,7 +110,7 @@
     /* ── MAP ── */
     #map {
       position: fixed;
-      top: calc(var(--topbar-h) + var(--stats-h));
+      top: calc(var(--topbar-h) + var(--stats-h) + var(--safe-top));
       left: 0; right: 0;
       bottom: calc(var(--bottomnav-h) + var(--safe-bottom));
       z-index: 1;
@@ -154,7 +157,7 @@
     #sidebar.open { left: 0; }
     .sb-header {
       background: linear-gradient(135deg, var(--navy), var(--navy2));
-      color: #fff; padding: 20px 16px 14px;
+      color: #fff; padding: calc(20px + var(--safe-top)) 16px 14px;
       display: flex; align-items: center; justify-content: space-between;
     }
     .sb-header-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
@@ -335,7 +338,7 @@
 
     /* ── SEARCH DROPDOWN ── */
     #searchDrop {
-      position: fixed; top: var(--topbar-h); left: 10px; right: 10px;
+      position: fixed; top: calc(var(--topbar-h) + var(--safe-top)); left: 10px; right: 10px;
       max-width: 460px; background: var(--white); border-radius: var(--radius);
       box-shadow: var(--shadow-lg); max-height: 260px; overflow-y: auto;
       z-index: 3100; display: none;

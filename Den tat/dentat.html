@@ -544,6 +544,7 @@
   <button class="nav-btn" onclick="saveMarkerData()">
     <span class="ni">💾</span><span>Lưu</span>
   </button>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom) + 2px);left:0;right:0;text-align:center;font-size:9px;color:rgba(255,255,255,.28);pointer-events:none">© 2026 CSKVTT</div>
 </nav>
 
 <!-- ── SIDEBAR ── -->
@@ -1427,7 +1428,9 @@ function fillForm(row, lat, lon) {
     markerImageDataUrl = p.hinhAnh; markerImagePath = normalizeImagePath(p.hinhAnh);
     document.getElementById('fImagePreview').innerHTML = markerImageDataUrl ? `<img src="${markerImageDataUrl}" style="max-height:80px;border-radius:8px">` : '';
   } else {
-    ['fId','fSoTru','fTenTu','fCongSuat','fDuong','fPhuong','fNguoiPhatHien','fNguoiSua','fVatTuSua','fGhiChu'].forEach(id => document.getElementById(id).value = '');
+    const maxId = loadedData.reduce((m, r) => { const n = parseInt(parseRow(r).id); return Number.isFinite(n) ? Math.max(m, n) : m; }, 0);
+    ['fSoTru','fTenTu','fCongSuat','fDuong','fPhuong','fNguoiPhatHien','fNguoiSua','fVatTuSua','fGhiChu'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('fId').value = maxId + 1;
     document.getElementById('fLoaiDen').value = '';
     document.getElementById('fTrangThai').value = '1';
     document.getElementById('fLat').value = lat ?? '';

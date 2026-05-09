@@ -874,7 +874,10 @@ function excelSerialToViDate(serial) {
 function parseDate(val) {
   if (val === null || val === undefined || val === '') return '';
   if (typeof val === 'number' && val > 40000) return excelSerialToViDate(val);
-  return String(val).trim();
+  const s = String(val).trim();
+  const d = parseViDate(s);
+  if (d) return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  return s;
 }
 
 // Parse dd/mm/yyyy hoặc yyyy-mm-dd → Date object theo giờ local (không bị lệch timezone)
@@ -1039,7 +1042,6 @@ function createPopupContent(row, rowIndex) {
   if (p.ngaySua || p.nguoiSua) rows.push(`<div class="pc-row"><span class="pi">✅</span><span class="pk">Đã sửa:</span><span class="pv">${[p.ngaySua, p.nguoiSua].filter(Boolean).join(' — ')}</span></div>`);
   if (p.vatTuSua) rows.push(`<div class="pc-row"><span class="pi">🔧</span><span class="pk">Vật tư:</span><span class="pv">${p.vatTuSua}</span></div>`);
   if (p.ghiChu) rows.push(`<div class="pc-row"><span class="pi">📝</span><span class="pk">Ghi chú:</span><span class="pv">${p.ghiChu}</span></div>`);
-  if (p.vn2000x || p.vn2000y) rows.push(`<div class="pc-row"><span class="pi">🗺</span><span class="pk">VN2000:</span><span class="pv" style="font-family:monospace">X:${p.vn2000x||'—'} Y:${p.vn2000y||'—'}</span></div>`);
   const fixBtn = broken && Number.isInteger(rowIndex)
     ? `<button class="pc-btn success" onclick="quickFix(${rowIndex});this.closest('.leaflet-popup').remove()">✅ Đã sửa</button>`
     : '';

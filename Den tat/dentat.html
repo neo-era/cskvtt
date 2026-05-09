@@ -711,7 +711,7 @@
 <script>
 'use strict';
 // ── CONSTANTS ──
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyC3WDoMS8q3bMtUd964eUdxr7Ds72uJP5TVC6KBazaPvrpUQ8yKtCWHl1xvtx-zzTb/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYQbv-GUBIYNRBFIzqBlgmho4xuq9mTMfeDmreSx2DeD3WrVnZWt2BM1LCWa0Tq0cEnQ/exec';
 const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQC6mnGNSNDjUVzs5C4Se9Q9JQCGF9_YQRTRXewhsJhg0QDAcp6NqtxNsFl-fs8g1yyYBQEUqPhgwBv/pub?output=csv';
 const MAX_IMG_LEN = 32767;
 
@@ -1030,18 +1030,25 @@ function getImageExtFromDataUrl(dataUrl) {
   return m[1].toLowerCase() === 'jpeg' ? 'jpg' : m[1].toLowerCase();
 }
 async function uploadImageViaGas(dataUrl, soTru) {
+  const payload = {
+    action: 'upload_image',
+    imageBase64: getBase64FromDataUrl(dataUrl),
+    ext: getImageExtFromDataUrl(dataUrl),
+    soTru: soTru || 'img'
+  };
+  console.log('[uploadImageViaGas] Sending to GAS, soTru=', soTru, 'ext=', payload.ext, 'base64 length=', payload.imageBase64.length);
   const res = await fetch(GOOGLE_SCRIPT_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({
-      action: 'upload_image',
-      imageBase64: getBase64FromDataUrl(dataUrl),
-      ext: getImageExtFromDataUrl(dataUrl),
-      soTru: soTru || 'img'
-    })
+    body: JSON.stringify(payload)
   });
+  console.log('[uploadImageViaGas] HTTP status:', res.status, res.statusText);
   if (!res.ok) throw new Error('HTTP ' + res.status);
-  const data = await res.json();
+  const text = await res.text();
+  console.log('[uploadImageViaGas] Response text:', text);
+  let data;
+  try { data = JSON.parse(text); } catch(e) { throw new Error('GAS trả về không phải JSON: ' + text.slice(0, 200)); }
+  console.log('[uploadImageViaGas] Parsed response:', data);
   if (data.status !== 'ok') throw new Error(data.message || 'Upload thất bại');
   return data.path;
 }

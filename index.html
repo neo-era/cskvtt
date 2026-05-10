@@ -332,6 +332,11 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
               Tải lại từ Google Sheet
             </button>
+            <button onclick="triggerExcelImport()" class="sb-btn outline">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Cập nhật từ file Excel
+            </button>
+            <input type="file" id="excelImportInput" accept=".xlsx,.xls" style="display:none" onchange="handleExcelImport(event)">
           </div>
 
           <div id="error"></div>
@@ -1055,6 +1060,34 @@
                     addMarkersToMap(jsonData);
                 } catch (error) {
                     displayError('Lỗi xử lý file Excel: ' + error.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function triggerExcelImport() {
+            const inp = document.getElementById('excelImportInput');
+            if (inp) { inp.value = null; inp.click(); }
+        }
+
+        function handleExcelImport(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            displayError('⏳ Đang tải file Excel...');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    loadedData = jsonData;
+                    newMarkerRows = [];
+                    addMarkersToMap(jsonData);
+                    displayError(`✅ Đã tải ${jsonData.length} dòng từ ${file.name}`);
+                    $('#controlsModal').modal('hide');
+                } catch (err) {
+                    displayError('❌ Lỗi đọc file Excel: ' + err.message);
                 }
             };
             reader.readAsArrayBuffer(file);

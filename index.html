@@ -142,15 +142,75 @@
     #exportCadCountInfo{font-size:13px;color:var(--indigo);font-weight:600}
     #exportCadModal .btn-secondary{background:#f1f5f9;color:var(--text);border:none;border-radius:9px;font-weight:600}
     #exportCadModal .btn-primary{background:var(--indigo);border:none;border-radius:9px;font-weight:600}
+    /* ── MARKER DOT ICONS ── */
+    .ks-dot-wrap{display:flex;align-items:center;justify-content:center}
+    .ks-dot{width:13px;height:13px;border-radius:50%;border:2px solid rgba(255,255,255,.85);box-shadow:0 1px 5px rgba(0,0,0,.35);position:relative}
+    .ks-dot.pulse::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px solid currentColor;opacity:.6;animation:ks-pulse 1.8s ease-out infinite}
+    @keyframes ks-pulse{0%{transform:scale(.8);opacity:.7}70%{transform:scale(1.7);opacity:0}100%{transform:scale(.8);opacity:0}}
     /* ── MISC ── */
     .custom-label{background:none;border:none;box-shadow:none;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);font-size:11px}
     button{touch-action:manipulation}
     #backToTopBtn{display:none !important}
     h1{display:none}
 
+    /* ── LOGIN ── */
+    #loginOverlay{position:fixed;inset:0;z-index:99000;background:linear-gradient(135deg,var(--navy) 0%,#1e3a5f 100%);display:none;align-items:center;justify-content:center;padding:20px}
+    #loginOverlay.visible{display:flex}
+    .login-card{background:#fff;border-radius:22px;width:min(380px,100%);box-shadow:0 24px 60px rgba(0,0,0,.4);overflow:hidden}
+    .login-head{background:linear-gradient(135deg,var(--navy),#1e3a5f);padding:28px 24px 22px;text-align:center;color:#fff}
+    .login-icon{font-size:42px;margin-bottom:10px}
+    .login-appname{font-size:17px;font-weight:800;letter-spacing:.02em;margin-bottom:4px;background:linear-gradient(135deg,#fbbf24,#f97316);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+    .login-sub{font-size:12px;opacity:.65}
+    .login-body{padding:22px 22px 24px}
+    .login-body .fg{margin-bottom:14px}
+    .login-body .fg label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px}
+    .login-body .fg input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit;color:var(--text);outline:none;transition:border-color .2s;background:#f8fafc}
+    .login-body .fg input:focus{border-color:var(--indigo);background:#fff;box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+    #loginError{min-height:20px;font-size:13px;color:var(--red);margin-bottom:10px;text-align:center}
+    .login-btn{width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--indigo),var(--indigo-dark));color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s;box-shadow:0 4px 16px rgba(99,102,241,.4)}
+    .login-btn:hover{opacity:.9}
+    .login-btn:disabled{opacity:.6;cursor:not-allowed}
+    /* Topbar user chip */
+    #topbarUser{display:flex;align-items:center;gap:7px;flex-shrink:0;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 12px 4px 6px;cursor:pointer;transition:background .18s;user-select:none}
+    #topbarUser:hover{background:rgba(255,255,255,.16)}
+    .topbar-av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--indigo),var(--indigo-dark));display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+    .topbar-uname{color:#fff;font-size:12px;font-weight:600;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    /* Sidebar user chip */
+    #sbUserChip{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,#eef2ff,#fff)}
+    .sb-user-av{width:36px;height:36px;border-radius:50%;background:var(--indigo);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+    .sb-user-name{font-size:13px;font-weight:700;color:var(--text)}
+    .sb-user-role{font-size:11px;color:var(--text-muted);margin-top:1px}
+    .sb-btn.logout{color:var(--red);border-color:#fee2e2}
+    .sb-btn.logout:hover{background:#fee2e2;border-color:var(--red);color:var(--red)}
+
   </style>
 </head>
 <body>
+
+<!-- ── LOGIN OVERLAY ── -->
+<div id="loginOverlay">
+  <div class="login-card">
+    <div class="login-head">
+      <div class="login-icon">🔦</div>
+      <div class="login-appname">KHẢO SÁT CHIẾU SÁNG</div>
+      <div class="login-sub">Đăng nhập để tiếp tục</div>
+    </div>
+    <div class="login-body">
+      <div class="fg">
+        <label>Tên đăng nhập</label>
+        <input id="lUsername" type="text" placeholder="Nhập tên đăng nhập" autocomplete="username"
+          onkeydown="if(event.key==='Enter')document.getElementById('lPassword').focus()">
+      </div>
+      <div class="fg">
+        <label>Mật khẩu</label>
+        <input id="lPassword" type="password" placeholder="Nhập mật khẩu" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div id="loginError"></div>
+      <button class="login-btn" id="loginBtn" onclick="doLogin()">Đăng nhập</button>
+    </div>
+  </div>
+</div>
 
   <!-- Topbar -->
   <div id="topBar">
@@ -158,7 +218,23 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     <span class="tb-title">Khảo Sát Chiếu Sáng</span>
+    <div id="topbarUser" onclick="logout()" title="Nhấn để đăng xuất">
+      <div class="topbar-av" id="topbarAv">👤</div>
+      <span class="topbar-uname" id="topbarUname">—</span>
+    </div>
   </div>
+<script>
+(function() {
+  try {
+    var u = JSON.parse(localStorage.getItem('ks_user') || 'null');
+    if (u && u.username) {
+      var isAdmin = u.role === 'admin' || u.role === 'quanly';
+      document.getElementById('topbarAv').textContent = isAdmin ? '👑' : '👷';
+      document.getElementById('topbarUname').textContent = u.displayName || u.username;
+    }
+  } catch(e) {}
+})();
+</script>
 
   <!-- Sidebar Modal -->
   <div class="modal fade left" id="controlsModal" tabindex="-1" role="dialog" aria-hidden="true">
@@ -168,7 +244,19 @@
           <span class="modal-title">Điều khiển</span>
           <button type="button" class="close" data-dismiss="modal" aria-label="Đóng">×</button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" style="padding:0">
+
+          <!-- User chip -->
+          <div id="sbUserChip">
+            <div class="sb-user-av" id="sbUserAv">👤</div>
+            <div style="flex:1;min-width:0">
+              <div class="sb-user-name" id="sbUserName">—</div>
+              <div class="sb-user-role" id="sbUserRole"></div>
+            </div>
+            <button onclick="logout()" class="sb-btn logout" style="width:auto;padding:6px 12px;margin:0;font-size:12px;border:1.5px solid #fee2e2;border-radius:8px;background:#fff">Đăng xuất</button>
+          </div>
+
+          <div style="padding:16px">
 
           <div class="sb-section">
             <div class="sb-label">Chọn trang</div>
@@ -198,24 +286,25 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
                 Vị trí
               </button>
-              <button onclick="saveMarkerData()" class="sb-btn outline">
+              <button onclick="saveMarkerDataExcel()" class="sb-btn outline">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                Lưu Excel
+                Xuất Excel backup
               </button>
             </div>
             <button onclick="showExportCadModal()" class="sb-btn dark">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
               Xuất CAD (.dxf)
             </button>
-            <button onclick="updateGitHubExcel()" class="sb-btn success">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
-              Cập nhật GitHub
+            <button onclick="loadDataFromSheet()" class="sb-btn success">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Tải lại từ Google Sheet
             </button>
           </div>
 
           <div id="error"></div>
           <div id="githubContents"></div>
 
+          </div><!-- /padding:16px -->
         </div>
       </div>
     </div>
@@ -238,13 +327,13 @@
       <div class="ni-wrap">＋</div>
       <span style="margin-top:4px">Thêm</span>
     </button>
-    <button class="nav-btn" onclick="saveMarkerData()">
-      <span class="ni">💾</span>
-      <span>Lưu</span>
+    <button class="nav-btn" onclick="loadDataFromSheet()">
+      <span class="ni">🔄</span>
+      <span>Tải lại</span>
     </button>
-    <button class="nav-btn" onclick="updateGitHubExcel()">
-      <span class="ni">☁</span>
-      <span>GitHub</span>
+    <button class="nav-btn" onclick="saveMarkerDataExcel()">
+      <span class="ni">💾</span>
+      <span>Excel</span>
     </button>
     <div style="position:absolute;bottom:calc(var(--safe-bottom) + 2px);left:0;right:0;text-align:center;font-size:9px;color:rgba(255,255,255,.28);pointer-events:none">© 2026 CSKVTT</div>
   </nav>
@@ -307,7 +396,18 @@
         </div>
         <div class="fg">
           <label>Loại trụ</label>
-          <input id="markerPoleTypeInput" type="text" class="sb-input" placeholder="STK, BTLT..." />
+          <select id="markerPoleTypeInput" class="sb-input">
+            <option value="0">Trụ STK + Đèn LED</option>
+            <option value="1">Trụ STK + Đèn HPS</option>
+            <option value="2">Trụ trang trí</option>
+            <option value="3">Trụ BTLT + Đèn LED</option>
+            <option value="4">Trụ BTLT + Đèn HPS</option>
+            <option value="5">Tủ lắp nổi</option>
+            <option value="6">Tủ lắp ngầm</option>
+            <option value="7">Trụ BTLT điện lực ql</option>
+            <option value="8">Trụ BTLT CS ql</option>
+            <option value="9">Trụ BTLT đề xuất trồng mới</option>
+          </select>
         </div>
         <div class="fg">
           <label>Loại đèn</label>
@@ -437,6 +537,7 @@
         let labelLayerGroup = L.layerGroup();
         let markers = [];
         let loadedData = [];
+        let currentUser = null; // { username, displayName, role }
         let newMarkerRows = [];
         let currentLocation = null;
         let currentLocationMarker = null;
@@ -453,6 +554,9 @@
         let lastMarkerPoleType = '';
         let lastMarkerLampType = '';
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbyNtO-Q8KPuRRgx0VacIEDF3VXeMfvAUsg-t2nJEqfVxzSlRGCyxjB4_kLMP7AqP9mu/exec';
+        // ── GOOGLE SHEET BACKEND ──
+        const KHAOSAT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxu_jM-DqletU08VM7fkK-UQoexE_biT7ZwsfiHYIug35KJolGTvwArI3AWk36-gPWZlg/exec';
+        const KHAOSAT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRjBdN5epr38kL2jLituPUC4wJO_Ohr_AsFpzaZh6Azxxs_gkzGT5s3JiZ1uFkNQFP5epR2U_wYT6wT/pub?output=csv';
         let githubOwner = 'neo-era';
         let githubRepo = 'cskvtt';
         let githubBranch = 'sub1';
@@ -568,9 +672,14 @@
                     const current = filtered[i];
                     const dist = getDistanceMeters(prev.lat || parseFloat(prev[2]), prev.lon || parseFloat(prev[3]), current.lat || parseFloat(current[2]), current.lon || parseFloat(current[3]));
                     totalDistance += dist;
-                    segments.push(`<li style="margin-bottom:4px;list-style:disc;">${(prev.name || prev[1] || 'Không có tên')} → ${(current.name || current[1] || 'Không có tên')}: ${Math.round(dist)} m</li>`);
+                    segments.push(`<option value="${Math.round(dist)}">${(prev.name || prev[1] || '?')} → ${(current.name || current[1] || '?')}: ${Math.round(dist)} m</option>`);
                 }
-                distancesHtml = `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tổng khoảng cách nối tiếp:</strong> ${Math.round(totalDistance)} m<ul style="margin:4px 0 0 16px;padding:0;">${segments.join('')}</ul></div>`;
+                distancesHtml = `<div style="margin-top:8px;font-size:13px;color:#333;">
+                  <strong>Tổng khoảng cách nối tiếp: ${Math.round(totalDistance)} m</strong>
+                  <select size="${Math.min(segments.length, 6)}" style="display:block;width:100%;margin-top:6px;padding:4px 6px;border:1px solid #ccc;border-radius:6px;font-size:12px;color:#333;background:#fafafa;cursor:default;" onclick="event.stopPropagation()">
+                    ${segments.join('')}
+                  </select>
+                </div>`;
             }
 
             const imagePath = (typeof imageValue === 'string' && !imageValue.startsWith('data:image/')) ? imageValue : '';
@@ -734,23 +843,49 @@
             displayError('Chế độ thêm marker đã tắt.');
         }
 
-        // Custom Icons
+        // Custom Icons — dot style
+        // 0=Trụ STK+LED  1=Trụ STK+HPS  2=Trang trí  3=Trụ BTLT+LED  4=Trụ BTLT+HPS
+        // 5=Tủ nổi(9.png)  6=Tủ ngầm(9.png)  7=BTLT ĐL ql  8=BTLT CS ql  9=BTLT trồng mới
+        const ICON_CONFIG = {
+            0: { color: '#0ea5e9', pulse: false, label: 'Trụ STK + Đèn LED' },
+            1: { color: '#f59e0b', pulse: false, label: 'Trụ STK + Đèn HPS' },
+            2: { color: '#ec4899', pulse: false, label: 'Trụ trang trí' },
+            3: { color: '#10b981', pulse: false, label: 'Trụ BTLT + Đèn LED' },
+            4: { color: '#f97316', pulse: false, label: 'Trụ BTLT + Đèn HPS' },
+            5: { color: null,      pulse: false, label: 'Tủ lắp nổi' },
+            6: { color: null,      pulse: false, label: 'Tủ lắp ngầm' },
+            7: { color: '#64748b', pulse: false, label: 'Trụ BTLT điện lực ql' },
+            8: { color: '#7c3aed', pulse: false, label: 'Trụ BTLT CS ql' },
+            9: { color: '#22c55e', pulse: true,  label: 'Trụ BTLT đề xuất trồng mới' },
+        };
+
+        function makeDotIcon(color, pulse) {
+            return L.divIcon({
+                className: 'ks-dot-wrap',
+                html: `<div class="ks-dot${pulse ? ' pulse' : ''}" style="background:${color};color:${color}"></div>`,
+                iconSize:    [17, 17],
+                iconAnchor:  [8, 8],
+                popupAnchor: [0, -10],
+            });
+        }
+
         const customIcons = {
-            1: L.icon({ iconUrl: 'images/1.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
-            2: L.icon({ iconUrl: 'images/2.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
-            3: L.icon({ iconUrl: 'images/3.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
-            4: L.icon({ iconUrl: 'images/4.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
-            5: L.icon({ iconUrl: 'images/5.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
-            6: L.icon({ iconUrl: 'images/9.png', iconSize: [16, 20], iconAnchor: [8, 10], popupAnchor: [0, -10] }),
-            7: L.icon({ iconUrl: 'images/7.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] }),
+            0: makeDotIcon('#0ea5e9', false),  // Trụ STK + LED — xanh dương
+            1: makeDotIcon('#f59e0b', false),  // Trụ STK + HPS — vàng
+            2: makeDotIcon('#ec4899', false),  // Trụ trang trí — hồng
+            3: makeDotIcon('#10b981', false),  // Trụ BTLT + LED — xanh lá
+            4: makeDotIcon('#f97316', false),  // Trụ BTLT + HPS — cam
+            5: L.icon({ iconUrl: 'images/9.png', iconSize: [22, 28], iconAnchor: [11, 14], popupAnchor: [0, -14] }), // Tủ lắp nổi
+            6: L.icon({ iconUrl: 'images/9.png', iconSize: [18, 22], iconAnchor: [9,  11], popupAnchor: [0, -11] }), // Tủ lắp ngầm (nhỏ hơn)
+            7: makeDotIcon('#64748b', false),  // Trụ BTLT điện lực ql — xám
+            8: makeDotIcon('#7c3aed', false),  // Trụ BTLT CS ql — tím
+            9: makeDotIcon('#22c55e', true),   // Trụ BTLT đề xuất trồng mới — xanh lá, pulse
             currentPos: L.divIcon({
                 className: 'custom-crosshair-icon',
-                html: '<i class="fa fa-plus" style="color: #007bff; font-size: 20px; text-shadow: 0 0 3px white;"></i>',
-                iconSize: [10, 10],
-                iconAnchor: [5, 5], // Căn giữa chính xác: tâm dấu thập trùng với tọa độ
-                popupAnchor: [0, -10]
+                html: '<i class="fa fa-plus" style="color:#007bff;font-size:20px;text-shadow:0 0 3px white"></i>',
+                iconSize: [20, 20], iconAnchor: [10, 10], popupAnchor: [0, -10],
             }),
-            default: L.icon({ iconUrl: 'images/8.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [0, -10] })
+            default: makeDotIcon('#94a3b8', false),  // mặc định — xám nhạt
         };
 
         function initializeMap() {
@@ -924,7 +1059,7 @@
             nameInput.value = nextName;
             noteInput.value = lastMarkerNote || '';
             cabinetInput.value = lastMarkerCabinet || '';
-            poleTypeInput.value = lastMarkerPoleType || '';
+            poleTypeInput.value = lastMarkerPoleType !== '' ? lastMarkerPoleType : '0';
             lampTypeInput.value = lastMarkerLampType || '';
             preview.innerHTML = '';
             fileInput.value = null;
@@ -1202,18 +1337,13 @@
                     return;
                 }
 
+                const type = parseInt(document.getElementById('markerPoleTypeInput').value) || 0;
+
                 lastMarkerName = name;
                 lastMarkerNote = note;
                 lastMarkerCabinet = cabinetName;
-                lastMarkerPoleType = poleType;
+                lastMarkerPoleType = String(type);
                 lastMarkerLampType = lampType;
-
-                let type = 1;
-                if (cabinetName) {
-                    type = 6;
-                } else if (poleType.toUpperCase() === 'STK') {
-                    type = 2;
-                }
 
                 // Xác định marker gốc để tính khoảng cách
                 let baseMarkerName = '';
@@ -1243,7 +1373,8 @@
                 const idInput = document.getElementById('markerIdInput');
                 const rowId = idInput && idInput.value ? String(idInput.value) : '';
                 // Thêm 2 trường cuối: tên marker gốc, khoảng cách (m)
-                const newRow = [rowId, name, lat, lon, note, '', type, cabinetName, poleType, '', lampType, imageData, updatedAt, baseMarkerName, distanceToBase];
+                const poleTypeLabel = ICON_CONFIG[type]?.label || String(type);
+                const newRow = [rowId, name, lat, lon, note, '', type, cabinetName, poleTypeLabel, '', lampType, imageData, updatedAt, baseMarkerName, distanceToBase];
                 loadedData.push(newRow);
                 newMarkerRows.push(newRow);
                 markerImageDataUrl = null;
@@ -1256,10 +1387,9 @@
 
                 hideMarkerPopup();
                 pendingNewMarker = true;
-                addMarkerMode = true;
                 pendingMarkerLocation = null;
                 updateAddMarkerButton();
-                displayError('Đã thêm marker mới (ảnh chưa lưu). Nhấn Lưu dữ liệu để lưu ảnh và cập nhật đường dẫn vào Excel/GitHub.');
+                pushMarkerToSheet(newRow);
             } catch (error) {
                 console.error('saveMarkerPopup error:', error);
                 displayError('Lỗi khi lưu marker: ' + (error.message || error));
@@ -1586,64 +1716,32 @@
         }
 
         async function saveMarkerData() {
+            // Tải lại dữ liệu từ Google Sheet
+            loadDataFromSheet();
+        }
+
+        async function saveMarkerDataExcel() {
             try {
-                if (!newMarkerRows || newMarkerRows.length === 0) {
-                    displayError('Không có marker mới để lưu.');
+                const exportRows = loadedData.slice(1).filter(r => parseFloat(r[2]) && parseFloat(r[3]));
+                if (!exportRows.length) {
+                    displayError('Không có dữ liệu để xuất.');
                     return;
                 }
 
-                prepareImagePathsForSave(newMarkerRows);
-                let downloadBlob = null;
-                if (typeof ExcelJS !== 'undefined' || (typeof window !== 'undefined' && window.ExcelJS)) {
-                    const buffer = await createExcelBufferWithImages(newMarkerRows);
-                    if (buffer) {
-                        downloadBlob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                    }
-                }
-
-                if (downloadBlob) {
-                    const url = URL.createObjectURL(downloadBlob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = 'khaosat-updated.xlsx';
-                    document.body.appendChild(a);
-                    a.click();
-                    setTimeout(() => {
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                    }, 100);
-                } else {
-                    const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh', 'Thời gian cập nhật', 'Tên marker gốc', 'Khoảng cách (m)'];
-                    const exportRows = newMarkerRows.map(row => Array.isArray(row) ? [...row] : []);
-                    const exportData = [header, ...exportRows];
-                    const worksheet = XLSX.utils.aoa_to_sheet(exportData);
-                    attachImagesToWorksheet(worksheet, newMarkerRows);
-                    const workbook = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
-                    if (typeof XLSX.writeFile === 'function') {
-                        XLSX.writeFile(workbook, 'khaosat-updated.xlsx');
-                    } else {
-                        const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-                        const blob = new Blob([wbout], { type: 'application/octet-stream' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.style.display = 'none';
-                        a.href = url;
-                        a.download = 'khaosat-updated.xlsx';
-                        document.body.appendChild(a);
-                        a.click();
-                        setTimeout(() => {
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                        }, 100);
-                    }
-                }
-
-                displayError('File dữ liệu mới đã được tạo và tải xuống.');
+                const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh', 'Thời gian cập nhật', 'Marker gốc', 'Khoảng cách (m)'];
+                const cleanRows = exportRows.map(row => {
+                    const r = Array.isArray(row) ? [...row] : [];
+                    r[11] = ''; // xóa base64 khi xuất Excel backup
+                    return r;
+                });
+                const worksheet = XLSX.utils.aoa_to_sheet([header, ...cleanRows]);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'KhaoSat');
+                XLSX.writeFile(workbook, 'khaosat-backup.xlsx');
+                displayError('✅ Đã xuất file backup Excel (không có ảnh).');
             } catch (error) {
-                console.error('saveMarkerData error:', error);
-                displayError('Lỗi khi tải file dữ liệu: ' + (error.message || error));
+                console.error('saveMarkerDataExcel error:', error);
+                displayError('Lỗi xuất Excel: ' + (error.message || error));
             }
         }
 
@@ -1794,6 +1892,11 @@
         }
 
         async function updateGitHubExcel() {
+            // Dữ liệu nay lưu trực tiếp lên Google Sheet — hàm này tải lại dữ liệu mới nhất
+            loadDataFromSheet();
+        }
+
+        async function _updateGitHubExcelLegacy() {
             try {
                 if (!newMarkerRows || newMarkerRows.length === 0) {
                     displayError('Không có marker mới để cập nhật lên GitHub.');
@@ -1856,10 +1959,176 @@
                 pendingNewMarker = false;
                 addMarkerMode = false;
                 updateAddMarkerButton();
-                displayError('Đã cập nhật file Excel và ảnh lên GitHub thành công. Ảnh đã được lưu vào thư mục images, đường dẫn được ghi vào file Excel.');
+                displayError('Đã cập nhật file Excel và ảnh lên GitHub thành công.');
             } catch (error) {
-                console.error('updateGitHubExcel error:', error);
+                console.error('_updateGitHubExcelLegacy error:', error);
                 displayError('Lỗi khi cập nhật GitHub: ' + (error.message || error));
+            }
+        }
+
+        // ── AUTH ──
+        function checkAuth() {
+            let u = null;
+            try { u = JSON.parse(localStorage.getItem('ks_user') || 'null'); } catch(e) {}
+            if (u && u.username) {
+                currentUser = u;
+                document.getElementById('loginOverlay').classList.remove('visible');
+                updateSidebarUser();
+                loadDataFromSheet();
+                return;
+            }
+            localStorage.removeItem('ks_user');
+            document.getElementById('loginOverlay').classList.add('visible');
+            setTimeout(() => { const el = document.getElementById('lUsername'); if (el) el.focus(); }, 150);
+        }
+
+        async function doLogin() {
+            const username = (document.getElementById('lUsername').value || '').trim();
+            const password = document.getElementById('lPassword').value || '';
+            const errEl = document.getElementById('loginError');
+            const btn = document.getElementById('loginBtn');
+            errEl.textContent = '';
+            if (!username) { errEl.textContent = 'Vui lòng nhập tên đăng nhập'; return; }
+            if (!password) { errEl.textContent = 'Vui lòng nhập mật khẩu'; return; }
+            btn.disabled = true; btn.textContent = '⏳ Đang kiểm tra...';
+            try {
+                const res = await fetch(KHAOSAT_GAS_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'login', username, password })
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    currentUser = data.user;
+                    localStorage.setItem('ks_user', JSON.stringify(currentUser));
+                    document.getElementById('loginOverlay').classList.remove('visible');
+                    updateSidebarUser();
+                    loadDataFromSheet();
+                } else {
+                    errEl.textContent = data.message || 'Sai tên đăng nhập hoặc mật khẩu';
+                }
+            } catch(e) {
+                errEl.textContent = 'Lỗi kết nối: ' + e.message;
+            } finally {
+                btn.disabled = false; btn.textContent = 'Đăng nhập';
+            }
+        }
+
+        function logout() {
+            if (!confirm('Bạn có muốn đăng xuất không?')) return;
+            localStorage.removeItem('ks_user');
+            currentUser = null;
+            loadedData = []; markers = [];
+            if (markersCluster) markersCluster.clearLayers();
+            if (labelLayerGroup) labelLayerGroup.clearLayers();
+            $('#controlsModal').modal('hide');
+            document.getElementById('loginOverlay').classList.add('visible');
+            document.getElementById('lPassword').value = '';
+            document.getElementById('loginError').textContent = '';
+            setTimeout(() => { const u = document.getElementById('lUsername'); if (u) u.focus(); }, 150);
+        }
+
+        function updateSidebarUser() {
+            if (!currentUser) return;
+            const isAdmin = currentUser.role === 'admin' || currentUser.role === 'quanly';
+            const av   = isAdmin ? '👑' : '👷';
+            const role = isAdmin ? 'Quản trị viên' : 'Nhân viên';
+            const name = currentUser.displayName || currentUser.username;
+            const sbAv   = document.getElementById('sbUserAv');
+            const sbName = document.getElementById('sbUserName');
+            const sbRole = document.getElementById('sbUserRole');
+            const tpAv   = document.getElementById('topbarAv');
+            const tpName = document.getElementById('topbarUname');
+            if (sbAv)   sbAv.textContent   = av;
+            if (sbName) sbName.textContent = name;
+            if (sbRole) sbRole.textContent = role;
+            if (tpAv)   tpAv.textContent   = av;
+            if (tpName) tpName.textContent = name;
+        }
+
+        // ── TẢI DỮ LIỆU TỪ GOOGLE SHEET ──
+        function loadDataFromSheet() {
+            if (!KHAOSAT_CSV_URL) {
+                displayError('⚠️ Chưa cấu hình KHAOSAT_CSV_URL. Xem file gas-khaosat.js để biết hướng dẫn.');
+                return;
+            }
+            displayError('Đang tải dữ liệu từ Google Sheet...');
+            fetch(KHAOSAT_CSV_URL + '&t=' + Date.now())
+                .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+                .then(buf => {
+                    const wb = XLSX.read(buf, { type: 'array' });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const all = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                    loadedData = all;
+                    newMarkerRows = [];
+                    addMarkersToMap(all);
+                    displayError(all.length > 1 ? `✅ Đã tải ${all.length - 1} marker từ Google Sheet.` : 'Sheet chưa có dữ liệu.');
+                })
+                .catch(e => {
+                    displayError('❌ Lỗi tải dữ liệu: ' + e.message);
+                    console.error(e);
+                });
+        }
+
+        // ── LƯU 1 ROW LÊN GOOGLE SHEET ──
+        async function pushMarkerToSheet(row) {
+            if (!KHAOSAT_GAS_URL) {
+                displayError('⚠️ Chưa cấu hình KHAOSAT_GAS_URL. Marker đã thêm vào bản đồ nhưng chưa lưu lên sheet.');
+                return;
+            }
+            try {
+                // 1. Upload ảnh lên GitHub nếu là base64
+                let imagePath = row[11] || '';
+                if (imagePath.startsWith('data:image/')) {
+                    const ext = getImageExtensionFromDataUrl(imagePath) || 'jpg';
+                    const res = await fetch(KHAOSAT_GAS_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({
+                            action: 'upload_image',
+                            imageBase64: getBase64FromDataUrl(imagePath),
+                            soTru: sanitizeFileName(row[1] || 'img'),
+                            ext
+                        })
+                    });
+                    const upData = await res.json();
+                    if (upData.status === 'ok') {
+                        imagePath = upData.path; // 'images/xxx.jpg'
+                        row[11] = imagePath;     // cập nhật luôn trong loadedData
+                    } else {
+                        console.warn('Upload ảnh lỗi:', upData.message);
+                    }
+                }
+                // 2. Ghi row lên Google Sheet
+                const payload = {
+                    action: 'full_update',
+                    id:           String(row[0] || ''),
+                    tenTru:       String(row[1] || ''),
+                    lat:          row[2] || '',
+                    lon:          row[3] || '',
+                    ghiChu:       String(row[4] || ''),
+                    nguoiKS:      String(row[5] || ''),   // Người KS
+                    loai:         String(row[6] || ''),
+                    tuDieuKhien:  String(row[7] || ''),
+                    loaiTru:      String(row[8] || ''),
+                    loaiCan:      String(row[9] || ''),
+                    loaiDen:      String(row[10] || ''),
+                    hinhAnh:      imagePath,              // → cột 'Ảnh'
+                    capNhat:      String(row[12] || ''),
+                    markerGoc:    String(row[13] || ''),
+                    khoangCach:   String(row[14] || ''),
+                };
+                await fetch(KHAOSAT_GAS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                displayError('✅ Đã lưu lên Google Sheet: ' + (row[1] || ''));
+            } catch(e) {
+                console.error('pushMarkerToSheet:', e);
+                displayError('⚠️ Lỗi lưu GSheet: ' + (e.message || e) + ' — Marker đã thêm vào bản đồ nhưng chưa lưu.');
             }
         }
 
@@ -2329,7 +2598,7 @@
        // Initialize when page loads
         window.onload = function() {
             map = initializeMap();
-            loadDefaultFile();
+            checkAuth();
 
             // Nút về đầu trang
             const backToTopBtn = document.getElementById('backToTopBtn');

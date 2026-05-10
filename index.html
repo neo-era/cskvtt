@@ -1137,23 +1137,40 @@
 
             XLSX.utils.book_append_sheet(wb, ws, 'DanhSachTru');
 
-            // Sheet hướng dẫn loại trụ
+            // Sheet hướng dẫn
             const GUIDE = [
-                ['Mã Loại', 'Nhãn Loại trụ', 'Màu icon'],
+                ['HƯỚNG DẪN SỬ DỤNG FILE MẪU KHẢO SÁT CSCC', '', ''],
+                ['', '', ''],
+                ['BẢNG MÃ LOẠI TRỤ (cột "Loại" phải là số nguyên 0–9)', '', ''],
+                ['Mã Loại', 'Nhãn Loại trụ', 'Màu icon trên bản đồ'],
                 [0, 'Trụ STK + Đèn LED',              'Xanh dương'],
                 [1, 'Trụ STK + Đèn HPS',              'Vàng'],
                 [2, 'Trụ trang trí',                  'Hồng'],
                 [3, 'Trụ BTLT + Đèn LED',             'Xanh lá'],
                 [4, 'Trụ BTLT + Đèn HPS',             'Cam'],
-                [5, 'Tủ lắp nổi',                     'Icon 9.png'],
-                [6, 'Tủ lắp ngầm',                    'Icon 9.png (nhỏ)'],
+                [5, 'Tủ lắp nổi',                     'Icon tủ (lớn)'],
+                [6, 'Tủ lắp ngầm',                    'Icon tủ (nhỏ)'],
                 [7, 'Trụ BTLT điện lực quản lý',      'Xám'],
                 [8, 'Trụ BTLT CSCC quản lý',          'Tím'],
                 [9, 'Trụ BTLT đề xuất trồng mới',     'Xanh lá (nhấp nháy)'],
+                ['', '', ''],
+                ['LƯU Ý KHI NHẬP DỮ LIỆU', '', ''],
+                ['1.', 'Xóa hàng 2 (dòng ghi chú mô tả cột) trước khi nhập vào ứng dụng.', ''],
+                ['2.', 'Cột "Loại" bắt buộc là số nguyên 0–9 (xem bảng trên). Nếu để trống hoặc sai → icon mặc định màu xám.', ''],
+                ['3.', 'Cột "Lat" và "Lon" phải là tọa độ WGS84 thập phân (VD: 10.776900 / 106.700900). Hàng không có tọa độ hợp lệ sẽ bị bỏ qua.', ''],
+                ['4.', 'Cột "Ảnh", "Thời gian cập nhật", "Khoảng cách (m)" — để trống, ứng dụng tự điền khi lưu.', ''],
+                ['5.', 'Cột "Marker gốc" — nhập tên trụ tham chiếu nếu muốn tính khoảng cách giữa 2 trụ. Có thể để trống.', ''],
+                ['6.', 'Sau khi nhập xong, chọn menu → "Nhập từ Excel" để tải file lên bản đồ.', ''],
+                ['7.', 'Để đồng bộ lên Google Sheet, nhấn nút "Tải lại từ Google Sheet" sau khi đã nhập và lưu marker.', ''],
             ];
             const wsGuide = XLSX.utils.aoa_to_sheet(GUIDE);
-            wsGuide['!cols'] = [{wch:10},{wch:34},{wch:20}];
-            XLSX.utils.book_append_sheet(wb, wsGuide, 'Hướng dẫn Loại');
+            wsGuide['!cols'] = [{wch:6},{wch:70},{wch:26}];
+            wsGuide['!merges'] = [
+                { s:{r:0,c:0}, e:{r:0,c:2} },
+                { s:{r:2,c:0}, e:{r:2,c:2} },
+                { s:{r:15,c:0}, e:{r:15,c:2} },
+            ];
+            XLSX.utils.book_append_sheet(wb, wsGuide, 'Hướng dẫn');
 
             XLSX.writeFile(wb, 'mau-khaosat-cscc.xlsx');
         }

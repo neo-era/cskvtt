@@ -140,6 +140,28 @@ function handleImageUpload(imageBase64, soTru, ext) {
   return jsonResponse({ status: 'ok', path: 'images/' + fileName });
 }
 
+// ── GITHUB FILE WRITE (dùng chung cho Excel + ảnh từ index.html) ───────────
+
+function handleGithubWriteFile(filePath, content, sha, message) {
+  const token = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
+  if (!token) return jsonResponse({ status: 'error', message: 'GITHUB_TOKEN chưa được cài trong Script Properties.' });
+  const encodedPath = filePath.split('/').map(encodeURIComponent).join('/');
+  const apiUrl = 'https://api.github.com/repos/neo-era/cskvtt/contents/' + encodedPath;
+  const body = { message: message || 'Update file', content: content, branch: 'sub1' };
+  if (sha) body.sha = sha;
+  const res = UrlFetchApp.fetch(apiUrl, {
+    method: 'put',
+    headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+    payload: JSON.stringify(body),
+    muteHttpExceptions: true
+  });
+  const code = res.getResponseCode();
+  if (code !== 200 && code !== 201) {
+    return jsonResponse({ status: 'error', message: 'GitHub API lỗi ' + code + ': ' + res.getContentText().slice(0, 300) });
+  }
+  return jsonResponse({ status: 'ok' });
+}
+
 // ── MAIN HANDLER ───────────────────────────────────────────────────────────
 
 function doPost(e) {
@@ -151,9 +173,14 @@ function doPost(e) {
       return handleLogin(data.username || '', data.password || '');
     }
 
-    // Upload ảnh lên GitHub qua GAS (token lưu trong Script Properties)
+    // Upload ảnh đèn tắt (tự tạo tên file)
     if (data.action === 'upload_image') {
       return handleImageUpload(data.imageBase64 || '', data.soTru || '', data.ext || 'jpg');
+    }
+
+    // Ghi file tuỳ chỉnh lên GitHub (Excel + ảnh từ index.html)
+    if (data.action === 'github_write_file') {
+      return handleGithubWriteFile(data.path || '', data.content || '', data.sha || '', data.message || '');
     }
 
     // Ghi dữ liệu đèn

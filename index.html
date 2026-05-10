@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <title>Lighting System V1.1</title>
+    <title>Khảo Sát Chiếu Sáng</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#007bff">
+    <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Lighting System">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Khảo Sát CS">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 
     <!-- Web App Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -43,732 +45,297 @@
     <script src="js/bootstrap.bundle.min.js"></script>
 
   <style>
-        /* Hiệu ứng fade cho modal và nút */
-        .btn, button, .form-control {
-            transition: background 0.2s, color 0.2s, box-shadow 0.2s, border 0.2s;
-        }
-        .btn:active, button:active {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-        }
-        /* Nút về đầu trang */
-        #backToTopBtn {
-            display: none;
-            position: fixed;
-            bottom: 24px;
-            right: 18px;
-            z-index: 4000;
-            background: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 50%;
-            width: 48px;
-            height: 48px;
-            font-size: 22px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-            cursor: pointer;
-        }
-        #backToTopBtn:active {
-            background: #0056b3;
-        }
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden; /* Prevent horizontal scroll on mobile */
-        }
+    :root {
+      --navy:#0f172a;--slate:#1e293b;--card:#fff;--text:#1e293b;--text-muted:#64748b;--border:#e2e8f0;
+      --indigo:#6366f1;--indigo-dark:#4f46e5;--green:#10b981;--amber:#f59e0b;--red:#ef4444;
+      --shadow:0 4px 20px rgba(0,0,0,.10);--shadow-lg:0 8px 40px rgba(0,0,0,.2);
+      --topbar-h:56px;--bottomnav-h:60px;
+      --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
+    }
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{height:100%;margin:0;padding:0;overflow:hidden;font-family:'Inter',system-ui,sans-serif;background:var(--navy)}
+
+    /* ── TOPBAR ── */
+    #topBar{position:fixed;top:0;left:0;right:0;z-index:4000;height:calc(var(--topbar-h) + var(--safe-top));padding-top:var(--safe-top);background:var(--navy);display:flex;align-items:center;gap:8px;padding-left:10px;padding-right:10px;box-shadow:0 1px 0 rgba(255,255,255,.06),0 4px 20px rgba(0,0,0,.3)}
+    .tb-title{flex:1;color:#fff;font-size:15px;font-weight:700;text-align:center;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #controlsBtn{width:40px;height:40px;border:none;border-radius:10px;background:rgba(255,255,255,.08);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s;flex-shrink:0;padding:0;margin:0;position:static;transform:none;z-index:auto;touch-action:manipulation}
+    #controlsBtn:hover,#controlsBtn:active{background:rgba(255,255,255,.18)}
+    /* ── MAP ── */
+    #map{position:fixed;top:calc(var(--topbar-h) + var(--safe-top));left:0;right:0;bottom:calc(var(--bottomnav-h) + var(--safe-bottom));z-index:1;touch-action:none}
+    /* ── BOTTOM NAV ── */
+    #bottomNav{position:fixed;bottom:0;left:0;right:0;z-index:4000;height:calc(var(--bottomnav-h) + var(--safe-bottom));padding-bottom:var(--safe-bottom);background:rgba(15,23,42,.97);backdrop-filter:blur(14px);border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:stretch}
+    .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;color:rgba(255,255,255,.5);font-size:10px;font-weight:600;cursor:pointer;transition:color .2s;touch-action:manipulation;padding:0;font-family:'Inter',system-ui,sans-serif;letter-spacing:.3px}
+    .nav-btn:active{color:#fff}
+    .nav-btn .ni{font-size:20px;line-height:1}
+    .ni-wrap{width:44px;height:44px;border-radius:14px;background:var(--indigo);display:flex;align-items:center;justify-content:center;font-size:22px;margin-top:-10px;box-shadow:0 4px 12px rgba(99,102,241,.5);transition:background .2s,transform .15s}
+    .nav-btn.add-btn:active .ni-wrap{background:var(--indigo-dark);transform:scale(.93)}
+    .nav-btn.add-btn.active .ni-wrap{background:var(--amber);box-shadow:0 4px 12px rgba(245,158,11,.5)}
+    /* ── SIDEBAR ── */
+    .modal.left{z-index:5000}
+    .modal.left .modal-dialog{position:fixed;left:-340px;top:0;height:100vh;width:320px;margin:0;transition:left .3s cubic-bezier(.4,0,.2,1);max-width:88vw}
+    .modal.left.show .modal-dialog{left:0}
+    .modal.left .modal-content{height:100vh;border:none;border-radius:0;background:var(--card);box-shadow:8px 0 40px rgba(0,0,0,.25)}
+    .modal.left .modal-header{background:var(--navy);border:none;border-radius:0;padding:0 16px;height:calc(var(--topbar-h) + var(--safe-top));padding-top:var(--safe-top);display:flex;align-items:center}
+    .modal.left .modal-title{color:#fff;font-size:15px;font-weight:700}
+    .modal.left .modal-header .close{color:rgba(255,255,255,.7);opacity:1;font-size:24px;background:none;border:none;cursor:pointer;padding:0;line-height:1;margin-left:auto}
+    .modal.left .modal-body{height:calc(100vh - var(--topbar-h) - var(--safe-top));overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
+    .modal-backdrop{z-index:4999}
+    .sb-section{margin-bottom:20px}
+    .sb-label{font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px}
+    .sb-input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;color:var(--text);background:#f8fafc;font-family:inherit;outline:none;transition:border-color .2s,box-shadow .2s}
+    .sb-input:focus{border-color:var(--indigo);box-shadow:0 0 0 3px rgba(99,102,241,.12);background:#fff}
+    .sb-select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer}
+    .sb-btn{width:100%;padding:11px 16px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;gap:8px;justify-content:center;transition:opacity .2s,transform .15s;touch-action:manipulation;font-family:inherit}
+    .sb-btn:active{opacity:.85;transform:scale(.98)}
+    .sb-btn.primary{background:var(--indigo);color:#fff}
+    .sb-btn.success{background:var(--green);color:#fff}
+    .sb-btn.warning{background:var(--amber);color:#fff}
+    .sb-btn.dark{background:var(--slate);color:#fff}
+    .sb-btn.outline{background:#f8fafc;color:var(--text);border:1.5px solid var(--border)}
+    .sb-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+    .sb-btn-row .sb-btn{margin-bottom:0}
+    #error{padding:10px 12px;border-radius:10px;font-size:13px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;margin-top:12px;display:none;font-weight:500;line-height:1.5}
+    #error.has-content{display:block}
+    #searchResults{margin-top:8px}
+    #searchResults ul{list-style:none;padding:0;margin:0;max-height:180px;overflow-y:auto}
+    #searchResults li{padding:8px 10px;border-radius:8px;border:1px solid var(--border);margin-bottom:4px;cursor:pointer;transition:background .15s}
+    #searchResults li:hover{background:#f8fafc}
+    #searchResults a{color:var(--indigo);text-decoration:none;font-size:13px;font-weight:500;display:block}
+    #githubContents{display:none}
+    /* ── MAP CONTROLS ── */
+    .leaflet-control-custom{z-index:3000;background:transparent;border:none;padding:4px;display:flex;flex-direction:column;gap:6px}
+    .leaflet-control-custom button{width:40px;height:40px;border:none;border-radius:10px;background:rgba(15,23,42,.85);backdrop-filter:blur(8px);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,transform .15s;box-shadow:0 2px 8px rgba(0,0,0,.25);touch-action:manipulation}
+    .leaflet-control-custom button:hover{background:rgba(99,102,241,.8)}
+    .leaflet-control-custom button:active{transform:scale(.93)}
+    /* ── MARKER POPUP FORM ── */
+    .marker-popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:6000;display:none;align-items:center;justify-content:center;padding:12px}
+    .marker-popup-card{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(380px,calc(100vw - 24px));max-height:calc(100vh - 24px);background:var(--card);border-radius:16px;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column}
+    .marker-popup-card header{padding:14px 16px;background:var(--navy);color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .mpop-body{padding:14px 16px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+    .fg{margin-bottom:12px}
+    .fg label{display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;letter-spacing:.3px}
+    .fg input,.fg textarea,.fg select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:16px;color:var(--text);background:#f8fafc;font-family:inherit;outline:none;transition:border-color .2s}
+    .fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--indigo);background:#fff}
+    .fg textarea{resize:vertical;min-height:60px}
+    .coords-info{font-size:11px;color:var(--text-muted);font-family:monospace;background:#f8fafc;padding:6px 10px;border-radius:8px;margin-top:4px}
+    .marker-image-preview{margin-top:8px;display:flex;justify-content:center}
+    .marker-image-preview img{max-height:90px;border-radius:10px;border:1.5px solid var(--border);object-fit:cover}
+    .mpop-footer{padding:12px 16px;background:#f8fafc;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+    .mpop-row{display:flex;gap:8px}
+    .mpop-btn{flex:1;padding:10px 8px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s,transform .15s;touch-action:manipulation;font-family:inherit}
+    .mpop-btn:active{opacity:.85;transform:scale(.97)}
+    .mpop-btn.cancel{background:#f1f5f9;color:var(--text)}
+    .mpop-btn.save{background:var(--indigo);color:#fff}
+    .mpop-btn.cam{background:#f1f5f9;color:var(--text);width:100%}
+    .mpop-btn.loc{background:#eff6ff;color:#1d4ed8}
+    .mpop-btn.pick{background:#fffbeb;color:#92400e}
+    /* ── EXPORT CAD MODAL ── */
+    #exportCadModal .modal-content{border-radius:16px;border:none;box-shadow:var(--shadow-lg)}
+    #exportCadModal .modal-header{background:var(--navy);color:#fff;border-radius:16px 16px 0 0;border:none;padding:16px 20px}
+    #exportCadModal .modal-title{color:#fff;font-weight:700}
+    #exportCadModal .modal-header .close{color:rgba(255,255,255,.7);opacity:1}
+    #exportCadModal .modal-body{padding:20px}
+    #exportCadModal .modal-footer{border-top:1px solid var(--border);padding:12px 20px;border-radius:0 0 16px 16px}
+    #exportCadModal label{font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block}
+    #exportCadModal .form-control{border:1.5px solid var(--border);border-radius:9px;font-size:15px;padding:9px 12px}
+    #exportCadModal .form-control:focus{border-color:var(--indigo);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+    #exportCadCountInfo{font-size:13px;color:var(--indigo);font-weight:600}
+    #exportCadModal .btn-secondary{background:#f1f5f9;color:var(--text);border:none;border-radius:9px;font-weight:600}
+    #exportCadModal .btn-primary{background:var(--indigo);border:none;border-radius:9px;font-weight:600}
+    /* ── MISC ── */
+    .custom-label{background:none;border:none;box-shadow:none;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);font-size:11px}
+    button{touch-action:manipulation}
+    #backToTopBtn{display:none !important}
+    h1{display:none}
 
-        h1 {
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 18px;
-            color: #2510c6;
-            margin: 0;
-            z-index: 3000;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 5px 10px;
-            border-radius: 4px;
-            touch-action: manipulation;
-        }
-
-        #controlsBtn {
-            position: fixed;
-            top: 35px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 3000;
-            touch-action: manipulation;
-        }
-
-        .controls-container {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .controls-container .form-group {
-            margin-bottom: 15px;
-        }
-
-        .button-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .button-group .btn {
-            margin: 0;
-        }
-
-        #pages, #searchInput {
-            padding: 8px;
-            margin: 5px;
-            font-size: 16px;
-        }
-
-        button {
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            padding: 12px 20px;
-            cursor: pointer;
-            font-size: 18px;
-            margin: 7px;
-            border-radius: 8px;
-        }
-        button:hover, .btn:hover {
-            background-color: #0056b3;
-        }
-
-        #map {
-            height: 100vh;
-            width: 100%;
-            touch-action: none; /* Improve touch handling on mobile */
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
-        .custom-crosshair-icon {
-            background: transparent;
-            border: none;
-        }
-
-        .marker-popup-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.35);
-            z-index: 2000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-            pointer-events: auto;
-        }
-
-        .marker-popup-card {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: min(360px, 100%);
-            max-height: calc(100vh - 30px);
-            background: #fff;
-            border-radius: 14px;
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
-            overflow: hidden;
-            border: 1px solid rgba(0,0,0,0.12);
-        }
-
-        .marker-popup-card header {
-            padding: 10px 12px;
-            background: #007bff;
-            color: #fff;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: grab;
-            user-select: none;
-        }
-
-        .marker-popup-card.dragging header {
-            cursor: grabbing;
-        }
-
-        .marker-popup-card .body {
-            padding: 10px 12px;
-            max-height: calc(100vh - 160px);
-            overflow-y: auto;
-        }
-
-        .marker-popup-card .body .form-group {
-            margin-bottom: 6px;
-        }
-
-        .marker-popup-card .body label {
-            display: block;
-            margin-bottom: 3px;
-            font-weight: 600;
-            font-size: 13px;
-        }
-
-        .marker-popup-card .body input,
-        .marker-popup-card .body textarea {
-            width: 100%;
-            padding: 6px 8px;
-            border: 1px solid #ced4da;
-            border-radius: 8px;
-            font-size: 16px;
-            line-height: 1.4;
-        }
-
-        .marker-popup-card .body textarea {
-            resize: vertical;
-            min-height: 60px;
-        }
-
-        .marker-popup-card .footer {
-            padding: 8px 12px 10px;
-            display: flex;
-            gap: 6px;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            background: #f8f9fa;
-        }
-
-        .marker-popup-card .footer button {
-            min-width: 110px;
-            flex: 1 1 calc(33.333% - 8px);
-            font-size: 13px;
-        }
-
-        .marker-popup-card .coords-info {
-            font-size: 12px;
-            color: #555;
-            margin-top: 6px;
-        }
-
-        .marker-image-preview {
-            margin-top: 6px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .marker-image-preview img {
-            max-width: 100%;
-            max-height: 100px;
-            border-radius: 10px;
-            border: 1px solid #dee2e6;
-            object-fit: cover;
-        }
-
-        .marker-image-button {
-            width: 100%;
-            margin-top: 4px;
-        }
-
-        .leaflet-control-custom {
-            z-index: 3000;
-            margin-bottom: 10px;
-            margin-right: 10px;
-            background: transparent;
-            border: 1px solid rgba(0, 0, 0, 0.18);
-            border-radius: 10px;
-            box-shadow: 0 1px 8px rgba(0, 0, 0, 0.18);
-            padding: 6px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            touch-action: manipulation;
-        }
-
-        .leaflet-control-custom button {
-            width: 42px;
-            height: 42px;
-            border: none;
-            border-radius: 8px;
-            background: #fff;
-            color: #333;
-            font-size: 16px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .leaflet-control-custom button:hover {
-            background: #f0f0f0;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-        }
-
-        .leaflet-control-custom button i {
-            pointer-events: none;
-        }
-
-        #error {
-            color: red;
-            text-align: center;
-            margin: 10px 0;
-            font-weight: bold;
-        }
-
-        #searchResults {
-            margin: 10px auto;
-            font-size: 15px;
-            max-width: 1200px;
-            text-align: left;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-
-        #searchResults ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        #searchResults li {
-            margin: 4px 0;
-            padding: 5px 8px;
-            border-radius: 4px;
-            transition: background-color 0.2s ease;
-        }
-
-        #searchResults li:hover {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-        }
-
-        #searchResults a {
-            color: #007bff;
-            text-decoration: none;
-            display: block;
-        }
-
-        #searchResults a:hover {
-            text-decoration: underline;
-        }
-
-        #githubContents {
-            margin: 10px auto;
-            font-size: 15px;
-            max-width: 1200px;
-            text-align: left;
-            max-height: 250px;
-            overflow-y: auto;
-        }
-
-        #githubContents ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        #githubContents li {
-            margin: 4px 0;
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #dee2e6;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #fff;
-        }
-
-        #githubContents li:hover {
-            background-color: #f8f9fa;
-        }
-
-        #githubContents .github-path {
-            font-size: 14px;
-            color: #555;
-            margin-bottom: 8px;
-        }
-
-        #githubContents .github-item-name {
-            font-weight: 600;
-            color: #333;
-        }
-
-        #githubContents .github-item-type {
-            font-size: 13px;
-            color: #666;
-        }
-
-        .custom-label {
-            background: none;
-            border: none;
-            box-shadow: none;
-            font-weight: bold;
-            color: #000;
-            text-shadow: 1px 1px 2px white;
-        }
-
-        .modal {
-            z-index: 1050;
-        }
-
-        .modal-backdrop {
-            z-index: 1040;
-        }
-
-        .modal.show {
-            display: block;
-        }
-
-        /* Modal slide in from left */
-        .modal.left .modal-dialog {
-            position: fixed;
-            left: -100%; /* Start off-screen */
-            top: 0;
-            height: 100vh;
-            width: 400px; /* Fixed width for sidebar */
-            margin: 0;
-            transition: left 0.3s ease-in-out;
-        }
-
-        .modal.left.show .modal-dialog {
-            left: 0; /* Slide in from left */
-        }
-
-        .modal.left .modal-content {
-            height: 100vh;
-            border-radius: 0;
-            border: none;
-        }
-
-        .modal.left .modal-body {
-            height: calc(100vh - 60px); /* Subtract header height */
-            overflow-y: auto;
-        }
-
-        /* Responsive Design */
-        @media only screen and (max-width: 768px) {
-            /* Ẩn các tính năng phụ trên mobile, chỉ hiện khi bấm nút "Hiện thêm" */
-            .button-group .btn:not(:first-child):not(:nth-child(2)) {
-                display: none;
-            }
-            #showMoreBtn {
-                display: block !important;
-            }
-            h1 {
-                font-size: 16px;
-                top: 5px;
-                left: 50%;
-                transform: translateX(-50%);
-                padding: 3px 8px;
-            }
-
-            #controlsBtn {
-                top: 5px;
-                left: 50%;
-                transform: translateX(-50%);
-                padding: 8px 12px;
-                font-size: 14px;
-            }
-
-            .controls-container {
-                gap: 10px;
-            }
-
-            .button-group {
-                grid-template-columns: 1fr;
-            }
-
-            #searchResults {
-                max-height: 150px;
-                font-size: 14px;
-            }
-
-            .modal-dialog {
-                margin: 10px;
-            }
-
-            /* Mobile modal takes full screen */
-            .modal.left .modal-dialog {
-                width: 100vw !important;
-                left: -100vw;
-            }
-
-            .modal.left.show .modal-dialog {
-                left: 0;
-            }
-
-            .marker-popup-overlay {
-                padding: 8px;
-            }
-
-            .marker-popup-card {
-                width: calc(100% - 14px);
-                max-width: 100%;
-                border-radius: 12px;
-                max-height: calc(100vh - 18px);
-            }
-
-            .marker-popup-card header {
-                padding: 8px 10px;
-                font-size: 14px;
-            }
-
-            .marker-popup-card .body {
-                padding: 8px 10px;
-                max-height: calc(100vh - 150px);
-            }
-
-            .marker-popup-card .body label {
-                font-size: 13px;
-            }
-
-            .marker-popup-card .body input,
-            .marker-popup-card .body textarea {
-                font-size: 16px;
-                padding: 8px 10px;
-            }
-
-            .marker-popup-card .footer {
-                padding: 8px 10px 10px;
-                flex-direction: column;
-                gap: 6px;
-            }
-
-            .marker-popup-card .footer button {
-                min-width: 100%;
-                font-size: 16px;
-            }
-        }
-
-        @media only screen and (max-width: 480px) {
-            #backToTopBtn {
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
-                bottom: 16px;
-                right: 10px;
-            }
-            h1 {
-                font-size: 14px;
-                padding: 2px 6px;
-            }
-
-            #controlsBtn {
-                padding: 6px 10px;
-                font-size: 12px;
-            }
-
-            #searchResults {
-                max-height: 120px;
-                font-size: 12px;
-            }
-
-            .marker-popup-overlay {
-                padding: 8px;
-            }
-
-            .marker-popup-card {
-                width: 100%;
-                max-width: 100%;
-                border-radius: 10px;
-                max-height: calc(100vh - 16px);
-            }
-
-            .marker-popup-card header {
-                padding: 8px 10px;
-                font-size: 14px;
-            }
-
-            .marker-popup-card .body {
-                padding: 8px 10px;
-                max-height: calc(100vh - 150px);
-            }
-
-            .marker-popup-card .footer {
-                padding: 8px 10px 10px;
-                flex-direction: column;
-                gap: 6px;
-            }
-
-            .marker-popup-card .footer button {
-                min-width: 100%;
-            }
-
-            /* Mobile modal takes full screen */
-            .modal.left .modal-dialog {
-                width: 100vw !important;
-                left: -100vw;
-            }
-
-            .modal.left.show .modal-dialog {
-                left: 0;
-            }
-        }
-        
-    </style>
+  </style>
 </head>
 <body>
-    <!-- <h1>BẢN ĐỒ KHẢO SÁT HỆ THỐNG CHIẾU SÁNG CÔNG CỘNG</h1> -->
 
-    <!-- Controls Button -->
-  <!-- Nút Điều khiển dạng Floating Action Button (FAB) -->
-<button id="controlsBtn" class="btn btn-primary fab-btn">
-    <i class="fa fa-cog"></i>
-    <span class="fab-text">Điều khiển</span>
-</button>
-    <!-- Controls Modal -->
-    <div class="modal fade left" id="controlsModal" tabindex="-1" role="dialog" aria-labelledby="controlsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="controlsModalLabel">Điều khiển bản đồ</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div id="pageSelector" class="controls-container">
-                        <div class="form-group">
-                            <label for="pages">Chọn Quận:</label>
-                            <select id="pages" class="form-control" onchange="navigateToPage()">
-                                <option value="index.html">Trang khảo sát</option>
-                                <option value="quan1.html">Quận 1</option>
-                                <option value="test.html">Kế hoạch</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="searchInput">Tìm kiếm:</label>
-                            <input type="text" id="searchInput" class="form-control" placeholder="Nhập tên trụ hoặc tọa độ (lat, lon)" />
-                        </div>
-
-                        <div class="button-group">
-                            <button onclick="searchMarkers()" class="btn btn-success btn-block">Tìm kiếm</button>
-                            <button onclick="centerOnUserLocation()" class="btn btn-info btn-block">Vị trí của tôi</button>
-                            <button id="addMarkerBtn" onclick="startAddMarker()" class="btn btn-warning btn-block">Thêm marker</button>
-                            <button onclick="saveMarkerData()" class="btn btn-secondary btn-block">Lưu dữ liệu</button>
-                            <button onclick="showExportCadModal()" class="btn btn-dark btn-block">Export to CAD</button>
-                            <button onclick="updateGitHubExcel()" class="btn btn-primary btn-block">Cập nhật GitHub</button>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="githubPathInput">Đường dẫn file GitHub:</label>
-                            <input type="text" id="githubPathInput" class="form-control" placeholder="Ví dụ: data/khaosat.xlsx" />
-                        </div>
-                    </div>
-
-                    <div id="error" class="alert alert-danger" style="display: none;"></div>
-                    <div id="searchResults" class="mt-3"></div>
-                    <div id="githubContents" class="mt-3"></div>
-
-                </div>
-            </div>
-        </div>
-    </div>
-    <div id="map"></div>
-    <!-- Nút về đầu trang -->
-    <button id="backToTopBtn" title="Về đầu trang">↑</button>
-    <!-- Export to CAD Modal -->
-    <div class="modal fade" id="exportCadModal" tabindex="-1" role="dialog" aria-labelledby="exportCadModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exportCadModalLabel">Export to CAD</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="closeExportCadModal()">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="exportCadType">Chọn loại marker để xuất:</label>
-                        <select id="exportCadType" class="form-control">
-                            <option value="new">Chỉ marker mới nhập</option>
-                            <option value="all">Tất cả marker</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="exportCadBasename">Chỉ xuất các marker cùng basename:</label>
-                        <input type="text" id="exportCadBasename" class="form-control" placeholder="Nhập basename (ví dụ: T1, T2...)" />
-                    </div>
-                    <div id="exportCadCountInfo" style="font-size:13px;color:#007bff;margin-bottom:8px;"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeExportCadModal()">Hủy</button>
-                    <button type="button" class="btn btn-primary" id="exportCadBtn">Export</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div id="markerPopupForm" class="marker-popup-overlay" role="dialog" aria-modal="true">
-        <div class="marker-popup-card">
-            <header>Thông tin marker mới</header>
-           <div class="footer">
-    <!-- Hàng 1: Hủy và Lưu (2 nút chính) -->
-    <div class="footer-main-actions">
-        <button id="markerPopupCancel" type="button" class="btn btn-secondary" onclick="cancelMarkerPopup()">
-            <i class="fa fa-times"></i> Hủy
-        </button>
-        <button id="markerPopupSave" type="button" class="btn btn-primary" onclick="saveMarkerPopup()">
-            <i class="fa fa-check"></i> Lưu marker
-        </button>
-    </div>
-
-    <!-- Hàng 2: Chụp ảnh -->
-    <button id="markerImageButton" type="button" class="btn btn-outline-primary marker-image-button" onclick="triggerMarkerImageInput()">
-        <i class="fa fa-camera"></i> Chụp / chọn ảnh
+  <!-- Topbar -->
+  <div id="topBar">
+    <button id="controlsBtn" onclick="$('#controlsModal').modal('show')" aria-label="Menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
+    <span class="tb-title">Khảo Sát Chiếu Sáng</span>
+  </div>
 
-    <!-- Hàng 3: Vị trí (2 nút ngang) -->
-    <div class="footer-location-actions">
-        <button id="markerCurrentLocationBtn" type="button" class="btn btn-info" onclick="setMarkerToCurrentLocation()">
-            <i class="fa fa-location-arrow"></i> Vị trí hiện tại
-        </button>
-        <button id="markerPickOnMapBtn" type="button" class="btn btn-warning" onclick="setMarkerToPickOnMap()">
-            <i class="fa fa-map-marker"></i> Chọn trên bản đồ
-        </button>
-    </div>
-</div>
-            <div class="body">
-                <div class="form-group">
-                    <label for="markerNameInput">Tên trụ</label>
-                    <input id="markerNameInput" type="text" class="form-control" placeholder="Nhập tên trụ" />
-                </div>
-                    <div class="form-group">
-                        <label for="markerBaseSelect">Chọn marker gốc để tính khoảng cách (cùng basename):</label>
-                        <select id="markerBaseSelect" class="form-control">
-                            <option value="">(Mặc định: marker trước đó)</option>
-                        </select>
-                    </div>
-               
-                <div class="form-group">
-                    <label for="markerCabinetInput">Tên tủ điều khiển</label>
-                    <input id="markerCabinetInput" type="text" class="form-control" placeholder="Nhập tên tủ điều khiển" />
-                </div>
-                <div class="form-group">
-                    <label for="markerPoleTypeInput">Loại trụ</label>
-                    <input id="markerPoleTypeInput" type="text" class="form-control" placeholder="Nhập loại trụ" />
-                </div>
-                <div class="form-group">
-                    <label for="markerLampTypeInput">Loại đèn</label>
-                    <input id="markerLampTypeInput" type="text" class="form-control" placeholder="Nhập loại đèn" />
-                </div>
-               <div class="form-group">
-                    <label for="markerNoteInput">Ghi chú</label>
-                    <textarea id="markerNoteInput" class="form-control" placeholder="Nhập ghi chú (tùy chọn)"></textarea>
-                </div>
-                <div class="form-group">
-                    
-                    <input id="markerImageInput" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleMarkerImageFile(event)" />
-                </div>
-                <div class="marker-image-preview" id="markerImagePreview"></div>
-                <div id="markerCoordsText" class="coords-info">Tọa độ: -</div>
-            </div>
+  <!-- Sidebar Modal -->
+  <div class="modal fade left" id="controlsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <span class="modal-title">Điều khiển</span>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Đóng">×</button>
         </div>
+        <div class="modal-body">
+
+          <div class="sb-section">
+            <div class="sb-label">Chọn trang</div>
+            <select id="pages" class="sb-input sb-select" onchange="navigateToPage()">
+              <option value="index.html">Khảo sát chiếu sáng</option>
+              <option value="quan1.html">Quận 1</option>
+              <option value="test.html">Kế hoạch</option>
+            </select>
+          </div>
+
+          <div class="sb-section">
+            <div class="sb-label">Tìm kiếm</div>
+            <input type="text" id="searchInput" class="sb-input" placeholder="Tên trụ hoặc tọa độ (lat, lon)" />
+            <div style="margin-top:8px">
+              <button onclick="searchMarkers()" class="sb-btn primary">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Tìm kiếm
+              </button>
+            </div>
+            <div id="searchResults"></div>
+          </div>
+
+          <div class="sb-section">
+            <div class="sb-label">Công cụ</div>
+            <div class="sb-btn-row">
+              <button onclick="centerOnUserLocation()" class="sb-btn outline">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                Vị trí
+              </button>
+              <button onclick="saveMarkerData()" class="sb-btn outline">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Lưu Excel
+              </button>
+            </div>
+            <button onclick="showExportCadModal()" class="sb-btn dark">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+              Xuất CAD (.dxf)
+            </button>
+            <button onclick="updateGitHubExcel()" class="sb-btn success">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+              Cập nhật GitHub
+            </button>
+          </div>
+
+          <div id="error"></div>
+          <div id="githubContents"></div>
+
+        </div>
+      </div>
     </div>
-    <!-- ... toàn bộ HTML body cũ của bạn ... -->
+  </div>
+
+  <!-- Map -->
+  <div id="map"></div>
+
+  <!-- Bottom Nav -->
+  <nav id="bottomNav">
+    <button class="nav-btn" onclick="$('#controlsModal').modal('show')">
+      <span class="ni">☰</span>
+      <span>Menu</span>
+    </button>
+    <button class="nav-btn" onclick="centerOnUserLocation()">
+      <span class="ni">◎</span>
+      <span>Vị trí</span>
+    </button>
+    <button class="nav-btn add-btn" id="addMarkerBtn" onclick="startAddMarker()">
+      <div class="ni-wrap">＋</div>
+      <span style="margin-top:4px">Thêm</span>
+    </button>
+    <button class="nav-btn" onclick="saveMarkerData()">
+      <span class="ni">💾</span>
+      <span>Lưu</span>
+    </button>
+    <button class="nav-btn" onclick="updateGitHubExcel()">
+      <span class="ni">☁</span>
+      <span>GitHub</span>
+    </button>
+    <div style="position:absolute;bottom:calc(var(--safe-bottom) + 2px);left:0;right:0;text-align:center;font-size:9px;color:rgba(255,255,255,.28);pointer-events:none">© 2026 CSKVTT</div>
+  </nav>
+
+  <!-- Export CAD Modal -->
+  <div class="modal fade" id="exportCadModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exportCadModalLabel">Xuất CAD</h5>
+          <button type="button" class="close" data-dismiss="modal" onclick="closeExportCadModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="exportCadType">Loại marker xuất:</label>
+            <select id="exportCadType" class="form-control">
+              <option value="new">Chỉ marker mới nhập</option>
+              <option value="all">Tất cả marker</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="exportCadBasename">Lọc theo basename:</label>
+            <input type="text" id="exportCadBasename" class="form-control" placeholder="VD: T1, T2..." />
+          </div>
+          <div id="exportCadCountInfo"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeExportCadModal()">Hủy</button>
+          <button type="button" class="btn btn-primary" id="exportCadBtn">Xuất DXF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Marker Popup Form -->
+  <div id="markerPopupForm" class="marker-popup-overlay" role="dialog" aria-modal="true">
+    <div class="marker-popup-card">
+      <header id="markerPopupHeader">
+        <span>Thông tin marker</span>
+        <button onclick="cancelMarkerPopup()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;line-height:1;cursor:pointer;padding:0">×</button>
+      </header>
+      <div class="mpop-body">
+        <div class="fg">
+          <label>ID</label>
+          <input id="markerIdInput" type="number" class="sb-input" placeholder="ID tự động" />
+        </div>
+        <div class="fg">
+          <label>Tên trụ</label>
+          <input id="markerNameInput" type="text" class="sb-input" placeholder="Nhập tên trụ" />
+        </div>
+        <div class="fg">
+          <label>Marker gốc (tính khoảng cách)</label>
+          <select id="markerBaseSelect" class="sb-input sb-select">
+            <option value="">(Mặc định: marker trước đó)</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Tên tủ điều khiển</label>
+          <input id="markerCabinetInput" type="text" class="sb-input" placeholder="Tên tủ điều khiển" />
+        </div>
+        <div class="fg">
+          <label>Loại trụ</label>
+          <input id="markerPoleTypeInput" type="text" class="sb-input" placeholder="STK, BTLT..." />
+        </div>
+        <div class="fg">
+          <label>Loại đèn</label>
+          <input id="markerLampTypeInput" type="text" class="sb-input" placeholder="LED, HPS..." />
+        </div>
+        <div class="fg">
+          <label>Ghi chú</label>
+          <textarea id="markerNoteInput" class="sb-input" rows="2" placeholder="Ghi chú (tùy chọn)"></textarea>
+        </div>
+        <input id="markerImageInput" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleMarkerImageFile(event)" />
+        <div class="marker-image-preview" id="markerImagePreview"></div>
+        <div id="markerCoordsText" class="coords-info">Tọa độ: —</div>
+      </div>
+      <div class="mpop-footer">
+        <button type="button" class="mpop-btn cam" onclick="triggerMarkerImageInput()">📷 Chụp / chọn ảnh</button>
+        <div class="mpop-row">
+          <button type="button" class="mpop-btn loc" onclick="setMarkerToCurrentLocation()" id="markerCurrentLocationBtn">📍 Vị trí hiện tại</button>
+          <button type="button" class="mpop-btn pick" onclick="setMarkerToPickOnMap()" id="markerPickOnMapBtn">🗺 Chọn trên bản đồ</button>
+        </div>
+        <div class="mpop-row">
+          <button type="button" class="mpop-btn cancel" onclick="cancelMarkerPopup()" id="markerPopupCancel">Hủy</button>
+          <button type="button" class="mpop-btn save" onclick="saveMarkerPopup()" id="markerPopupSave">Lưu marker</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button id="backToTopBtn" style="display:none"></button>
 
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -885,9 +452,10 @@
         let lastMarkerCabinet = '';
         let lastMarkerPoleType = '';
         let lastMarkerLampType = '';
-        let githubOwner = '';
-        let githubRepo = '';
-        let githubBranch = '';
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyNtO-Q8KPuRRgx0VacIEDF3VXeMfvAUsg-t2nJEqfVxzSlRGCyxjB4_kLMP7AqP9mu/exec';
+        let githubOwner = 'neo-era';
+        let githubRepo = 'cskvtt';
+        let githubBranch = 'sub1';
         let githubToken = '';
         const MAX_EXCEL_TEXT_LENGTH = 32767;
 
@@ -1146,9 +714,7 @@
         function updateAddMarkerButton() {
             const btn = document.getElementById('addMarkerBtn');
             if (!btn) return;
-            btn.textContent = addMarkerMode ? 'Dừng thêm marker' : 'Thêm marker';
-            btn.classList.toggle('btn-danger', addMarkerMode);
-            btn.classList.toggle('btn-warning', !addMarkerMode);
+            btn.classList.toggle('active', addMarkerMode);
         }
 
         function enableAddMarkerMode() {
@@ -1363,6 +929,14 @@
             preview.innerHTML = '';
             fileInput.value = null;
             coordsText.textContent = `Tọa độ: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+            const idInput = document.getElementById('markerIdInput');
+            if (idInput) {
+                const maxId = (Array.isArray(loadedData) ? loadedData : []).reduce((m, r) => {
+                    const n = parseInt(r[0]);
+                    return Number.isFinite(n) ? Math.max(m, n) : m;
+                }, 0);
+                idInput.value = maxId + 1;
+            }
 
             // Populate baseSelect with markers of same basename
             if (baseSelect) {
@@ -1666,8 +1240,10 @@
                     newMarkerRows = [];
                 }
                 const updatedAt = new Date().toLocaleString('vi-VN');
+                const idInput = document.getElementById('markerIdInput');
+                const rowId = idInput && idInput.value ? String(idInput.value) : '';
                 // Thêm 2 trường cuối: tên marker gốc, khoảng cách (m)
-                const newRow = ['', name, lat, lon, note, '', type, cabinetName, poleType, '', lampType, imageData, updatedAt, baseMarkerName, distanceToBase];
+                const newRow = [rowId, name, lat, lon, note, '', type, cabinetName, poleType, '', lampType, imageData, updatedAt, baseMarkerName, distanceToBase];
                 loadedData.push(newRow);
                 newMarkerRows.push(newRow);
                 markerImageDataUrl = null;
@@ -1877,34 +1453,23 @@
         }
 
         async function uploadGitHubImageFile(owner, repo, path, branch, token, dataUrl, message) {
-            if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
-                return null;
-            }
-            const contentBase64 = getBase64FromDataUrl(dataUrl);
-            const existing = await getGitHubFileContent(owner, repo, path, branch, token);
-            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
-            const body = {
-                message: message || `Upload image ${path}`,
-                content: contentBase64,
-                branch: branch
-            };
-            if (existing.sha) {
-                body.sha = existing.sha;
-            }
-            const response = await fetch(apiUrl, {
-                method: 'PUT',
-                headers: {
-                    Authorization: `token ${token}`,
-                    Accept: 'application/vnd.github+json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(body)
+            if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) return null;
+            const existing = await getGitHubFileContent(owner, repo, path, branch, '');
+            const res = await fetch(GAS_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                    action: 'github_write_file',
+                    path: path,
+                    content: getBase64FromDataUrl(dataUrl),
+                    sha: existing.sha || '',
+                    message: message || 'Upload image ' + path
+                })
             });
-            if (!response.ok) {
-                const text = await response.text();
-                throw new Error(`Không thể tải ảnh lên GitHub: ${response.status} ${response.statusText}\n${text}`);
-            }
-            return await response.json();
+            if (!res.ok) throw new Error('GAS HTTP ' + res.status);
+            const data = await res.json();
+            if (data.status !== 'ok') throw new Error(data.message || 'Upload ảnh thất bại');
+            return data;
         }
 
         async function prepareImagePathsForGitHub(rows, owner, repo, branch, token) {
@@ -2083,14 +1648,11 @@
         }
 
         async function getGitHubFileContent(owner, repo, path, branch, token) {
-            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
-            const response = await fetch(apiUrl, {
-                method: 'GET',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    Accept: 'application/vnd.github+json'
-                }
-            });
+            const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}?ref=${encodeURIComponent(branch)}`;
+            const headers = { Accept: 'application/vnd.github+json' };
+            if (token) headers.Authorization = `token ${token}`;
+            const response = await fetch(apiUrl, { method: 'GET', headers });
 
             if (response.status === 404) {
                 return { sha: null, content: null };
@@ -2140,13 +1702,9 @@
 
         async function getGitHubRepoContents(owner, repo, path, branch, token) {
             const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`;
-            const response = await fetch(apiUrl, {
-                method: 'GET',
-                headers: {
-                    Authorization: `token ${token}`,
-                    Accept: 'application/vnd.github+json'
-                }
-            });
+            const headers = { Accept: 'application/vnd.github+json' };
+            if (token) headers.Authorization = `token ${token}`;
+            const response = await fetch(apiUrl, { method: 'GET', headers });
 
             if (!response.ok) {
                 const errorText = await response.text();
@@ -2202,7 +1760,7 @@
         async function browseGitHubPath(path) {
             try {
                 displayError(`Đang tải nội dung thư mục: ${path || '/'}...`);
-                const contents = await getGitHubRepoContents(githubOwner, githubRepo, path, githubBranch, githubToken);
+                const contents = await getGitHubRepoContents(githubOwner, githubRepo, path, githubBranch, '');
                 renderGitHubContents(contents, path);
             } catch (error) {
                 console.error('browseGitHubPath error:', error);
@@ -2220,14 +1778,9 @@
 
         async function checkGitHubBranchExists(owner, repo, branch, token) {
             const apiUrl = `https://api.github.com/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}`;
-            const response = await fetch(apiUrl, {
-                method: 'GET',
-                headers: {
-                    Authorization: `token ${token}`,
-                    Accept: 'application/vnd.github+json'
-                }
-            });
-
+            const headers = { Accept: 'application/vnd.github+json' };
+            if (token) headers.Authorization = `token ${token}`;
+            const response = await fetch(apiUrl, { method: 'GET', headers });
             return response.ok;
         }
 
@@ -2247,45 +1800,14 @@
                     return;
                 }
 
-                if (!githubOwner || !githubRepo || !githubBranch || !githubToken) {
-                    //githubOwner = prompt('Nhập GitHub owner (tên người dùng):', 'neo-era');
-                    githubOwner = 'neo-era';
-                    if (!githubOwner) return;
-                    //githubRepo = prompt('Nhập repository name:', 'cskvtt');
-                    githubRepo = 'cskvtt';
-                    if (!githubRepo) return;
-                   // githubBranch = prompt('Nhập branch:', 'sub1');
-                    githubBranch = 'sub1';
-                    if (!githubBranch) return;
-                    githubToken = prompt('Nhập GitHub token (repo scope):');
-                    if (!githubToken) return;
-                }
-
-                const githubPathInput = document.getElementById('githubPathInput');
-                const path = githubPathInput && githubPathInput.value.trim() ? githubPathInput.value.trim() : '';
-
-                displayError('Đang kiểm tra repo GitHub...');
-
-                const branchExists = await checkGitHubBranchExists(githubOwner, githubRepo, githubBranch, githubToken);
-                if (!branchExists) {
-                    displayError(`Branch '${githubBranch}' không tồn tại hoặc không thể truy cập.`);
-                    return;
-                }
-
-                await browseGitHubPath('');
-
-                if (!path) {
-                    displayError('Đã tải danh sách file/thư mục. Chọn file trong danh sách hoặc nhập đường dẫn vào ô trên cùng.');
-                    return;
-                }
-
+                const path = 'data/khaosat.xlsx';
                 displayError('Đang cập nhật file trên GitHub...');
 
                 await prepareImagePathsForGitHub(newMarkerRows, githubOwner, githubRepo, githubBranch, githubToken);
 
                 const header = ['ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Trống', 'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn', 'Ảnh', 'Thời gian cập nhật'];
 
-                const fileData = await getGitHubFileContent(githubOwner, githubRepo, path, githubBranch, githubToken);
+                const fileData = await getGitHubFileContent(githubOwner, githubRepo, path, githubBranch, '');
                 let combinedRows = [header, ...newMarkerRows];
                 let sheetName = 'Sheet1';
 
@@ -2323,7 +1845,13 @@
                     contentBase64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
                 }
 
-                await updateGitHubFile(githubOwner, githubRepo, path, githubBranch, githubToken, contentBase64, fileData.sha);
+                const writeRes = await fetch(GAS_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'github_write_file', path, content: contentBase64, sha: fileData.sha || '', message: 'Update khaosat.xlsx' })
+                });
+                const writeData = await writeRes.json();
+                if (writeData.status !== 'ok') throw new Error(writeData.message || 'Ghi file GitHub thất bại');
                 newMarkerRows = [];
                 pendingNewMarker = false;
                 addMarkerMode = false;
@@ -2484,8 +2012,9 @@
 
         function displayError(message) {
             const errorDiv = document.getElementById('error');
+            if (!errorDiv) return;
             errorDiv.textContent = message;
-            errorDiv.style.display = message ? 'block' : 'none';
+            errorDiv.classList.toggle('has-content', !!message);
         }
 
 
@@ -2920,9 +2449,6 @@
                 }
             });
 
-            const markerPopupHeader = document.querySelector('#markerPopupForm .marker-popup-card header');
-            const markerPopupCard = document.querySelector('#markerPopupForm .marker-popup-card');
-            makeElementDraggable(markerPopupHeader, markerPopupCard);
             // Allow closing export modal by clicking backdrop
             const exportCadModal = document.getElementById('exportCadModal');
             if (exportCadModal) {

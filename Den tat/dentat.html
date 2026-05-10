@@ -544,7 +544,7 @@
   <button class="nav-btn" onclick="saveMarkerData()">
     <span class="ni">💾</span><span>Lưu</span>
   </button>
-  <div style="position:absolute;bottom:calc(var(--safe-bottom) + 2px);left:0;right:0;text-align:center;font-size:9px;color:rgba(255,255,255,.28);pointer-events:none">© 2026 CSKVTT</div>
+  <div style="position:absolute;bottom:calc(var(--safe-bottom) + 2px);left:0;right:0;text-align:center;font-size:9px;color:rgba(255,255,255,.28);pointer-events:none">© 2026 Liên hệ: 0989725507</div>
 </nav>
 
 <!-- ── SIDEBAR ── -->
@@ -581,11 +581,12 @@
       <div class="sb-section-title">Hành động</div>
       <button class="sb-btn" onclick="centerOnUserLocation();closeSidebar()"><span class="bi">📍</span>Vị trí hiện tại</button>
       <button class="sb-btn" onclick="startAddMarker();closeSidebar()"><span class="bi">➕</span>Thêm đèn mới</button>
-      <button class="sb-btn" onclick="loadDataFromSheet();closeSidebar()"><span class="bi">🔄</span>Tải lại từ Google Sheet</button>
+      <button class="sb-btn" onclick="loadDataFromSheet();closeSidebar()"><span class="bi">🔄</span>Tải lại từ Data</button>
       <button class="sb-btn" onclick="document.getElementById('importFileInput').click();closeSidebar()"><span class="bi">📂</span>Nhập từ file Excel</button>
       <button class="sb-btn" onclick="saveMarkerData();closeSidebar()"><span class="bi">💾</span>Xuất Excel</button>
       <button class="sb-btn" onclick="exportMarkersToCad();closeSidebar()"><span class="bi">📐</span>Xuất CAD (.dxf)</button>
       <button class="sb-btn" onclick="openReportModal();closeSidebar()"><span class="bi">📊</span>Báo cáo hàng ngày</button>
+      <button class="sb-btn" onclick="window.open('huongdan.html','_blank')"><span class="bi">📖</span>Hướng dẫn sử dụng</button>
       <button class="sb-btn logout" onclick="logout()"><span class="bi">🚪</span>Đăng xuất</button>
     </div>
     <div class="sb-section">
@@ -1342,7 +1343,7 @@ function processFile(event) {
 
 // ── LOAD DATA ──
 async function loadDataFromSheet() {
-  showToast('⏳ Đang tải dữ liệu từ Google Sheet...');
+  showToast('⏳ Đang tải dữ liệu từ Data...');
   try {
     const res = await fetch(GOOGLE_SHEET_CSV_URL);
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -1358,7 +1359,7 @@ async function loadDataFromSheet() {
     }
     loadedData = data;
     addMarkersToMap(loadedData);
-    showToast(`✅ Đã tải ${data.length} đèn từ Google Sheet`);
+    showToast(`✅ Đã tải ${data.length} đèn từ Data`);
   } catch(e) {
     console.error('[dentat] Load error:', e);
     showToast('❌ Không tải được dữ liệu: ' + e.message);

@@ -327,14 +327,16 @@
     #reportCard p { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
     .rpt-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
     .rpt-row label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; }
-    .rpt-row input { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 13px; font-family: inherit; outline: none; }
-    .rpt-row input:focus { border-color: var(--orange); }
+    .rpt-row input, .rpt-row select { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 13px; font-family: inherit; outline: none; background: var(--white); color: var(--text); box-sizing: border-box; }
+    .rpt-row input:focus, .rpt-row select:focus { border-color: var(--orange); }
+    .rpt-row select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
     .rpt-preview { background: var(--bg); border-radius: 10px; padding: 12px 14px; margin: 10px 0; }
     .rpt-preview-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; padding: 3px 0; }
     .rpt-preview-row .dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
     .rpt-btn-row { display: flex; gap: 8px; margin-top: 14px; }
     .rpt-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
     .rpt-btn-outline { background: var(--bg); color: var(--text); border: 1.5px solid var(--border) !important; }
+    .rpt-btn-pdf     { background: #0f172a; color: #fff; }
     .rpt-btn-primary { background: var(--orange); color: #fff; }
 
     /* ── SEARCH DROPDOWN ── */
@@ -490,7 +492,8 @@
     var u = JSON.parse(localStorage.getItem('dt_user') || 'null');
     if (u && u.username) {
       var isAdmin = u.role === 'admin' || u.role === 'quanly';
-      document.getElementById('topbarAv').textContent = isAdmin ? '👑' : '👷';
+      var isDemo  = u.role === 'demo';
+      document.getElementById('topbarAv').textContent = isDemo ? '👁' : isAdmin ? '👑' : '👷';
       document.getElementById('topbarUname').textContent = u.displayName || u.username;
     }
   } catch(e) {}
@@ -541,7 +544,7 @@
   <button class="nav-btn" onclick="openReportModal()">
     <span class="ni">📊</span><span>Báo cáo</span>
   </button>
-  <button class="nav-btn" onclick="saveMarkerData()">
+  <button id="saveNavBtn" class="nav-btn" onclick="saveMarkerData()">
     <span class="ni">💾</span><span>Lưu</span>
   </button>
   <div style="position:absolute;bottom:calc(var(--safe-bottom) + 2px);left:0;right:0;text-align:center;font-size:9px;color:rgba(255,255,255,.28);pointer-events:none">© 2026 Liên hệ: 0989725507</div>
@@ -580,12 +583,12 @@
     <div class="sb-section">
       <div class="sb-section-title">Hành động</div>
       <button class="sb-btn" onclick="centerOnUserLocation();closeSidebar()"><span class="bi">📍</span>Vị trí hiện tại</button>
-      <button class="sb-btn" onclick="startAddMarker();closeSidebar()"><span class="bi">➕</span>Thêm đèn mới</button>
+      <button id="sbBtnAdd" class="sb-btn" onclick="startAddMarker();closeSidebar()"><span class="bi">➕</span>Thêm đèn mới</button>
       <button class="sb-btn" onclick="loadDataFromSheet();closeSidebar()"><span class="bi">🔄</span>Tải lại từ Data</button>
-      <button class="sb-btn" onclick="document.getElementById('importFileInput').click();closeSidebar()"><span class="bi">📂</span>Nhập từ file Excel</button>
-      <button class="sb-btn" onclick="saveMarkerData();closeSidebar()"><span class="bi">💾</span>Xuất Excel</button>
-      <button class="sb-btn" onclick="exportMarkersToCad();closeSidebar()"><span class="bi">📐</span>Xuất CAD (.dxf)</button>
-      <button class="sb-btn" onclick="openReportModal();closeSidebar()"><span class="bi">📊</span>Báo cáo hàng ngày</button>
+      <button id="sbBtnImport" class="sb-btn" onclick="document.getElementById('importFileInput').click();closeSidebar()"><span class="bi">📂</span>Nhập từ file Excel</button>
+      <button id="sbBtnExcel" class="sb-btn" onclick="saveMarkerData();closeSidebar()"><span class="bi">💾</span>Xuất Excel</button>
+      <button id="sbBtnCad" class="sb-btn" onclick="exportMarkersToCad();closeSidebar()"><span class="bi">📐</span>Xuất CAD (.dxf)</button>
+      <button id="sbBtnReport" class="sb-btn" onclick="openReportModal();closeSidebar()"><span class="bi">📊</span>Báo cáo hàng ngày</button>
       <button class="sb-btn" onclick="window.open('huongdan.html','_blank')"><span class="bi">📖</span>Hướng dẫn sử dụng</button>
       <button class="sb-btn logout" onclick="logout()"><span class="bi">🚪</span>Đăng xuất</button>
     </div>
@@ -677,15 +680,20 @@
     <h3>📊 Báo cáo đèn hư hàng ngày</h3>
     <p>Chọn khoảng thời gian và xuất danh sách đèn sự cố</p>
     <div class="rpt-row">
-      <div><label>Từ ngày</label><input type="date" id="rptFrom"></div>
-      <div><label>Đến ngày</label><input type="date" id="rptTo"></div>
+      <div><label>Từ ngày</label><input type="text" id="rptFrom" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10"></div>
+      <div><label>Đến ngày</label><input type="text" id="rptTo" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10"></div>
+    </div>
+    <div class="rpt-row">
+      <div><label>Phường / Xã</label><select id="rptPhuong"><option value="">Tất cả phường</option></select></div>
+      <div><label>Người phát hiện</label><select id="rptNguoiPH"><option value="">Tất cả</option></select></div>
     </div>
     <div class="rpt-preview" id="rptPreview">
       <div style="font-size:12px;color:var(--text-muted);text-align:center">Chọn ngày để xem tóm tắt</div>
     </div>
     <div class="rpt-btn-row">
       <button class="rpt-btn rpt-btn-outline" onclick="closeReportModal()">Hủy</button>
-      <button class="rpt-btn rpt-btn-primary" onclick="exportReport()">📥 Xuất Excel</button>
+      <button class="rpt-btn rpt-btn-pdf" onclick="exportReportPDF()">🖨️ In / PDF</button>
+      <button class="rpt-btn rpt-btn-primary" onclick="exportReport()">📥 Excel</button>
     </div>
   </div>
 </div>
@@ -709,7 +717,6 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
 <script>
 'use strict';
 // ── CONSTANTS ──
@@ -805,16 +812,39 @@ function logout() {
   setTimeout(() => { const u = document.getElementById('lUsername'); if (u) u.focus(); }, 150);
 }
 
+function isDemoUser() {
+  return currentUser && currentUser.role === 'demo';
+}
+function denyDemo() {
+  showToast('🔒 Tài khoản demo chỉ được xem, không thể thực hiện thao tác này');
+  return true;
+}
+
 function updateSidebarUser() {
   if (!currentUser) return;
+  const isDemo  = currentUser.role === 'demo';
   const isAdmin = currentUser.role === 'admin' || currentUser.role === 'quanly';
-  const av = isAdmin ? '👑' : '👷';
+  const av   = isDemo ? '👁' : isAdmin ? '👑' : '👷';
+  const role = isDemo ? 'Tài khoản demo (chỉ xem)' : isAdmin ? 'Quản trị viên' : 'Nhân viên';
   const name = currentUser.displayName || currentUser.username;
   document.getElementById('sbUserAv').textContent = av;
   document.getElementById('sbUserName').textContent = name;
-  document.getElementById('sbUserRole').textContent = isAdmin ? 'Quản trị viên' : 'Nhân viên';
+  document.getElementById('sbUserRole').textContent = role;
   document.getElementById('topbarAv').textContent = av;
   document.getElementById('topbarUname').textContent = name;
+
+  // Ẩn các nút bị cấm với tài khoản demo
+  const demoHideIds = ['sbBtnAdd','sbBtnImport','sbBtnExcel','sbBtnCad','sbBtnReport'];
+  demoHideIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isDemo ? 'none' : '';
+  });
+  // Ẩn nút Thêm ở bottom nav
+  const addBtn = document.getElementById('addMarkerBtn');
+  if (addBtn) addBtn.style.display = isDemo ? 'none' : '';
+  // Ẩn nút Lưu ở bottom nav
+  const saveBtn = document.getElementById('saveNavBtn');
+  if (saveBtn) saveBtn.style.display = isDemo ? 'none' : '';
 }
 
 // ── TOAST ──
@@ -1319,6 +1349,7 @@ function flyToEntry(index) {
 
 // ── IMPORT LOCAL FILE ──
 function processFile(event) {
+  if (isDemoUser()) { denyDemo(); event.target.value = null; return; }
   const file = event.target.files && event.target.files[0];
   event.target.value = null;
   if (!file) return;
@@ -1368,6 +1399,7 @@ async function loadDataFromSheet() {
 
 // ── ADD MARKER MODE ──
 function startAddMarker() {
+  if (isDemoUser()) { denyDemo(); return; }
   if (addMarkerMode) { disableAddMode(); return; }
   enableAddMode();
   const useGPS = confirm('Dùng vị trí GPS để thêm đèn?\nOK = dùng GPS  |  Hủy = nhấp vào bản đồ');
@@ -1400,6 +1432,7 @@ function showFormAt(lat, lon) {
   fillForm(null, lat, lon);
 }
 function openEditPopup(index) {
+  if (isDemoUser()) { denyDemo(); return; }
   if (index < 0 || index >= loadedData.length) { showToast('Không tìm thấy dữ liệu'); return; }
   editingIndex = index;
   fillForm(loadedData[index]);
@@ -1507,6 +1540,7 @@ function centerOnUserLocation() {
 
 // ── SAVE MARKER ──
 async function saveMarkerPopup() {
+  if (isDemoUser()) { denyDemo(); return; }
   const soTru = document.getElementById('fSoTru').value.trim();
   const trangThai = document.getElementById('fTrangThai').value;
   if (!soTru) { showToast('Vui lòng nhập số trụ'); return; }
@@ -1594,6 +1628,7 @@ async function saveMarkerPopup() {
 
 // ── QUICK FIX ──
 async function quickFix(index) {
+  if (isDemoUser()) { denyDemo(); return; }
   if (index < 0 || index >= loadedData.length) return;
   const p = parseRow(loadedData[index]);
   const newStatus = p.loaiDen === 'HPS' ? '4' : '3';
@@ -1617,7 +1652,7 @@ async function quickFix(index) {
 }
 
 // ── IMAGE ──
-function triggerImageInput() { const f = document.getElementById('fImageInput'); if (f) { f.value = null; f.click(); } }
+function triggerImageInput() { if (isDemoUser()) { denyDemo(); return; } const f = document.getElementById('fImageInput'); if (f) { f.value = null; f.click(); } }
 function resizeImage(dataUrl, cb) {
   const img = new Image();
   img.onload = () => {
@@ -1652,6 +1687,7 @@ function handleImageFile(e) {
 
 // ── EXPORT EXCEL ──
 function saveMarkerData() {
+  if (isDemoUser()) { denyDemo(); return; }
   if (!loadedData.length) { showToast('Không có dữ liệu để lưu'); return; }
   const header = ['ID','Số trụ','Tên tủ','latitude','lontitude','Loại đèn','Công suất','Trang thai','Đường','Phường','Ngày phát hiện','Người phát hiện','Ngày sửa','Người sửa','Vật tư sửa','HÌnh ảnh','Ghi chú','VN2000-X','VN2000-Y'];
   const ws = XLSX.utils.aoa_to_sheet([header, ...loadedData.map(rowToArray)]);
@@ -1661,23 +1697,48 @@ function saveMarkerData() {
 }
 
 // ── DAILY REPORT ──
+function populateReportFilters() {
+  const norm = v => (v||'').trim();
+  const phuongs = [...new Set(loadedData.map(r => norm(parseRow(r).phuong)).filter(Boolean))].sort((a,b) => a.localeCompare(b,'vi'));
+  const nguois  = [...new Set(loadedData.map(r => norm(parseRow(r).nguoiPhatHien)).filter(Boolean))].sort((a,b) => a.localeCompare(b,'vi'));
+  const sel = (id, items, all) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const cur = el.value;
+    el.innerHTML = `<option value="">${all}</option>` + items.map(v => `<option value="${v}"${v===cur?' selected':''}>${v}</option>`).join('');
+  };
+  sel('rptPhuong', phuongs, 'Tất cả phường');
+  sel('rptNguoiPH', nguois,  'Tất cả');
+}
+
 function openReportModal() {
-  const today = new Date().toISOString().split('T')[0];
-  const weekAgo = new Date(Date.now() - 7*86400000).toISOString().split('T')[0];
-  document.getElementById('rptFrom').value = weekAgo;
-  document.getElementById('rptTo').value = today;
+  if (isDemoUser()) { denyDemo(); return; }
+  const n = new Date();
+  const fmt = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  const weekAgo = new Date(n.getFullYear(), n.getMonth(), n.getDate() - 7);
+  document.getElementById('rptFrom').value = fmt(weekAgo);
+  document.getElementById('rptTo').value = fmt(n);
+  populateReportFilters();
   updateReportPreview();
   document.getElementById('reportModal').classList.add('open');
 }
 function closeReportModal() { document.getElementById('reportModal').classList.remove('open'); }
 function getReportRows() {
-  const from = new Date(document.getElementById('rptFrom').value + 'T00:00:00');
-  const to   = new Date(document.getElementById('rptTo').value + 'T23:59:59');
+  const fromD = parseViDate(document.getElementById('rptFrom').value);
+  const toD   = parseViDate(document.getElementById('rptTo').value);
+  if (!fromD || !toD) return [];
+  fromD.setHours(0,0,0,0);
+  toD.setHours(23,59,59,999);
+  const fPhuong = (document.getElementById('rptPhuong')?.value  || '').trim();
+  const fNguoi  = (document.getElementById('rptNguoiPH')?.value || '').trim().toLowerCase();
   return loadedData.filter(row => {
     const p = parseRow(row);
     if (!p.ngayPhatHien) return false;
-    const d = new Date(toInputDate(p.ngayPhatHien) + 'T00:00:00');
-    return d >= from && d <= to;
+    const d = parseViDate(p.ngayPhatHien);
+    if (!d || d < fromD || d > toD) return false;
+    if (fPhuong && (p.phuong||'').trim() !== fPhuong) return false;
+    if (fNguoi  && (p.nguoiPhatHien||'').trim().toLowerCase() !== fNguoi) return false;
+    return true;
   });
 }
 function updateReportPreview() {
@@ -1691,30 +1752,217 @@ function updateReportPreview() {
     ).join('') + (rows.length === 0 ? '<div style="font-size:12px;color:var(--text-muted);text-align:center">Không có dữ liệu trong khoảng này</div>' : '');
 }
 document.addEventListener('DOMContentLoaded', () => {
-  ['rptFrom','rptTo'].forEach(id => {
+  ['rptFrom','rptTo','rptPhuong','rptNguoiPH'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('change', updateReportPreview);
   });
 });
 function exportReport() {
-  const rows = getReportRows();
-  if (!rows.length) { showToast('Không có dữ liệu trong khoảng ngày này'); return; }
-  const from = document.getElementById('rptFrom').value;
-  const to   = document.getElementById('rptTo').value;
-  const header = ['STT','Số trụ','Tên tủ','Loại đèn','Công suất','Trạng thái','Đường','Phường','Ngày phát hiện','Ngày sửa','Số ngày hư','Vật tư sửa','Ghi chú'];
-  const data = rows.map((row, i) => {
-    const p = parseRow(row);
-    const cfg = STATUS_CONFIG[p.trangThai] || {};
-    const days = daysBetween(p.ngayPhatHien);
-    return [i+1, p.soTru, p.tenTu, p.loaiDen, p.congSuat ? p.congSuat+'W' : '', cfg.label || p.trangThai, p.duong, p.phuong, p.ngayPhatHien, p.ngaySua, days != null ? days : '', p.vatTuSua, p.ghiChu];
-  });
-  const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
-  ws['!cols'] = [4,12,14,8,8,20,18,14,12,10,8,20,20].map(w=>({wch:w}));
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Báo cáo');
-  XLSX.writeFile(wb, `baocao-denten-${from}-${to}.xlsx`);
-  showToast(`✅ Xuất báo cáo ${rows.length} đèn`);
-  closeReportModal();
+  try {
+    const rows = getReportRows();
+    if (!rows.length) { showToast('Không có dữ liệu trong khoảng ngày này'); return; }
+
+    const fromVal  = document.getElementById('rptFrom').value;
+    const toVal    = document.getElementById('rptTo').value;
+    const fromFile = fromVal.replace(/\//g, '-');
+    const toFile   = toVal.replace(/\//g, '-');
+    const fPhuong  = (document.getElementById('rptPhuong')?.value  || '').trim();
+    const fNguoi   = (document.getElementById('rptNguoiPH')?.value || '').trim();
+    const filterTxt = [fPhuong && ('Phường: ' + fPhuong), fNguoi && ('Người PH: ' + fNguoi)].filter(Boolean).join(' | ');
+
+    // đếm theo trạng thái
+    const counts = {};
+    Object.keys(STATUS_CONFIG).forEach(k => counts[k] = 0);
+    rows.forEach(r => { const p = parseRow(r); const s = String(p.trangThai||''); if (counts[s] !== undefined) counts[s]++; });
+    const totalFixed = rows.filter(r => { const p = parseRow(r); return p.ngaySua && String(p.ngaySua).trim(); }).length;
+
+    const NC   = 15; // số cột
+    const aoa  = []; // array of arrays cho toàn bộ sheet
+    const merges = [];
+
+    const mr = (r1, c1, r2, c2) => merges.push({ s:{r:r1,c:c1}, e:{r:r2,c:c2} });
+
+    // ── TIÊU ĐỀ (rows 0-2, 0-indexed) ──
+    aoa.push(['CHIẾU SÁNG KHU VỰC TRUNG TÂM', ...Array(NC-1).fill('')]);       mr(0,0,0,NC-1);
+    aoa.push(['BÁO CÁO ĐÈN TẮT / HƯ HỆ THỐNG CHIẾU SÁNG CÔNG CỘNG', ...Array(NC-1).fill('')]); mr(1,0,1,NC-1);
+    const period = 'Kỳ báo cáo: ' + fromVal + ' — ' + toVal + '   |   Xuất ngày: ' + todayStr() + (filterTxt ? '   |   ' + filterTxt : '');
+    aoa.push([period, ...Array(NC-1).fill('')]); mr(2,0,2,NC-1);
+
+    // ── SPACER ──
+    aoa.push(Array(NC).fill(''));
+
+    // ── TỔNG HỢP header (row 4) ──
+    aoa.push(['TỔNG HỢP', ...Array(NC-1).fill('')]); mr(4,0,4,NC-1);
+
+    // ── SUMMARY labels (row 5) ──
+    const sumLabels = ['Tổng đèn trong kỳ','','','Đèn LED hư (mã 1)','','','Đèn HPS hư (mã 7)','','','Hư quá 10 ngày','','','Đã sửa trong kỳ','',''];
+    aoa.push(sumLabels);
+    mr(5,0,5,2); mr(5,3,5,5); mr(5,6,5,8); mr(5,9,5,11); mr(5,12,5,14);
+
+    // ── SUMMARY values (row 6) ──
+    const sumVals = [rows.length,'','', counts['1']||0,'','', counts['7']||0,'','', counts['5']||0,'','', totalFixed,'',''];
+    aoa.push(sumVals);
+    mr(6,0,6,2); mr(6,3,6,5); mr(6,6,6,8); mr(6,9,6,11); mr(6,12,6,14);
+
+    // ── SPACER ──
+    aoa.push(Array(NC).fill(''));
+
+    // ── HEADER BẢNG (row 8) ──
+    aoa.push(['STT','Số trụ','Tên tủ','Đường','Phường','Loại đèn','Công suất','Trạng thái',
+              'Ngày phát hiện','Số ngày hư','Người phát hiện','Ngày sửa','Người sửa','Vật tư sửa','Ghi chú']);
+
+    // ── DỮ LIỆU (row 9+) ──
+    rows.forEach((row, i) => {
+      const p   = parseRow(row);
+      const cfg = STATUS_CONFIG[String(p.trangThai)] || { label:'Không xác định' };
+      const days = daysBetween(p.ngayPhatHien);
+      aoa.push([
+        i+1, p.soTru||'', p.tenTu||'', p.duong||'', p.phuong||'',
+        p.loaiDen||'', p.congSuat ? p.congSuat+'W' : '', cfg.label,
+        p.ngayPhatHien||'', days != null ? days : '',
+        p.nguoiPhatHien||'', p.ngaySua||'', p.nguoiSua||'', p.vatTuSua||'', p.ghiChu||'',
+      ]);
+    });
+
+    // ── FOOTER ──
+    const footerTxt = 'Hệ thống quản lý đèn tắt CSCC TP.HCM  —  Xuất ngày ' + todayStr();
+    aoa.push([footerTxt, ...Array(NC-1).fill('')]); mr(aoa.length-1, 0, aoa.length-1, NC-1);
+
+    // ── BUILD WORKBOOK ──
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!merges'] = merges;
+    ws['!cols']   = [5,12,14,22,14,10,10,22,13,9,16,11,13,20,20].map(w => ({ wch: w }));
+    ws['!rows']   = [
+      {hpt:22},{hpt:28},{hpt:18},{hpt:6},  // rows 0-3
+      {hpt:20},{hpt:18},{hpt:28},{hpt:6},  // rows 4-7
+      {hpt:22},                             // header
+      ...rows.map(() => ({hpt:18})),        // data
+      {hpt:14},                             // footer
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Báo cáo');
+    XLSX.writeFile(wb, 'BaoCao-DenTat-' + fromFile + '-den-' + toFile + '.xlsx');
+    showToast('✅ Xuất báo cáo ' + rows.length + ' đèn');
+    closeReportModal();
+  } catch(err) {
+    console.error('exportReport:', err);
+    showToast('❌ Lỗi xuất báo cáo: ' + (err.message || err));
+  }
+}
+
+// ── PRINT / PDF ──
+function exportReportPDF() {
+  try {
+    const rows = getReportRows();
+    if (!rows.length) { showToast('Không có dữ liệu trong khoảng ngày này'); return; }
+
+    const fromVal  = document.getElementById('rptFrom').value;
+    const toVal    = document.getElementById('rptTo').value;
+    const fPhuong  = (document.getElementById('rptPhuong')?.value  || '').trim();
+    const fNguoi   = (document.getElementById('rptNguoiPH')?.value || '').trim();
+    const filterTxt = [fPhuong && ('Phường: ' + fPhuong), fNguoi && ('Người PH: ' + fNguoi)].filter(Boolean).join(' &nbsp;|&nbsp; ');
+
+    const counts = {};
+    Object.keys(STATUS_CONFIG).forEach(k => counts[k] = 0);
+    rows.forEach(r => { const p = parseRow(r); const s = String(p.trangThai||''); if (counts[s] !== undefined) counts[s]++; });
+    const totalFixed = rows.filter(r => { const p = parseRow(r); return p.ngaySua && String(p.ngaySua).trim(); }).length;
+
+    const sumItems = [
+      { label:'Tổng đèn trong kỳ', val: rows.length,        color:'#0f172a' },
+      { label:'Đèn LED hư',         val: counts['1']||0,     color:'#ef4444' },
+      { label:'Đèn HPS hư',         val: counts['7']||0,     color:'#f97316' },
+      { label:'Hư quá 10 ngày',     val: counts['5']||0,     color:'#7c3aed' },
+      { label:'Đã sửa trong kỳ',   val: totalFixed,          color:'#10b981' },
+    ];
+
+    const dataRows = rows.map((row, i) => {
+      const p   = parseRow(row);
+      const cfg = STATUS_CONFIG[String(p.trangThai)] || { label:'Không xác định', color:'#94a3b8' };
+      const days = daysBetween(p.ngayPhatHien);
+      const isFixed = p.ngaySua && String(p.ngaySua).trim();
+      const daysCell = days == null ? '' :
+        `<span style="font-weight:700;color:${days>10?'#7c3aed':days>0?'#ef4444':'#10b981'}">${days}</span>`;
+      const statusCell = `<span style="font-weight:700;color:${cfg.color}">${cfg.label}</span>`;
+      const rowBg = isFixed ? '#d1fae5' : (i%2===1 ? '#f8fafc' : '#fff');
+      return `<tr style="background:${rowBg}">
+        <td style="text-align:center">${i+1}</td>
+        <td>${p.soTru||''}</td>
+        <td>${p.tenTu||''}</td>
+        <td>${p.duong||''}</td>
+        <td>${p.phuong||''}</td>
+        <td style="text-align:center">${p.loaiDen||''}</td>
+        <td style="text-align:center">${p.congSuat ? p.congSuat+'W' : ''}</td>
+        <td>${statusCell}</td>
+        <td style="text-align:center">${p.ngayPhatHien||''}</td>
+        <td style="text-align:center">${daysCell}</td>
+        <td>${p.nguoiPhatHien||''}</td>
+        <td style="text-align:center">${p.ngaySua||''}</td>
+        <td>${p.nguoiSua||''}</td>
+        <td>${p.vatTuSua||''}</td>
+        <td>${p.ghiChu||''}</td>
+      </tr>`;
+    }).join('');
+
+    const html = `<!DOCTYPE html><html lang="vi"><head>
+<meta charset="UTF-8">
+<title>Báo cáo đèn tắt ${fromVal} – ${toVal}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 10.5px; color: #1e293b; }
+  @page { size: A4 landscape; margin: 10mm 12mm; }
+  #printbar { display: flex; align-items: center; justify-content: space-between; background: #0f172a; color: #fff; padding: 10px 16px; position: sticky; top: 0; z-index: 99; }
+  #printbar span { font-size: 12px; font-weight: 600; }
+  #printbar button { background: #f97316; color: #fff; border: none; padding: 7px 18px; border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  #content { padding: 10mm 12mm; }
+  .title-block { text-align: center; margin-bottom: 12px; }
+  .org { font-size: 11px; font-weight: 700; text-transform: uppercase; }
+  .rpt-title { font-size: 17px; font-weight: 700; margin: 5px 0 4px; }
+  .rpt-period { font-size: 10px; color: #475569; }
+  .summary { display: flex; gap: 6px; margin-bottom: 10px; }
+  .sum-card { flex: 1; border: 1.5px solid #e2e8f0; border-radius: 6px; padding: 6px 4px; text-align: center; }
+  .sum-label { font-size: 9px; color: #64748b; margin-bottom: 2px; }
+  .sum-val { font-size: 22px; font-weight: 700; line-height: 1; }
+  table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
+  thead th { background: #0f172a; color: #fff; padding: 5px 4px; text-align: center; font-weight: 600; border: 1px solid #0f172a; white-space: nowrap; }
+  tbody td { border: 1px solid #e2e8f0; padding: 3px 4px; vertical-align: middle; }
+  .footer { margin-top: 8px; text-align: center; font-size: 8.5px; color: #94a3b8; }
+  @media print { #printbar { display: none !important; } #content { padding: 0; } }
+</style></head><body>
+<div id="printbar">
+  <span>📊 Báo cáo đèn tắt ${fromVal} – ${toVal}</span>
+  <button onclick="window.print()">🖨️ In / Lưu PDF</button>
+</div>
+<div id="content">
+<div class="title-block">
+  <div class="org">Chiếu Sáng Khu Vực Trung Tâm</div>
+  <div class="rpt-title">BÁO CÁO ĐÈN TẮT / HƯ HỆ THỐNG CHIẾU SÁNG CÔNG CỘNG</div>
+  <div class="rpt-period">Kỳ báo cáo: <b>${fromVal}</b> — <b>${toVal}</b> &nbsp;|&nbsp; Xuất ngày: <b>${todayStr()}</b>${filterTxt ? ' &nbsp;|&nbsp; ' + filterTxt : ''}</div>
+</div>
+<div class="summary">
+  ${sumItems.map(s => `<div class="sum-card"><div class="sum-label">${s.label}</div><div class="sum-val" style="color:${s.color}">${s.val}</div></div>`).join('')}
+</div>
+<table>
+  <thead><tr>
+    <th style="width:28px">STT</th><th>Số trụ</th><th>Tên tủ</th><th>Đường</th><th>Phường</th>
+    <th>Loại</th><th>CS</th><th>Trạng thái</th><th>Ngày PH</th><th>Số ngày hư</th>
+    <th>Người PH</th><th>Ngày sửa</th><th>Người sửa</th><th>Vật tư sửa</th><th>Ghi chú</th>
+  </tr></thead>
+  <tbody>${dataRows}</tbody>
+</table>
+<div class="footer">Hệ thống quản lý đèn tắt CSCC TP.HCM &nbsp;—&nbsp; Xuất ngày ${todayStr()}</div>
+</div>
+</body></html>`;
+
+    const w = window.open('', '_blank', 'width=1000,height=700');
+    if (!w) { showToast('⚠️ Trình duyệt chặn cửa sổ pop-up, hãy cho phép pop-up để in'); return; }
+    w.document.write(html);
+    w.document.close();
+    closeReportModal();
+  } catch(err) {
+    console.error('exportReportPDF:', err);
+    showToast('❌ Lỗi xuất PDF: ' + (err.message || err));
+  }
 }
 
 // ── ROUTE ──
@@ -1760,6 +2008,7 @@ function convertLatLonToVn2000(lat, lon) {
 
 // ── EXPORT DXF ──
 function exportMarkersToCad() {
+  if (isDemoUser()) { denyDemo(); return; }
   const rows = loadedData.filter(r => { const p = parseRow(r); return Number.isFinite(p.lat) && Number.isFinite(p.lon); });
   if (!rows.length) { showToast('Không có marker để xuất'); return; }
   const L2 = [], add = t => L2.push(t);

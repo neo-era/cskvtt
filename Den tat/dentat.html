@@ -336,7 +336,6 @@
     .rpt-btn-row { display: flex; gap: 8px; margin-top: 14px; }
     .rpt-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
     .rpt-btn-outline { background: var(--bg); color: var(--text); border: 1.5px solid var(--border) !important; }
-    .rpt-btn-pdf     { background: #0f172a; color: #fff; }
     .rpt-btn-primary { background: var(--orange); color: #fff; }
 
     /* ── SEARCH DROPDOWN ── */
@@ -692,8 +691,7 @@
     </div>
     <div class="rpt-btn-row">
       <button class="rpt-btn rpt-btn-outline" onclick="closeReportModal()">Hủy</button>
-      <button class="rpt-btn rpt-btn-pdf" onclick="exportReportPDF()">🖨️ In / PDF</button>
-      <button class="rpt-btn rpt-btn-primary" onclick="exportReport()">📥 Excel</button>
+      <button class="rpt-btn rpt-btn-primary" onclick="exportReport()">📥 Xuất Excel</button>
     </div>
   </div>
 </div>
@@ -1848,120 +1846,6 @@ function exportReport() {
   } catch(err) {
     console.error('exportReport:', err);
     showToast('❌ Lỗi xuất báo cáo: ' + (err.message || err));
-  }
-}
-
-// ── PRINT / PDF ──
-function exportReportPDF() {
-  try {
-    const rows = getReportRows();
-    if (!rows.length) { showToast('Không có dữ liệu trong khoảng ngày này'); return; }
-
-    const fromVal  = document.getElementById('rptFrom').value;
-    const toVal    = document.getElementById('rptTo').value;
-    const fPhuong  = (document.getElementById('rptPhuong')?.value  || '').trim();
-    const fNguoi   = (document.getElementById('rptNguoiPH')?.value || '').trim();
-    const filterTxt = [fPhuong && ('Phường: ' + fPhuong), fNguoi && ('Người PH: ' + fNguoi)].filter(Boolean).join(' &nbsp;|&nbsp; ');
-
-    const counts = {};
-    Object.keys(STATUS_CONFIG).forEach(k => counts[k] = 0);
-    rows.forEach(r => { const p = parseRow(r); const s = String(p.trangThai||''); if (counts[s] !== undefined) counts[s]++; });
-    const totalFixed = rows.filter(r => { const p = parseRow(r); return p.ngaySua && String(p.ngaySua).trim(); }).length;
-
-    const sumItems = [
-      { label:'Tổng đèn trong kỳ', val: rows.length,        color:'#0f172a' },
-      { label:'Đèn LED hư',         val: counts['1']||0,     color:'#ef4444' },
-      { label:'Đèn HPS hư',         val: counts['7']||0,     color:'#f97316' },
-      { label:'Hư quá 10 ngày',     val: counts['5']||0,     color:'#7c3aed' },
-      { label:'Đã sửa trong kỳ',   val: totalFixed,          color:'#10b981' },
-    ];
-
-    const dataRows = rows.map((row, i) => {
-      const p   = parseRow(row);
-      const cfg = STATUS_CONFIG[String(p.trangThai)] || { label:'Không xác định', color:'#94a3b8' };
-      const days = daysBetween(p.ngayPhatHien);
-      const isFixed = p.ngaySua && String(p.ngaySua).trim();
-      const daysCell = days == null ? '' :
-        `<span style="font-weight:700;color:${days>10?'#7c3aed':days>0?'#ef4444':'#10b981'}">${days}</span>`;
-      const statusCell = `<span style="font-weight:700;color:${cfg.color}">${cfg.label}</span>`;
-      const rowBg = isFixed ? '#d1fae5' : (i%2===1 ? '#f8fafc' : '#fff');
-      return `<tr style="background:${rowBg}">
-        <td style="text-align:center">${i+1}</td>
-        <td>${p.soTru||''}</td>
-        <td>${p.tenTu||''}</td>
-        <td>${p.duong||''}</td>
-        <td>${p.phuong||''}</td>
-        <td style="text-align:center">${p.loaiDen||''}</td>
-        <td style="text-align:center">${p.congSuat ? p.congSuat+'W' : ''}</td>
-        <td>${statusCell}</td>
-        <td style="text-align:center">${p.ngayPhatHien||''}</td>
-        <td style="text-align:center">${daysCell}</td>
-        <td>${p.nguoiPhatHien||''}</td>
-        <td style="text-align:center">${p.ngaySua||''}</td>
-        <td>${p.nguoiSua||''}</td>
-        <td>${p.vatTuSua||''}</td>
-        <td>${p.ghiChu||''}</td>
-      </tr>`;
-    }).join('');
-
-    const html = `<!DOCTYPE html><html lang="vi"><head>
-<meta charset="UTF-8">
-<title>Báo cáo đèn tắt ${fromVal} – ${toVal}</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; font-size: 10.5px; color: #1e293b; }
-  @page { size: A4 landscape; margin: 10mm 12mm; }
-  #printbar { display: flex; align-items: center; justify-content: space-between; background: #0f172a; color: #fff; padding: 10px 16px; position: sticky; top: 0; z-index: 99; }
-  #printbar span { font-size: 12px; font-weight: 600; }
-  #printbar button { background: #f97316; color: #fff; border: none; padding: 7px 18px; border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer; }
-  #content { padding: 10mm 12mm; }
-  .title-block { text-align: center; margin-bottom: 12px; }
-  .org { font-size: 11px; font-weight: 700; text-transform: uppercase; }
-  .rpt-title { font-size: 17px; font-weight: 700; margin: 5px 0 4px; }
-  .rpt-period { font-size: 10px; color: #475569; }
-  .summary { display: flex; gap: 6px; margin-bottom: 10px; }
-  .sum-card { flex: 1; border: 1.5px solid #e2e8f0; border-radius: 6px; padding: 6px 4px; text-align: center; }
-  .sum-label { font-size: 9px; color: #64748b; margin-bottom: 2px; }
-  .sum-val { font-size: 22px; font-weight: 700; line-height: 1; }
-  table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
-  thead th { background: #0f172a; color: #fff; padding: 5px 4px; text-align: center; font-weight: 600; border: 1px solid #0f172a; white-space: nowrap; }
-  tbody td { border: 1px solid #e2e8f0; padding: 3px 4px; vertical-align: middle; }
-  .footer { margin-top: 8px; text-align: center; font-size: 8.5px; color: #94a3b8; }
-  @media print { #printbar { display: none !important; } #content { padding: 0; } }
-</style></head><body>
-<div id="printbar">
-  <span>📊 Báo cáo đèn tắt ${fromVal} – ${toVal}</span>
-  <button onclick="window.print()">🖨️ In / Lưu PDF</button>
-</div>
-<div id="content">
-<div class="title-block">
-  <div class="org">Chiếu Sáng Khu Vực Trung Tâm</div>
-  <div class="rpt-title">BÁO CÁO ĐÈN TẮT / HƯ HỆ THỐNG CHIẾU SÁNG CÔNG CỘNG</div>
-  <div class="rpt-period">Kỳ báo cáo: <b>${fromVal}</b> — <b>${toVal}</b> &nbsp;|&nbsp; Xuất ngày: <b>${todayStr()}</b>${filterTxt ? ' &nbsp;|&nbsp; ' + filterTxt : ''}</div>
-</div>
-<div class="summary">
-  ${sumItems.map(s => `<div class="sum-card"><div class="sum-label">${s.label}</div><div class="sum-val" style="color:${s.color}">${s.val}</div></div>`).join('')}
-</div>
-<table>
-  <thead><tr>
-    <th style="width:28px">STT</th><th>Số trụ</th><th>Tên tủ</th><th>Đường</th><th>Phường</th>
-    <th>Loại</th><th>CS</th><th>Trạng thái</th><th>Ngày PH</th><th>Số ngày hư</th>
-    <th>Người PH</th><th>Ngày sửa</th><th>Người sửa</th><th>Vật tư sửa</th><th>Ghi chú</th>
-  </tr></thead>
-  <tbody>${dataRows}</tbody>
-</table>
-<div class="footer">Hệ thống quản lý đèn tắt CSCC TP.HCM &nbsp;—&nbsp; Xuất ngày ${todayStr()}</div>
-</div>
-</body></html>`;
-
-    const w = window.open('', '_blank', 'width=1000,height=700');
-    if (!w) { showToast('⚠️ Trình duyệt chặn cửa sổ pop-up, hãy cho phép pop-up để in'); return; }
-    w.document.write(html);
-    w.document.close();
-    closeReportModal();
-  } catch(err) {
-    console.error('exportReportPDF:', err);
-    showToast('❌ Lỗi xuất PDF: ' + (err.message || err));
   }
 }
 

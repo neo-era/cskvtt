@@ -332,10 +332,16 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
               Tải lại từ Google Sheet
             </button>
-            <button onclick="triggerExcelImport()" class="sb-btn outline">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              Cập nhật từ file Excel
-            </button>
+            <div class="sb-btn-row">
+              <button onclick="triggerExcelImport()" class="sb-btn outline">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Nhập từ Excel
+              </button>
+              <button onclick="downloadTemplateExcel()" class="sb-btn outline">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Tải file mẫu
+              </button>
+            </div>
             <input type="file" id="excelImportInput" accept=".xlsx,.xls" style="display:none" onchange="handleExcelImport(event)">
           </div>
 
@@ -1091,6 +1097,65 @@
                 }
             };
             reader.readAsArrayBuffer(file);
+        }
+
+        function downloadTemplateExcel() {
+            // Header khớp chính xác với cấu trúc Google Sheet (gas-khaosat.js)
+            const HEADER = [
+                'ID', 'Tên trụ', 'Lat', 'Lon', 'Ghi chú', 'Người KS',
+                'Loại', 'Tủ điều khiển', 'Loại trụ', 'Loại cần', 'Loại đèn',
+                'Ảnh', 'Thời gian cập nhật', 'Marker gốc', 'Khoảng cách (m)'
+            ];
+            // Ghi chú mô tả cột (dòng 2)
+            const NOTES = [
+                'Số nguyên, tự tăng', 'Tên định danh trụ', 'VD: 10.776900', 'VD: 106.700900',
+                'Ghi chú tự do', 'Tên người khảo sát',
+                '0-9 (xem bảng loại)', 'Tên tủ điều khiển', 'Nhãn loại trụ', 'Loại cần đèn', 'VD: LED 100W',
+                'Để trống (tự động)', 'Tự động điền', 'Tên trụ gốc (tính khoảng cách)', 'Số mét (tự động)'
+            ];
+            // Dữ liệu mẫu
+            const SAMPLES = [
+                [1,  'T1-001', 10.776900, 106.700900, '',              'Nguyễn Văn A', 0, 'TU-Q1-01', 'Trụ STK + Đèn LED',              '', 'LED 100W',  '', '10/5/2026 08:00', '',        ''],
+                [2,  'T1-002', 10.777120, 106.701200, 'Gần ngã tư',    'Nguyễn Văn A', 3, 'TU-Q1-01', 'Trụ BTLT + Đèn LED',             '', 'LED 150W',  '', '10/5/2026 08:05', 'T1-001',  35],
+                [3,  'T1-003', 10.777400, 106.701500, '',              'Nguyễn Văn A', 1, 'TU-Q1-02', 'Trụ STK + Đèn HPS',              '', 'HPS 150W',  '', '10/5/2026 08:10', 'T1-002',  42],
+                [4,  'T1-004', 10.777680, 106.701800, 'Trụ hỏng cần', 'Nguyễn Văn B', 4, 'TU-Q1-02', 'Trụ BTLT + Đèn HPS',             '', 'HPS 250W',  '', '10/5/2026 09:00', 'T1-003',  38],
+                [5,  'T1-005', 10.778000, 106.702100, '',              'Nguyễn Văn B', 9, 'TU-Q1-03', 'Trụ BTLT đề xuất trồng mới',     '', 'LED 100W',  '', '10/5/2026 09:10', 'T1-004',  45],
+            ];
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet([HEADER, NOTES, ...SAMPLES]);
+
+            // Độ rộng cột
+            ws['!cols'] = [
+                {wch:6},{wch:10},{wch:12},{wch:12},{wch:22},{wch:16},
+                {wch:6},{wch:16},{wch:30},{wch:14},{wch:12},
+                {wch:8},{wch:20},{wch:12},{wch:14}
+            ];
+
+            // Đóng băng hàng đầu
+            ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+            XLSX.utils.book_append_sheet(wb, ws, 'DanhSachTru');
+
+            // Sheet hướng dẫn loại trụ
+            const GUIDE = [
+                ['Mã Loại', 'Nhãn Loại trụ', 'Màu icon'],
+                [0, 'Trụ STK + Đèn LED',              'Xanh dương'],
+                [1, 'Trụ STK + Đèn HPS',              'Vàng'],
+                [2, 'Trụ trang trí',                  'Hồng'],
+                [3, 'Trụ BTLT + Đèn LED',             'Xanh lá'],
+                [4, 'Trụ BTLT + Đèn HPS',             'Cam'],
+                [5, 'Tủ lắp nổi',                     'Icon 9.png'],
+                [6, 'Tủ lắp ngầm',                    'Icon 9.png (nhỏ)'],
+                [7, 'Trụ BTLT điện lực quản lý',      'Xám'],
+                [8, 'Trụ BTLT CSCC quản lý',          'Tím'],
+                [9, 'Trụ BTLT đề xuất trồng mới',     'Xanh lá (nhấp nháy)'],
+            ];
+            const wsGuide = XLSX.utils.aoa_to_sheet(GUIDE);
+            wsGuide['!cols'] = [{wch:10},{wch:34},{wch:20}];
+            XLSX.utils.book_append_sheet(wb, wsGuide, 'Hướng dẫn Loại');
+
+            XLSX.writeFile(wb, 'mau-khaosat-cscc.xlsx');
         }
 
         function startAddMarker() {

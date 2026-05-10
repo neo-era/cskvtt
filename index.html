@@ -183,6 +183,39 @@
     .sb-btn.logout{color:var(--red);border-color:#fee2e2}
     .sb-btn.logout:hover{background:#fee2e2;border-color:var(--red);color:var(--red)}
 
+    /* ── LEAFLET POPUP ── */
+    .leaflet-popup-content-wrapper{border-radius:18px !important;box-shadow:0 12px 40px rgba(0,0,0,.22) !important;padding:0 !important;overflow:hidden;border:none !important;min-width:0}
+    .leaflet-popup-content{margin:0 !important;width:290px !important}
+    .leaflet-popup-tip-container{margin-top:-1px}
+    .leaflet-popup-close-button{top:8px !important;right:10px !important;color:rgba(0,0,0,.35) !important;font-size:18px !important;z-index:1}
+    .pc{font-family:'Inter',sans-serif;color:var(--text);background:#fff;border-radius:18px;overflow:hidden}
+    .pc-topbar{height:5px}
+    .pc-header{padding:14px 16px 10px;display:flex;gap:12px;align-items:flex-start}
+    .pc-avatar{width:54px;height:54px;border-radius:12px;object-fit:cover;flex-shrink:0;border:2px solid rgba(0,0,0,.07);cursor:pointer}
+    .pc-avatar-ph{width:54px;height:54px;border-radius:12px;background:linear-gradient(135deg,#f1f5f9,#e2e8f0);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+    .pc-meta{min-width:0;flex:1}
+    .pc-name{font-size:15px;font-weight:800;color:var(--text);line-height:1.25;letter-spacing:-.2px}
+    .pc-id{font-size:11px;color:var(--text-muted);margin-top:2px}
+    .pc-badge{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700;margin-top:7px}
+    .pc-divider{height:1px;background:#f1f5f9;margin:0 16px}
+    .pc-body{padding:10px 16px 4px}
+    .pc-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:12.5px;border-bottom:1px solid #f8fafc}
+    .pc-row:last-child{border-bottom:none}
+    .pc-row .pi{font-size:14px;flex-shrink:0;width:20px;text-align:center;margin-top:1px}
+    .pc-row .pk{color:var(--text-muted);font-weight:600;white-space:nowrap;min-width:68px;flex-shrink:0;font-size:12px}
+    .pc-row .pv{color:var(--text);line-height:1.45}
+    .pc-coords{background:#f8fafc;border-radius:8px;padding:5px 10px;font-size:10px;color:var(--text-muted);font-family:monospace;margin-top:8px;letter-spacing:.2px}
+    .pc-dist{margin-top:8px}
+    .pc-dist strong{font-size:12px;color:var(--text);display:block;margin-bottom:4px}
+    .pc-dist select{display:block;width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text);background:#f8fafc;cursor:default}
+    .pc-actions{display:grid;gap:8px;padding:12px 16px 16px}
+    .pc-actions.one{grid-template-columns:1fr}
+    .pc-actions.two{grid-template-columns:1fr 1fr}
+    .pc-btn{padding:11px 6px;border-radius:11px;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .1s;display:flex;align-items:center;justify-content:center;gap:5px;touch-action:manipulation;min-height:44px;white-space:nowrap}
+    .pc-btn:active{opacity:.82;transform:scale(.97)}
+    .pc-btn.route{background:var(--indigo);color:#fff}
+    .pc-btn.edit{background:#f1f5f9;color:var(--text)}
+
   </style>
 </head>
 <body>
@@ -538,6 +571,7 @@
         let markers = [];
         let loadedData = [];
         let currentUser = null; // { username, displayName, role }
+        let editingMarkerIndex = null; // null = thêm mới, integer = đang chỉnh sửa marker
         let newMarkerRows = [];
         let currentLocation = null;
         let currentLocationMarker = null;
@@ -634,73 +668,77 @@
             };
         }
 
-        function createMarkerPopupContent(row) {
-            const name = row[1] || row[0] || '';
-            const lat = parseFloat(row[2]);
-            const lon = parseFloat(row[3]);
-            const note = row[4] || '';
-            const tudieukhien = row[7];
-            const loaitru = row[8];
-            const loaiden = row[10];
+        function createMarkerPopupContent(row, markerIdx) {
+            const name       = row[1] || row[0] || '';
+            const lat        = parseFloat(row[2]);
+            const lon        = parseFloat(row[3]);
+            const note       = row[4] || '';
+            const type       = parseInt(row[6]) || 0;
+            const tudk       = row[7] || '';
+            const loaitru    = row[8] || '';
+            const loaiden    = row[10] || '';
             const imageValue = row[11] || '';
-            const updatedAt = row[12] || '';
+            const updatedAt  = row[12] || '';
+            const id         = row[0] || '';
+
+            const cfg       = ICON_CONFIG[type] || ICON_CONFIG[0];
+            const typeColor = cfg?.color || '#6366f1';
+            const typeLabel = cfg?.label || 'Trụ chiếu sáng';
+            const badgeBg   = typeColor + '22';
+
+            const imgUrl = (typeof imageValue === 'string' && (imageValue.startsWith('http') || imageValue.startsWith('data:'))) ? imageValue : '';
+            const avatarHtml = imgUrl
+                ? `<img class="pc-avatar" src="${imgUrl}" onclick="window.open('${imgUrl}','_blank')" title="Xem ảnh đầy đủ" onerror="this.outerHTML='<div class=\\'pc-avatar-ph\\'>🔦</div>'">`
+                : `<div class="pc-avatar-ph">🔦</div>`;
+
+            const coordStr = Number.isFinite(lat) && Number.isFinite(lon) ? `${lat.toFixed(6)}, ${lon.toFixed(6)}` : '—';
+
+            const rows = [];
+            if (typeLabel) rows.push(`<div class="pc-row"><span class="pi">🔦</span><span class="pk">Loại trụ</span><span class="pv">${typeLabel}</span></div>`);
+            if (tudk)      rows.push(`<div class="pc-row"><span class="pi">🗄</span><span class="pk">Tủ ĐK</span><span class="pv">${tudk}</span></div>`);
+            if (loaiden)   rows.push(`<div class="pc-row"><span class="pi">💡</span><span class="pk">Đèn</span><span class="pv">${loaiden}</span></div>`);
+            if (note)      rows.push(`<div class="pc-row"><span class="pi">📝</span><span class="pk">Ghi chú</span><span class="pv">${note}</span></div>`);
+            if (updatedAt) rows.push(`<div class="pc-row"><span class="pi">🕐</span><span class="pk">Cập nhật</span><span class="pv">${updatedAt}</span></div>`);
+
+            // Khoảng cách các trụ cùng tên
             const sameNameMarkers = getSameNameMarkers(name);
-            const currentLat = lat;
-            const currentLon = lon;
-            const currentNameNormalized = normalizeText(name || '');
-            const isAlreadyIncluded = sameNameMarkers.some(item => item.lat === currentLat && item.lon === currentLon && normalizeText(item.name || '') === currentNameNormalized);
-            if (!isAlreadyIncluded) {
-                sameNameMarkers.push({ lat: currentLat, lon: currentLon, name });
+            if (!sameNameMarkers.some(m => (m.lat ?? parseFloat(m[2])) === lat && (m.lon ?? parseFloat(m[3])) === lon)) {
+                sameNameMarkers.push({ lat, lon, name });
             }
-            const sameNameCount = sameNameMarkers.length;
-            const sameNameHtml = sameNameCount > 1 ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Tổng số trụ cùng tên:</strong> ${sameNameCount}</div>` : '';
-
-            let distancesHtml = '';
-            if (sameNameCount > 1) {
-                // Lấy danh sách marker cùng basename, loại bỏ các marker có trường 'Tên marker gốc' (cột 13 hoặc 14)
-                // row: ['', name, lat, lon, note, '', type, cabinetName, poleType, '', lampType, imageData, updatedAt, baseMarkerName, distanceToBase]
-                const filtered = sameNameMarkers.filter(m => {
-                    // Nếu là row gốc (object), không có cột 13/14, luôn giữ lại
-                    if (!Array.isArray(m)) return true;
-                    // Nếu có cột 13 (baseMarkerName) và nó khác rỗng, loại bỏ khỏi chuỗi nối tiếp
-                    return !m[13];
-                });
-                const segments = [];
-                let totalDistance = 0;
+            let distHtml = '';
+            if (sameNameMarkers.length > 1) {
+                const filtered = sameNameMarkers.filter(m => !Array.isArray(m) || !m[13]);
+                const segs = []; let total = 0;
                 for (let i = 1; i < filtered.length; i++) {
-                    const prev = filtered[i - 1];
-                    const current = filtered[i];
-                    const dist = getDistanceMeters(prev.lat || parseFloat(prev[2]), prev.lon || parseFloat(prev[3]), current.lat || parseFloat(current[2]), current.lon || parseFloat(current[3]));
-                    totalDistance += dist;
-                    segments.push(`<option value="${Math.round(dist)}">${(prev.name || prev[1] || '?')} → ${(current.name || current[1] || '?')}: ${Math.round(dist)} m</option>`);
+                    const a = filtered[i-1], b = filtered[i];
+                    const d = getDistanceMeters(a.lat ?? parseFloat(a[2]), a.lon ?? parseFloat(a[3]), b.lat ?? parseFloat(b[2]), b.lon ?? parseFloat(b[3]));
+                    total += d;
+                    segs.push(`<option>${(a.name||a[1]||'?')} → ${(b.name||b[1]||'?')}: ${Math.round(d)} m</option>`);
                 }
-                distancesHtml = `<div style="margin-top:8px;font-size:13px;color:#333;">
-                  <strong>Tổng khoảng cách nối tiếp: ${Math.round(totalDistance)} m</strong>
-                  <select size="${Math.min(segments.length, 6)}" style="display:block;width:100%;margin-top:6px;padding:4px 6px;border:1px solid #ccc;border-radius:6px;font-size:12px;color:#333;background:#fafafa;cursor:default;" onclick="event.stopPropagation()">
-                    ${segments.join('')}
-                  </select>
-                </div>`;
+                distHtml = `<div class="pc-dist"><strong>Tổng khoảng cách: ${Math.round(total)} m</strong><select size="${Math.min(segs.length,4)}" onclick="event.stopPropagation()">${segs.join('')}</select></div>`;
             }
 
-            const imagePath = (typeof imageValue === 'string' && !imageValue.startsWith('data:image/')) ? imageValue : '';
-            const imageHtml = imageValue ? `<div style="margin-top:8px;text-align:center;"><img src="${imageValue}" alt="Ảnh trụ" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc;" /></div>` : '';
-            const imagePathHtml = imagePath ? `<div style="margin-top:6px;font-size:12px;color:#555;word-break:break-all;text-align:center;">${imagePath}</div>` : '';
-            const timestampHtml = updatedAt ? `<div style="margin-top:8px;font-size:13px;color:#333;"><strong>Thời gian cập nhật:</strong> ${updatedAt}</div>` : '';
-            return `
-                <div>
-                    <strong>Tên trụ: ${name || 'Không có tên'}</strong><br>
-                    Lat: ${lat.toFixed(6)}<br>
-                    Lon: ${lon.toFixed(6)}<br>
-                    Ghi chú: ${note || 'Không có'}<br>
-                    Trụ: ${loaitru || ''}<br>
-                    Tủ điều khiển: ${tudieukhien || ''}<br>
-                    Đèn: ${loaiden || ''}<br>
-                    ${sameNameHtml}
-                    ${distancesHtml}
-                    ${timestampHtml}
-                    ${imageHtml}
-                    ${imagePathHtml}
-                </div>`;
+            const hasRoute = Number.isFinite(lat) && Number.isInteger(markerIdx);
+            const hasEdit  = Number.isInteger(markerIdx);
+            const btnCount = (hasRoute ? 1 : 0) + (hasEdit ? 1 : 0);
+            const gridClass = btnCount >= 2 ? 'two' : 'one';
+            const routeBtn = hasRoute ? `<button class="pc-btn route" onclick="routeToMarker(${markerIdx})">🧭 Đi đến</button>` : '';
+            const editBtn  = hasEdit  ? `<button class="pc-btn edit"  onclick="openEditMarker(${markerIdx})">✏️ Chỉnh sửa</button>` : '';
+
+            return `<div class="pc">
+                <div class="pc-topbar" style="background:${typeColor}"></div>
+                <div class="pc-header">
+                    ${avatarHtml}
+                    <div class="pc-meta">
+                        <div class="pc-name">${name || 'Chưa có tên'}</div>
+                        ${id ? `<div class="pc-id">ID: ${id}</div>` : ''}
+                        <div class="pc-badge" style="background:${badgeBg};color:${typeColor}">🔦 ${typeLabel}</div>
+                    </div>
+                </div>
+                <div class="pc-divider"></div>
+                <div class="pc-body">${rows.join('')}${distHtml}<div class="pc-coords">📡 ${coordStr}</div></div>
+                <div class="pc-actions ${gridClass}">${routeBtn}${editBtn}</div>
+            </div>`;
         }
 
         function updateMarkerCoordinatesInData(markerName, newLat, newLon) {
@@ -745,7 +783,7 @@
 
             marker.bindPopup('');
             marker.on('popupopen', function() {
-                marker.setPopupContent(createMarkerPopupContent(row));
+                marker.setPopupContent(createMarkerPopupContent(row, markerIndex));
             });
             
             // Enable dragging for newly added markers - update coordinates on drag end
@@ -781,7 +819,7 @@
             });
             
             markersCluster.addLayer(marker);
-            markers.push({ lat, lon, name, note, marker });
+            markers.push({ lat, lon, name, note, marker, row });
 
             if (name) {
                 const label = L.marker([lat, lon], {
@@ -1311,6 +1349,38 @@
                 const noteInput = document.getElementById('markerNoteInput');
                 const baseSelect = document.getElementById('markerBaseSelect');
 
+                // ── CHẾ ĐỘ CHỈNH SỬA ──
+                if (editingMarkerIndex !== null) {
+                    const entry = markers[editingMarkerIndex];
+                    if (!entry || !entry.row) { editingMarkerIndex = null; hideMarkerPopup(); return; }
+                    const row = entry.row;
+                    const name = nameInput?.value.trim() || row[1];
+                    if (!name) { displayError('Vui lòng nhập tên trụ.'); nameInput?.focus(); return; }
+                    const note        = noteInput?.value.trim() || '';
+                    const cabinetName = document.getElementById('markerCabinetInput')?.value.trim() || '';
+                    const lampType    = document.getElementById('markerLampTypeInput')?.value.trim() || '';
+                    const type        = parseInt(document.getElementById('markerPoleTypeInput')?.value) || 0;
+                    const poleTypeLabel = ICON_CONFIG[type]?.label || String(type);
+                    // Cập nhật row gốc tại chỗ (cùng reference trong loadedData)
+                    row[1] = name; row[4] = note; row[6] = type; row[7] = cabinetName;
+                    row[8] = poleTypeLabel; row[10] = lampType;
+                    row[12] = new Date().toLocaleString('vi-VN');
+                    if (markerImageDataUrl) row[11] = markerImageDataUrl;
+                    // Cập nhật icon và popup
+                    const newIcon = customIcons[type] || customIcons.default;
+                    entry.marker.setIcon(newIcon);
+                    entry.marker.setPopupContent(createMarkerPopupContent(row, editingMarkerIndex));
+                    // Reset state
+                    const idx = editingMarkerIndex;
+                    editingMarkerIndex = null;
+                    markerImageDataUrl = null;
+                    const headerSpan = document.querySelector('#markerPopupHeader span');
+                    if (headerSpan) headerSpan.textContent = 'Thông tin marker';
+                    hideMarkerPopup();
+                    pushMarkerToSheet(row);
+                    return;
+                }
+
                 if (!markerPopupLocation || !Array.isArray(markerPopupLocation) || markerPopupLocation.length !== 2) {
                     displayError('Không có vị trí marker để lưu.');
                     hideMarkerPopup();
@@ -1374,7 +1444,8 @@
                 const rowId = idInput && idInput.value ? String(idInput.value) : '';
                 // Thêm 2 trường cuối: tên marker gốc, khoảng cách (m)
                 const poleTypeLabel = ICON_CONFIG[type]?.label || String(type);
-                const newRow = [rowId, name, lat, lon, note, '', type, cabinetName, poleTypeLabel, '', lampType, imageData, updatedAt, baseMarkerName, distanceToBase];
+                const nguoiKS = currentUser ? (currentUser.displayName || currentUser.username) : '';
+                const newRow = [rowId, name, lat, lon, note, nguoiKS, type, cabinetName, poleTypeLabel, '', lampType, imageData, updatedAt, baseMarkerName, distanceToBase];
                 loadedData.push(newRow);
                 newMarkerRows.push(newRow);
                 markerImageDataUrl = null;
@@ -1397,6 +1468,13 @@
         }
 
         function cancelMarkerPopup() {
+            if (editingMarkerIndex !== null) {
+                editingMarkerIndex = null;
+                const headerSpan = document.querySelector('#markerPopupHeader span');
+                if (headerSpan) headerSpan.textContent = 'Thông tin marker';
+                hideMarkerPopup();
+                return;
+            }
             hideMarkerPopup();
             displayError(addMarkerMode ? 'Đã hủy nhập marker. Vui lòng chọn lại vị trí hoặc nhấn Thêm marker để tắt.' : 'Đã hủy nhập marker.');
             pendingNewMarker = addMarkerMode;
@@ -2045,6 +2123,51 @@
             if (sbRole) sbRole.textContent = role;
             if (tpAv)   tpAv.textContent   = av;
             if (tpName) tpName.textContent = name;
+        }
+
+        // ── CHỈNH SỬA MARKER ──
+        function openEditMarker(markerIdx) {
+            const entry = markers[markerIdx];
+            if (!entry || !entry.row) return;
+            const row = entry.row;
+
+            if (entry.marker) entry.marker.closePopup();
+
+            // Set edit state
+            editingMarkerIndex = markerIdx;
+            markerPopupLocation = [entry.lat, entry.lon];
+            pendingMarkerLocation = [entry.lat, entry.lon];
+
+            // Fill form fields
+            const nameInput     = document.getElementById('markerNameInput');
+            const noteInput     = document.getElementById('markerNoteInput');
+            const cabinetInput  = document.getElementById('markerCabinetInput');
+            const poleTypeInput = document.getElementById('markerPoleTypeInput');
+            const lampTypeInput = document.getElementById('markerLampTypeInput');
+            const coordsText    = document.getElementById('markerCoordsText');
+            const idInput       = document.getElementById('markerIdInput');
+            const preview       = document.getElementById('markerImagePreview');
+            const fileInput     = document.getElementById('markerImageInput');
+            const headerSpan    = document.querySelector('#markerPopupHeader span');
+
+            if (nameInput)     nameInput.value     = row[1] || '';
+            if (noteInput)     noteInput.value     = row[4] || '';
+            if (cabinetInput)  cabinetInput.value  = row[7] || '';
+            if (poleTypeInput) poleTypeInput.value = String(parseInt(row[6]) || 0);
+            if (lampTypeInput) lampTypeInput.value = row[10] || '';
+            if (coordsText)    coordsText.textContent = `Tọa độ: ${entry.lat.toFixed(6)}, ${entry.lon.toFixed(6)}`;
+            if (idInput)       idInput.value       = row[0] || '';
+            if (headerSpan)    headerSpan.textContent = '✏️ Chỉnh sửa marker';
+
+            const imgVal = row[11] || '';
+            markerImageDataUrl = (typeof imgVal === 'string' && imgVal.startsWith('data:')) ? imgVal : null;
+            if (preview) preview.innerHTML = imgVal
+                ? `<img src="${imgVal}" style="max-height:80px;border-radius:8px;border:1px solid #ccc">`
+                : '';
+            if (fileInput) fileInput.value = null;
+
+            const overlay = document.getElementById('markerPopupForm');
+            if (overlay) overlay.style.display = 'flex';
         }
 
         // ── TẢI DỮ LIỆU TỪ GOOGLE SHEET ──

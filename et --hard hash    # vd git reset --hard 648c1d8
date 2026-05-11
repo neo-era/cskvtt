@@ -1,0 +1,158 @@
+[33mb319aa3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32msub1[m[33m)[m Double image resize limit: 400px → 800px
+[33mf21c0ea[m Fix image not showing after reload from Google Sheet
+[33mf39233f[m Expand guide sheet in template Excel with usage instructions
+[33m5a7cd01[m Add downloadTemplateExcel() — sample Excel with guide sheet
+[33mcc4f29a[m Add Excel import button to sidebar menu
+[33m0a797c8[m Redesign marker popup in index.html + add Đi đến / Chỉnh sửa buttons
+[33m648c1d8[m Redesign marker popup in dentat.html — modern card UI
+[33mb74f99b[m Update KHAOSAT_GAS_URL to new GAS deployment (v2 with login)
+[33m33f0349[m Add login page to index.html and login support to GAS
+[33me716e1e[m Update dentat.html
+[33m513e159[m dentat endv1
+[33mc431b58[m dentat: demo guards, report filters, PDF export, sw cache v12
+[33m6f158d8[m Upload ảnh đèn tắt: a-2026-05-10T01-17-13Z.jpg
+[33m43c0133[m Merge branch 'sub1' of https://github.com/neo-era/cskvtt into sub1
+[33m949e487[m Dentat-end
+[33m67098f2[m Upload ảnh đèn tắt: a-2026-05-10T00-01-47Z.jpg
+[33mf0028cf[m Update khaosat.xlsx
+[33m1446cfe[m Upload marker image images/my-home-2026-05-09T23-57-09-315Z.jpeg
+[33m9c5c302[m Update khaosat.xlsx
+[33m85d8b0e[m Update khaosat.xlsx
+[33m76b14b7[m Upload ảnh đèn tắt: ts-7-h-m-172-an-d--ng-v--ng-2026-05-09T18-28-51Z.jpg
+[33m47bcd55[m Merge branch 'sub1' of https://github.com/neo-era/cskvtt into sub1
+[33m8fd1100[m end 1
+[33m2d39f0c[m Upload ảnh đèn tắt: ltt-1-2026-05-09T18-09-18Z.jpg
+[33m0970ac0[m Upload ảnh đèn tắt: 1-2026-05-09T18-08-08Z.jpg
+[33mabd0dbf[m Upload ảnh đèn tắt: 123-2026-05-09T18-00-57Z.jpg
+[33m0d8fe82[m Merge branch 'sub1' of https://github.com/neo-era/cskvtt into sub1
+[33m9bca857[m end den tat
+[33m5664249[m Upload ảnh đèn tắt: 123-2026-05-09T17-41-47Z.jpg
+[33m7b3133c[m Upload ảnh đèn tắt: 123-2026-05-09T17-41-22Z.jpg
+[33me9327d7[m Upload ảnh đèn tắt: 123-2026-05-09T17-20-11Z.jpg
+[33m47f6d72[m lan 8
+[33mddb8d1f[m dentat7
+[33m8733610[m dentat lan 6
+[33m490ca7f[m dentat lan 5
+[33m142af06[m dentat 4
+[33m9b43645[m dentat 3
+[33m1e8394d[m dentat 12
+[33m5d815ab[m dentat1
+[33m64304d4[m 0507lan 2
+[33mf567f55[m Merge branch 'sub1' of https://github.com/neo-era/cskvtt into sub1
+[33m9903521[m 0507
+[33m4751d92[m end
+[33ma2004c3[m ;an 2
+[33mac59440[m dentat
+[33m9daf0e6[m toi uu
+[33m43da090[m Update CLAUDE.md
+[33m2b6d965[m Merge branch 'sub1' of https://github.com/neo-era/cskvtt into sub1
+[33m3434af5[m Delete coords-override.json
+[33m2096eec[m Delete k76a11.html
+[33m7a023a5[m 1
+[33m8a7c8ad[m Update coords: mai vu lam @ 2/5/2026
+[33m47c3f44[m Cập nhật K76.A11 - 14:40 28/4/26
+[33m7c861b4[m Cập nhật K76.A11 - 14:38 28/4/26
+[33m1888fd4[m Cập nhật file excel từ bản đồ
+[33m7ab62db[m Upload marker image images/nsc-6-2026-04-24T00-33-31-828Z.jpeg
+[33m6eb0bc7[m end
+[33mff2b972[m Merge branch 'sub1' of https://github.com/neo-era/cskvtt into sub1
+[33m30ba721[m PWA
+[33mcb67440[m Cập nhật file excel từ bản đồ
+[33m0bdc020[m Cập nhật file excel từ bản đồ
+[33me7dcb89[m update vi tri drag
+[33m37713df[m update vi tri drag
+[33m4c5b62e[m Merge branch 'sub1' of https://github.com/neo-era/cskvtt into sub1
+[33m9c934e6[m drag vt hien tai + update github auto
+[33mb07e6a8[m Cập nhật file excel từ bản đồ
+[33mb22d694[m Cập nhật file excel từ bản đồ
+[33m30f0e13[m t1
+[33mc5c2f67[m tracking vi tri hien tai
+[33mf17f128[m Cập nhật file excel từ bản đồ
+[33mbb599c3[m update end1
+[33m99d21a4[m update end
+[33m820d4e4[m cap nhat mobile1
+[33md0f1d76[m cap nhat mobile1
+[33mce4953a[m cap nhat mobile1
+[33md14191b[m Update index.html
+[33m0f7883c[m cap nhat mobile
+[33m3e60b9e[m cap nhat cad
+[33mf919f7d[m cap nhat cad
+[33md4c1342[m Merge branch 'sub1' of https://github.com/neo-era/cskvtt into sub1
+[33md3d54e5[m khoang cach
+[33m2c17eeb[m Cập nhật file excel từ bản đồ
+[33m900969f[m Cập nhật file excel từ bản đồ
+[33m31073e9[m Cập nhật file excel từ bản đồ
+[33m8f2e96c[m Update khaosat.xlsx
+[33mf5e2189[m Cập nhật file excel từ bản đồ
+[33ma0a5ea0[m Cập nhật file excel từ bản đồ
+[33m3604f70[m Cập nhật file excel từ bản đồ
+[33m2be0b19[m Upload marker image images/vvk1-2026-04-13T02-05-32-103Z.jpeg
+[33m6eb59cc[m Cập nhật file excel từ bản đồ
+[33mebf91d0[m Upload marker image images/lvc1-2-2026-04-13T01-58-06-769Z.jpeg
+[33m13e8a4a[m Upload marker image images/lvc-1-2026-04-13T01-58-04-926Z.jpeg
+[33mc0522e3[m Cập nhật file excel từ bản đồ
+[33m99638b5[m Upload marker image images/an-ty-071_2-2026-04-13T01-48-36-691Z.jpeg
+[33ma825b5d[m Cập nhật file excel từ bản đồ
+[33me4f0e23[m Cập nhật file excel từ bản đồ
+[33m1e866b8[m Upload marker image images/tktq1-2026-04-12T15-40-11-455Z.jpeg
+[33mf551ed3[m Cập nhật file excel từ bản đồ
+[33m17dd321[m Upload marker image images/h3-2026-04-12T15-34-37-427Z.jpeg
+[33m2991f1f[m Upload marker image images/h1-2026-04-12T15-34-35-445Z.jpeg
+[33me19ffb7[m Update index.html
+[33m2540352[m Merge branch 'sub1' of https://github.com/neo-era/cskvtt into sub1
+[33me95cc2d[m update 3
+[33m3f4f857[m Cập nhật file excel từ bản đồ
+[33mcc63993[m Upload marker image images/fgfdg-2026-04-12T15-17-44-843Z.jpeg
+[33m1630964[m update 2
+[33md8ef578[m Update khaosat.xlsx
+[33m88a83b8[m Update index.html
+[33m95a504a[m Cập nhật file excel từ bản đồ
+[33m2ef5ce8[m Upload marker image images/tttt2-2026-04-12T13-26-34-364Z.png
+[33m5e98f2f[m Upload marker image images/tttt1-2026-04-12T13-26-31-857Z.png
+[33ma1f1baa[m Merge branch 'sub1' of https://github.com/neo-era/cskvtt into sub1
+[33mb602290[m update 1
+[33m36a3319[m Cập nhật file excel từ bản đồ
+[33mb7ed961[m Merge branch 'sub1' of https://github.com/neo-era/cskvtt into sub1
+[33m4b7b497[m Update index.html
+[33mc7e2133[m Cập nhật file excel từ bản đồ
+[33m1483347[m update 1
+[33meadbaba[m Cập nhật file excel từ bản đồ
+[33m6202aa9[m Cập nhật file excel từ bản đồ
+[33m18a3164[m Cập nhật file excel từ bản đồ
+[33mf92e7a5[m Cập nhật file excel từ bản đồ
+[33mf230896[m k76.a1
+[33m1e6d9c1[m Update k76a11.html
+[33md7c528a[m Update danhsach.xlsx
+[33m5c84139[m Update k76a11.html
+[33mcf4ced0[m k76.a1
+[33ma95d06c[m cap nhat github va giao dienbb
+[33mebedb8f[m Update khaosat.xlsx
+[33m83a5555[m Merge branch 'sub1' of https://github.com/neo-era/cskvtt into sub1
+[33m1d5e52d[m Update index.html
+[33m9537783[m Cập nhật file excel từ bản đồ
+[33med55d9d[m Cập nhật file excel từ bản đồ
+[33m2ec7964[m Merge branch 'sub1' of https://github.com/neo-era/cskvtt into sub1
+[33m76d8aed[m cap nhat github va giao dien
+[33m2a8a1a0[m Cập nhật file excel từ bản đồ
+[33mf8fd035[m cap nhat github va giao dien
+[33mcef4214[m cap nhat github va giao dien
+[33m8db0032[m Update khaosat.xlsx
+[33m3d4dd77[m Merge branch 'sub1' of https://github.com/neo-era/cskvtt into sub1
+[33m8fa9f46[m cap nhat github va giao dien
+[33m5928f3c[m Cập nhật file excel từ bản đồ
+[33m16d2716[m cap nhat github end
+[33m88ff1c0[m Merge branch 'sub1' of https://github.com/neo-era/cskvtt into sub1
+[33m592ee21[m Update index.html
+[33m8b387dc[m Cập nhật file excel từ bản đồ
+[33m78e6416[m Cập nhật file excel từ bản đồ
+[33m2ed3435[m Merge branch 'sub1' of https://github.com/neo-era/cskvtt into sub1
+[33mb27695b[m cap nhat github end
+[33m4dfb310[m Cập nhật file excel từ bản đồ
+[33mfafdb84[m Cập nhật file excel từ bản đồ
+[33m61c0e71[m Cập nhật file excel từ bản đồ
+[33m80bdd50[m cap nhat github end
+[33mb24ec74[m Merge branch 'sub1' of https://github.com/neo-era/cskvtt into sub1
+[33m60b791e[m Update khaosat.xlsx
+[33mf611dc8[m Cập nhật file excel từ bản đồ
+[33m5a00ffc[m cap nhat github
+[33m9ce7a4d[

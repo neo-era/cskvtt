@@ -1,0 +1,2066 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <title>Lighting System V1.1</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="author" content="Mai Vũ Lâm">
+
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+    <link rel="icon" href="images/fevicon.png" type="image/gif">
+
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
+
+    <style>
+        /* ══ DESIGN SYSTEM ══ */
+        :root {
+            --primary:       #2563eb;
+            --primary-dark:  #1d4ed8;
+            --primary-light: #dbeafe;
+            --secondary:     #f59e0b;
+            --success:       #10b981;
+            --danger:        #ef4444;
+            --surface:       #ffffff;
+            --surface-2:     #f9fafb;
+            --border:        #e5e7eb;
+            --text:          #111827;
+            --text-muted:    #6b7280;
+            --shadow:    0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,.10), 0 4px 10px rgba(0,0,0,.05);
+            --shadow-xl: 0 20px 40px rgba(0,0,0,.15), 0 8px 16px rgba(0,0,0,.08);
+            --radius-sm: 8px;
+            --radius:    12px;
+            --radius-lg: 20px;
+            --radius-full: 9999px;
+            --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --topbar-h:    60px;
+            --bottombar-h: 72px;
+            --safe-top:    env(safe-area-inset-top,    0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        /* ══ RESET ══ */
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; padding: 0; font-family: var(--font); overflow: hidden; }
+
+        /* ══ BẢN ĐỒ FULL SCREEN ══ */
+        #map { position: fixed; inset: 0; z-index: 1; }
+
+        /* ══ TOP BAR — command bar nổi ══ */
+        #topBar {
+            position: fixed;
+            top: calc(10px + var(--safe-top));
+            left: 12px; right: 12px;
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            height: 48px;
+            pointer-events: none;
+        }
+        #topBar > * { pointer-events: auto; }
+
+        /* Nút hamburger = controlsBtn (JS dùng getElementById) */
+        #controlsBtn {
+            flex-shrink: 0;
+            width: 48px; height: 48px;
+            border: none;
+            border-radius: var(--radius);
+            background: var(--surface);
+            color: var(--text);
+            font-size: 19px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: var(--shadow);
+            transition: background .15s;
+            padding: 0; margin: 0;
+        }
+        #controlsBtn:active { background: var(--surface-2); }
+
+        /* Thanh search pill */
+        .topbar-search {
+            flex: 1; min-width: 0;
+            display: flex; align-items: center;
+            background: var(--surface);
+            border-radius: var(--radius-full);
+            box-shadow: var(--shadow);
+            padding: 0 4px 0 14px;
+            height: 48px; gap: 6px;
+        }
+        .topbar-search i { color: var(--text-muted); font-size: 14px; flex-shrink: 0; }
+        #searchInput {
+            flex: 1; min-width: 0;
+            border: none; outline: none;
+            font-size: 15px; font-family: var(--font);
+            color: var(--text); background: transparent;
+        }
+        #searchInput::placeholder { color: var(--text-muted); }
+        .ts-btn {
+            flex-shrink: 0;
+            height: 38px; padding: 0 14px;
+            border: none; border-radius: var(--radius-full);
+            background: var(--primary); color: white;
+            font-size: 13px; font-weight: 600; font-family: var(--font);
+            cursor: pointer; transition: background .15s;
+        }
+        .ts-btn:active { background: var(--primary-dark); }
+
+        /* Dropdown kết quả tìm kiếm — ngoài modal, dưới topbar */
+        #searchResultsWrapper {
+            position: fixed;
+            top: calc(var(--safe-top) + 68px);
+            left: 12px; right: 12px;
+            z-index: 3001;
+            pointer-events: none;
+        }
+        #searchResults {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            max-height: 220px;
+            overflow-y: auto;
+            pointer-events: auto;
+        }
+        #searchResults:empty { display: none; }
+        #searchResults ul { list-style: none; padding: 8px; margin: 0; }
+        #searchResults li { padding: 8px 10px; border-radius: var(--radius-sm); transition: background .15s; }
+        #searchResults li:hover { background: var(--surface-2); }
+        #searchResults a { color: var(--primary); text-decoration: none; font-size: 14px; display: block; }
+
+        /* Indicator offline */
+        #offlineIndicator {
+            position: fixed;
+            top: calc(var(--safe-top) + 68px);
+            left: 50%; transform: translateX(-50%);
+            z-index: 3002;
+            background: #374151; color: white;
+            font-size: 12px; font-weight: 600;
+            padding: 5px 14px; border-radius: var(--radius-full);
+            display: none;
+        }
+        body.offline #offlineIndicator { display: block; }
+
+        /* ══ BOTTOM ACTION BAR ══ */
+        #bottomActionBar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            z-index: 3000;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            box-shadow: 0 -4px 20px rgba(0,0,0,.08);
+            display: flex; align-items: center; justify-content: space-around;
+            padding: 8px 12px calc(8px + var(--safe-bottom));
+            height: calc(var(--bottombar-h) + var(--safe-bottom));
+            gap: 8px;
+        }
+        .bab-btn {
+            flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+            border: none; background: transparent;
+            color: var(--text-muted);
+            font-size: 10px; font-weight: 600; font-family: var(--font);
+            cursor: pointer;
+            padding: 4px 6px; border-radius: var(--radius);
+            transition: color .15s, background .15s;
+            touch-action: manipulation;
+        }
+        .bab-btn i { font-size: 20px; line-height: 1.2; }
+        .bab-btn:active { background: var(--surface-2); color: var(--primary); }
+
+        /* Nút Thêm marker — pill nổi bật */
+        #addMarkerBtn {
+            flex-shrink: 0;
+            min-width: 120px; height: 44px;
+            padding: 0 18px;
+            border: none; border-radius: var(--radius-full);
+            background: var(--primary); color: white;
+            font-size: 14px; font-weight: 700; font-family: var(--font);
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(37,99,235,.35);
+            transition: background .15s, transform .1s, box-shadow .15s;
+            touch-action: manipulation;
+            white-space: nowrap;
+        }
+        #addMarkerBtn:active { transform: scale(.96); }
+        #addMarkerBtn.btn-danger  { background: var(--danger);  box-shadow: 0 4px 14px rgba(239,68,68,.35); }
+        #addMarkerBtn.btn-warning { background: var(--primary); box-shadow: 0 4px 14px rgba(37,99,235,.35); }
+
+        /* ══ SIDE PANEL — Bootstrap modal trái ══ */
+        .modal { z-index: 4050; }
+        .modal-backdrop { z-index: 4040; }
+
+        .modal.left .modal-dialog {
+            position: fixed; left: -360px; top: 0;
+            height: 100%; width: 320px; max-width: 88vw;
+            margin: 0;
+            transition: left .3s cubic-bezier(.4,0,.2,1);
+        }
+        .modal.left.show .modal-dialog { left: 0; }
+        .modal.left .modal-content { height: 100%; border: none; border-radius: 0; box-shadow: var(--shadow-xl); }
+
+        .modal.left .modal-header {
+            background: var(--primary);
+            border: none; padding: 0 16px;
+            height: 60px; display: flex; align-items: center;
+        }
+        .modal.left .modal-title { color: white; font-weight: 700; font-size: 16px; }
+        .modal.left .modal-header .close {
+            color: white; opacity: .8;
+            font-size: 24px; text-shadow: none;
+            background: none; border: none; cursor: pointer;
+            padding: 0; margin-left: auto; line-height: 1;
+        }
+        .modal.left .modal-body {
+            padding: 20px 16px;
+            overflow-y: auto;
+            height: calc(100% - 60px);
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Controls trong side panel */
+        .ctrl-section { margin-bottom: 20px; }
+        .ctrl-title { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px; }
+        .ctrl-label { display: block; font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+        .ctrl-input {
+            width: 100%; padding: 10px 12px;
+            border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+            font-size: 14px; font-family: var(--font); color: var(--text); background: var(--surface);
+            outline: none; transition: border-color .2s;
+            -webkit-appearance: none; appearance: none;
+            margin-bottom: 10px;
+        }
+        .ctrl-input:focus { border-color: var(--primary); }
+        .ctrl-btn {
+            width: 100%; padding: 11px 16px;
+            border: none; border-radius: var(--radius-sm);
+            font-size: 14px; font-weight: 600; font-family: var(--font);
+            cursor: pointer; display: flex; align-items: center; gap: 8px; justify-content: center;
+            margin-bottom: 8px;
+            transition: opacity .15s, transform .1s;
+            touch-action: manipulation;
+        }
+        .ctrl-btn:active { opacity: .85; transform: scale(.98); }
+        .ctrl-btn.primary { background: var(--primary); color: white; }
+        .ctrl-btn.success { background: var(--success); color: white; }
+        .ctrl-btn.warning { background: var(--secondary); color: white; }
+        .ctrl-btn.dark    { background: #374151; color: white; }
+        .ctrl-btn.outline { background: var(--surface-2); color: var(--text); border: 1.5px solid var(--border); }
+        .ctrl-btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+        .ctrl-btn-grid .ctrl-btn { margin-bottom: 0; }
+        .ctrl-divider { height: 1px; background: var(--border); margin: 16px -16px; }
+
+        /* GitHub contents */
+        #githubContents { font-size: 13px; max-height: 220px; overflow-y: auto; }
+        #githubContents ul { list-style: none; padding: 0; margin: 0; }
+        #githubContents li {
+            padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            margin-bottom: 4px; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--surface);
+        }
+        #githubContents li:hover { background: var(--surface-2); }
+        #githubContents .github-path { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+        #githubContents .github-item-name { font-weight: 600; color: var(--text); }
+        #githubContents .github-item-type { font-size: 12px; color: var(--text-muted); }
+
+        /* ══ MARKER FORM — BOTTOM SHEET ══ */
+        #markerPopupForm {
+            position: fixed; inset: 0;
+            z-index: 5000;
+            display: none;
+            flex-direction: column;
+            justify-content: flex-end;
+            background: rgba(0,0,0,.38);
+        }
+        .marker-popup-card {
+            width: 100%; max-height: 88vh;
+            background: var(--surface);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            box-shadow: var(--shadow-xl);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+        .bs-handle {
+            width: 40px; height: 4px;
+            background: var(--border); border-radius: 2px;
+            margin: 10px auto 0; flex-shrink: 0; cursor: grab;
+        }
+        .marker-popup-card header {
+            padding: 10px 16px 12px;
+            color: var(--text); font-size: 16px; font-weight: 700;
+            flex-shrink: 0; border-bottom: 1px solid var(--border);
+            user-select: none; cursor: default;
+        }
+        .marker-popup-card .body {
+            padding: 12px 16px;
+            overflow-y: auto; flex: 1;
+            -webkit-overflow-scrolling: touch;
+        }
+        .marker-popup-card .body .form-group { margin-bottom: 10px; }
+        .marker-popup-card .body label {
+            display: block;
+            font-size: 11px; font-weight: 700; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px;
+        }
+        .marker-popup-card .body input,
+        .marker-popup-card .body textarea,
+        .marker-popup-card .body select {
+            width: 100%; padding: 10px 12px;
+            border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+            font-size: 15px; font-family: var(--font); color: var(--text); background: var(--surface);
+            outline: none; transition: border-color .2s;
+            -webkit-appearance: none; appearance: none;
+        }
+        .marker-popup-card .body input:focus,
+        .marker-popup-card .body textarea:focus,
+        .marker-popup-card .body select:focus { border-color: var(--primary); }
+        .marker-popup-card .body textarea { resize: vertical; min-height: 64px; }
+
+        /* Footer cố định dưới form */
+        .marker-popup-card .footer {
+            padding: 10px 16px calc(10px + var(--safe-bottom));
+            background: var(--surface-2); border-top: 1px solid var(--border);
+            flex-shrink: 0; display: flex; flex-direction: column; gap: 8px;
+        }
+        .footer-main-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
+        .footer-location-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .marker-popup-card .footer button {
+            padding: 11px 14px;
+            border: none; border-radius: var(--radius-sm);
+            font-size: 14px; font-weight: 600; font-family: var(--font);
+            cursor: pointer; display: flex; align-items: center; gap: 6px; justify-content: center;
+            transition: opacity .15s, transform .1s; touch-action: manipulation; margin: 0;
+        }
+        .marker-popup-card .footer button:active { opacity: .85; transform: scale(.98); }
+
+        .marker-image-preview { margin-top: 8px; display: flex; justify-content: center; }
+        .marker-image-preview img {
+            max-width: 100%; max-height: 120px;
+            border-radius: var(--radius); border: 1px solid var(--border); object-fit: cover;
+        }
+        .marker-image-button { width: 100%; }
+        .coords-info {
+            font-size: 12px; color: var(--text-muted); margin-top: 4px;
+            padding: 8px 10px; background: var(--surface-2); border-radius: var(--radius-sm);
+        }
+
+        /* ══ TOAST — thay #error ══ */
+        #error {
+            position: fixed;
+            bottom: calc(var(--bottombar-h) + var(--safe-bottom) + 14px);
+            left: 50%; transform: translateX(-50%);
+            z-index: 6000;
+            background: #1f2937; color: white;
+            font-size: 13px; font-weight: 500; font-family: var(--font);
+            padding: 10px 20px; border-radius: var(--radius-full);
+            box-shadow: var(--shadow-lg);
+            white-space: nowrap; max-width: calc(100vw - 32px);
+            overflow: hidden; text-overflow: ellipsis;
+            display: none;
+            pointer-events: none; text-align: center;
+        }
+
+        /* ══ FLOATING CONTROLS (Leaflet) ══ */
+        .leaflet-control-custom {
+            z-index: 2000; background: transparent; border: none; padding: 0;
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .leaflet-control-custom button {
+            width: 44px; height: 44px;
+            border: none; border-radius: var(--radius);
+            background: var(--surface); color: var(--text);
+            font-size: 16px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: var(--shadow);
+            transition: background .15s, transform .1s;
+            touch-action: manipulation; padding: 0; margin: 0;
+        }
+        .leaflet-control-custom button:active { background: var(--surface-2); transform: scale(.93); }
+        .leaflet-control-custom button i { pointer-events: none; }
+
+        /* ══ LEAFLET POPUP — override kích thước ══ */
+        .leaflet-popup-content-wrapper {
+            padding: 0; border-radius: 14px;
+            box-shadow: 0 8px 32px rgba(0,0,0,.15), 0 2px 8px rgba(0,0,0,.1);
+            border: none; overflow: hidden;
+        }
+        .leaflet-popup-content { margin: 0; min-width: 260px; max-width: 300px; }
+        .leaflet-popup-tip-container { margin-top: -1px; }
+
+        /* ══ MARKER POPUP CARD ══ */
+        .mpu {
+            font-family: var(--font); background: var(--surface);
+            border-radius: 14px; overflow: hidden;
+        }
+        .mpu-header {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 12px 12px 10px;
+        }
+        .mpu-thumb {
+            width: 52px; height: 52px; border-radius: 10px;
+            object-fit: cover; border: 1px solid var(--border);
+            flex-shrink: 0; display: block;
+        }
+        .mpu-thumb-ph {
+            width: 52px; height: 52px; border-radius: 10px;
+            background: var(--surface-2); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-muted); flex-shrink: 0; font-size: 20px;
+        }
+        .mpu-title-wrap { flex: 1; min-width: 0; }
+        .mpu-title {
+            font-size: 13.5px; font-weight: 700; color: var(--text);
+            line-height: 1.35; word-break: break-word;
+        }
+        .mpu-id { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+        /* Badges trạng thái */
+        .mpu-badges {
+            display: flex; flex-wrap: wrap; gap: 4px;
+            padding: 0 12px 8px;
+        }
+        .mpu-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 8px; border-radius: var(--radius-full);
+            font-size: 11px; font-weight: 600; line-height: 1.4;
+        }
+        .mpu-badge.warn   { background: #fef3c7; color: #92400e; }
+        .mpu-badge.danger { background: #fee2e2; color: #991b1b; }
+        .mpu-badge.info   { background: #dbeafe; color: #1e40af; }
+        .mpu-badge.ok     { background: #d1fae5; color: #065f46; }
+
+        /* Hàng thông tin */
+        .mpu-divider { height: 1px; background: var(--border); margin: 0 12px 6px; }
+        .mpu-rows { padding: 0 12px 8px; }
+        .mpu-row {
+            display: flex; gap: 8px; padding: 4px 0;
+            border-bottom: 1px solid var(--surface-2);
+            font-size: 12.5px; align-items: flex-start;
+        }
+        .mpu-row:last-child { border-bottom: none; }
+        .mpu-row-icon { width: 15px; text-align: center; color: var(--text-muted); flex-shrink: 0; margin-top: 1px; }
+        .mpu-row-lbl  { color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
+        .mpu-row-val  { color: var(--text); font-weight: 500; flex: 1; word-break: break-word; }
+
+        /* Tọa độ */
+        .mpu-coords {
+            padding: 2px 12px 10px;
+            font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums;
+        }
+        .mpu-coords i { margin-right: 3px; }
+
+        /* Nút hành động */
+        .mpu-actions {
+            display: grid; grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px; padding: 10px 12px 12px;
+            border-top: 1px solid var(--border); background: var(--surface-2);
+        }
+        .mpu-btn {
+            border: none; border-radius: var(--radius-sm);
+            padding: 8px 4px; font-size: 11.5px; font-weight: 700;
+            font-family: var(--font); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            gap: 4px; line-height: 1.2; touch-action: manipulation;
+            transition: opacity .15s, transform .1s;
+        }
+        .mpu-btn:active { opacity: .8; transform: scale(.96); }
+        .mpu-btn.nav  { background: #2563eb; color: white; }
+        .mpu-btn.edit { background: #f59e0b; color: white; }
+        .mpu-btn.done { background: #10b981; color: white; }
+
+        /* ══ MARKER LABELS ══ */
+        .custom-label {
+            background: none; border: none; box-shadow: none;
+            font-weight: 700; color: #111;
+            text-shadow: 0 0 3px white, 0 0 6px white;
+        }
+        .custom-crosshair-icon { background: transparent; border: none; }
+
+        /* ══ NÚT VỀ ĐẦU TRANG ══ */
+        #backToTopBtn {
+            display: none;
+            position: fixed;
+            bottom: calc(var(--bottombar-h) + var(--safe-bottom) + 16px);
+            right: 16px; z-index: 3500;
+            width: 44px; height: 44px;
+            border: none; border-radius: var(--radius-full);
+            background: var(--primary); color: white;
+            font-size: 18px; cursor: pointer; box-shadow: var(--shadow);
+            touch-action: manipulation;
+        }
+
+        /* ══ EXPORT CAD MODAL ══ */
+        #exportCadModal .modal-content { border: none; border-radius: var(--radius-lg); box-shadow: var(--shadow-xl); }
+        #exportCadModal .modal-header { background: var(--primary); border-radius: var(--radius-lg) var(--radius-lg) 0 0; border: none; }
+        #exportCadModal .modal-title { color: white; font-weight: 700; }
+        #exportCadModal .modal-header .close { color: white; opacity: .8; text-shadow: none; }
+        #exportCadCountInfo { font-size: 13px; color: var(--primary); font-weight: 600; margin-bottom: 8px; }
+        #exportCadModal .form-group label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+        #exportCadModal .form-control { border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: var(--font); }
+        #exportCadModal .form-control:focus { border-color: var(--primary); box-shadow: none; }
+
+        /* ══ DARK MODE ══ */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --surface: #1f2937; --surface-2: #111827;
+                --border: #374151; --text: #f9fafb; --text-muted: #9ca3af;
+            }
+            #error { background: #374151; }
+        }
+
+        /* ══ RESPONSIVE DESKTOP ══ */
+        @media (min-width: 768px) {
+            /* Form marker: panel phải thay bottom sheet */
+            #markerPopupForm { justify-content: flex-end; align-items: flex-end; padding: 0 16px 16px 0; }
+            .marker-popup-card { width: 380px; max-height: 85vh; border-radius: var(--radius-lg); }
+            .bs-handle { display: none; }
+            /* Toast lên trên thay vì đè bottom bar */
+            #error { bottom: auto; top: calc(var(--safe-top) + 74px); }
+            /* Search results */
+            #searchResultsWrapper { left: 68px; right: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ═══ BẢN ĐỒ ═══ -->
+    <div id="map"></div>
+
+    <!-- ═══ TOP BAR ═══ -->
+    <div id="topBar">
+        <button id="controlsBtn" title="Bảng điều khiển">
+            <i class="fa fa-bars"></i>
+        </button>
+        <div class="topbar-search">
+            <i class="fa fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Tìm trụ đèn hoặc tọa độ..." autocomplete="off">
+            <button class="ts-btn" onclick="searchMarkers()">Tìm</button>
+        </div>
+    </div>
+
+    <!-- Dropdown kết quả tìm kiếm — dưới topbar -->
+    <div id="searchResultsWrapper">
+        <div id="searchResults"></div>
+    </div>
+
+    <!-- Offline indicator -->
+    <div id="offlineIndicator">Offline</div>
+
+    <!-- ═══ BOTTOM ACTION BAR ═══ -->
+    <div id="bottomActionBar">
+        <button class="bab-btn" onclick="centerOnUserLocation()" title="Vị trí của tôi">
+            <i class="fa fa-location-arrow"></i>
+            <span>Vị trí</span>
+        </button>
+
+        <button id="addMarkerBtn" class="btn-warning" onclick="startAddMarker()" title="Thêm trụ mới">
+            Thêm marker
+        </button>
+
+        <button class="bab-btn" onclick="saveMarkerData()" title="Lưu dữ liệu">
+            <i class="fa fa-download"></i>
+            <span>Lưu</span>
+        </button>
+    </div>
+
+    <!-- ═══ SIDE PANEL — Bảng điều khiển ═══ -->
+    <div class="modal fade left" id="controlsModal" tabindex="-1" role="dialog" aria-labelledby="controlsModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="controlsModalLabel">Điều khiển bản đồ</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                    <!-- Điều hướng -->
+                    <div class="ctrl-section">
+                        <div class="ctrl-title">Điều hướng</div>
+                        <label class="ctrl-label" for="pages">Chọn trang</label>
+                        <select id="pages" class="ctrl-input" onchange="navigateToPage()">
+                            <option value="index.html">Trang khảo sát</option>
+                            <option value="quan1.html">Quận 1</option>
+                            <option value="test.html">Kế hoạch</option>
+                        </select>
+                    </div>
+
+                    <div class="ctrl-divider"></div>
+
+                    <!-- GitHub -->
+                    <div class="ctrl-section">
+                        <div class="ctrl-title">GitHub</div>
+                        <label class="ctrl-label" for="githubPathInput">Đường dẫn file</label>
+                        <input type="text" id="githubPathInput" class="ctrl-input" placeholder="data/khaosat.xlsx">
+                        <div class="ctrl-btn-grid">
+                            <button onclick="saveMarkerData()" class="ctrl-btn success">
+                                <i class="fa fa-save"></i> Lưu Excel
+                            </button>
+                            <button onclick="updateGitHubExcel()" class="ctrl-btn primary">
+                                <i class="fa fa-cloud-upload"></i> GitHub
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="ctrl-divider"></div>
+
+                    <!-- Export -->
+                    <div class="ctrl-section">
+                        <div class="ctrl-title">Xuất dữ liệu</div>
+                        <button onclick="showExportCadModal()" class="ctrl-btn dark">
+                            <i class="fa fa-file-code-o"></i> Export to CAD
+                        </button>
+                    </div>
+
+                    <div class="ctrl-divider"></div>
+
+                    <!-- Nội dung GitHub -->
+                    <div id="githubContents"></div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ TOAST (id=error, JS gọi displayError) ═══ -->
+    <div id="error" role="status" aria-live="polite"></div>
+
+    <!-- ═══ NÚT VỀ ĐẦU TRANG ═══ -->
+    <button id="backToTopBtn" title="Về đầu trang">↑</button>
+
+    <!-- ═══ EXPORT TO CAD MODAL ═══ -->
+    <div class="modal fade" id="exportCadModal" tabindex="-1" role="dialog" aria-labelledby="exportCadModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exportCadModalLabel">Export to CAD</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="closeExportCadModal()">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="exportCadType">Chọn loại marker để xuất</label>
+                        <select id="exportCadType" class="form-control">
+                            <option value="new">Chỉ marker mới nhập</option>
+                            <option value="all">Tất cả marker</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="exportCadBasename">Lọc theo basename</label>
+                        <input type="text" id="exportCadBasename" class="form-control" placeholder="Ví dụ: T1, T2...">
+                    </div>
+                    <div id="exportCadCountInfo"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeExportCadModal()">Hủy</button>
+                    <button type="button" class="btn btn-primary" id="exportCadBtn">Export</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ MARKER FORM — BOTTOM SHEET ═══ -->
+    <div id="markerPopupForm" role="dialog" aria-modal="true">
+        <div class="marker-popup-card">
+            <div class="bs-handle"></div>
+            <header>Thêm / chỉnh sửa trụ đèn</header>
+
+            <!-- Footer đặt trước body để luôn visible khi scroll (flexbox reverse không cần) -->
+            <div class="footer">
+                <div class="footer-main-actions">
+                    <button id="markerPopupCancel" type="button" class="btn btn-secondary" onclick="cancelMarkerPopup()">
+                        <i class="fa fa-times"></i> Hủy
+                    </button>
+                    <button id="markerPopupSave" type="button" class="btn btn-primary" onclick="saveMarkerPopup()">
+                        <i class="fa fa-check"></i> Lưu marker
+                    </button>
+                </div>
+                <button id="markerImageButton" type="button" class="btn btn-outline-primary marker-image-button" onclick="triggerMarkerImageInput()">
+                    <i class="fa fa-camera"></i> Chụp / chọn ảnh
+                </button>
+                <div class="footer-location-actions">
+                    <button id="markerCurrentLocationBtn" type="button" class="btn btn-info" onclick="setMarkerToCurrentLocation()">
+                        <i class="fa fa-location-arrow"></i> Vị trí hiện tại
+                    </button>
+                    <button id="markerPickOnMapBtn" type="button" class="btn btn-warning" onclick="setMarkerToPickOnMap()">
+                        <i class="fa fa-map-marker"></i> Chọn trên bản đồ
+                    </button>
+                </div>
+            </div>
+
+            <div class="body">
+                <div class="form-group">
+                    <label for="markerNameInput">Tên trụ</label>
+                    <input id="markerNameInput" type="text" placeholder="Nhập tên trụ">
+                </div>
+                <div class="form-group">
+                    <label for="markerBaseSelect">Marker gốc (cùng basename)</label>
+                    <select id="markerBaseSelect">
+                        <option value="">(Mặc định: marker trước đó)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="markerCabinetInput">Tủ điều khiển</label>
+                    <input id="markerCabinetInput" type="text" placeholder="Tên tủ điều khiển">
+                </div>
+                <div class="form-group">
+                    <label for="markerPoleTypeInput">Loại trụ</label>
+                    <input id="markerPoleTypeInput" type="text" placeholder="STK, BTLT...">
+                </div>
+                <div class="form-group">
+                    <label for="markerLampTypeInput">Loại đèn</label>
+                    <input id="markerLampTypeInput" type="text" placeholder="LED, HPS...">
+                </div>
+                <div class="form-group">
+                    <label for="markerNoteInput">Ghi chú</label>
+                    <textarea id="markerNoteInput" placeholder="Ghi chú (tùy chọn)"></textarea>
+                </div>
+                <input id="markerImageInput" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleMarkerImageFile(event)">
+                <div class="marker-image-preview" id="markerImagePreview"></div>
+                <div id="markerCoordsText" class="coords-info">Tọa độ: —</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ SCRIPTS ═══ -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.1/exceljs.min.js"></script>
+
+    <script>
+        // --- Export to CAD Modal Logic ---
+        function showExportCadModal() {
+            document.getElementById('exportCadType').value = 'new';
+            document.getElementById('exportCadBasename').value = '';
+            updateExportCadCountInfo();
+            if (typeof $ !== 'undefined' && $.fn.modal) {
+                $('#exportCadModal').modal('show');
+            } else {
+                const modal = document.getElementById('exportCadModal');
+                if (modal) {
+                    modal.style.display = 'block';
+                    modal.classList.add('show');
+                    document.body.classList.add('modal-open');
+                    const backdrop = document.createElement('div');
+                    backdrop.className = 'modal-backdrop show';
+                    document.body.appendChild(backdrop);
+                    backdrop.onclick = function() { closeExportCadModal(); };
+                }
+            }
+            document.getElementById('exportCadType').onchange = updateExportCadCountInfo;
+            document.getElementById('exportCadBasename').oninput = updateExportCadCountInfo;
+        }
+
+        function closeExportCadModal() {
+            if (typeof $ !== 'undefined' && $.fn.modal) {
+                $('#exportCadModal').modal('hide');
+            } else {
+                const modal = document.getElementById('exportCadModal');
+                if (modal) {
+                    modal.classList.remove('show');
+                    modal.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) document.body.removeChild(backdrop);
+                }
+            }
+        }
+
+        function updateExportCadCountInfo() {
+            const type = document.getElementById('exportCadType').value;
+            const basename = document.getElementById('exportCadBasename').value.trim();
+            let rows = (type === 'new') ? (Array.isArray(newMarkerRows) ? newMarkerRows : []) : (Array.isArray(loadedData) ? loadedData : []);
+            if (basename) {
+                const normBase = normalizeMarkerBaseName(basename);
+                rows = rows.filter(row => normalizeMarkerBaseName(row[1] || row[0] || '') === normBase);
+            }
+            document.getElementById('exportCadCountInfo').textContent = `Số marker sẽ xuất: ${rows.length}`;
+        }
+
+        function confirmExportCad() {
+            const type = document.getElementById('exportCadType').value;
+            const basename = document.getElementById('exportCadBasename').value.trim();
+            let rows = [];
+            if (type === 'new') {
+                rows = Array.isArray(newMarkerRows) ? newMarkerRows : [];
+            } else {
+                rows = (Array.isArray(loadedData) && loadedData.length > 1) ? loadedData.slice(1) : [];
+            }
+            if (basename) {
+                const normBase = normalizeMarkerBaseName(basename);
+                rows = rows.filter(row => normalizeMarkerBaseName(row[1] || row[0] || '') === normBase);
+            }
+            if (!rows.length) {
+                displayError('Không có marker phù hợp để xuất.');
+                return;
+            }
+            const dxf = createDxfForMarkers(rows);
+            const baseNameForFile = basename ? sanitizeFileName(basename) : (type === 'new' ? 'marker-moi' : 'tat-ca-marker');
+            const fileName = `export-${baseNameForFile}.dxf`;
+            downloadTextFile(fileName, dxf);
+            closeExportCadModal();
+            displayError(`Đã xuất file CAD: ${fileName}`);
+        }
+
+        // --- Biến toàn cục ---
+        let map;
+        let markersCluster = L.markerClusterGroup();
+        let labelLayerGroup = L.layerGroup();
+        let markers = [];
+        let loadedData = [];
+        let newMarkerRows = [];
+        let currentLocation = null;
+        let currentLocationMarker = null;
+        let tempMarker = null;
+        let routeLine = null;
+        let pendingNewMarker = false;
+        let pendingMarkerLocation = null;
+        let markerPopupLocation = null;
+        let markerImageDataUrl = null;
+        let addMarkerMode = false;
+        let pickMarkerMode = false;
+        let lastMarkerName = '';
+        let lastMarkerNote = '';
+        let lastMarkerCabinet = '';
+        let lastMarkerPoleType = '';
+        let lastMarkerLampType = '';
+        let githubOwner = '';
+        let githubRepo = '';
+        let githubBranch = '';
+        let githubToken = '';
+        const MAX_EXCEL_TEXT_LENGTH = 32767;
+
+        function getNextMarkerName(previousName) {
+            if (!previousName) return '';
+            const match = previousName.match(/^(.*?)(\d+)$/);
+            if (!match) return previousName;
+            const prefix = match[1];
+            const number = match[2];
+            const nextNumber = String(parseInt(number, 10) + 1).padStart(number.length, '0');
+            return prefix + nextNumber;
+        }
+
+        function normalizeMarkerBaseName(name) {
+            const base = (name || '').toString().trim().replace(/[\s\-]*\d+$/, '');
+            return normalizeText(base);
+        }
+
+        function getMarkerCountByName(name) {
+            if (!name) return 0;
+            const normalizedBase = normalizeMarkerBaseName(name);
+            return markers.reduce((acc, item) => {
+                return acc + (normalizeMarkerBaseName(item.name || '') === normalizedBase ? 1 : 0);
+            }, 0);
+        }
+
+        function getSameNameMarkers(name) {
+            if (!name) return [];
+            const normalizedBase = normalizeMarkerBaseName(name);
+            return markers.filter(item => normalizeMarkerBaseName(item.name || '') === normalizedBase);
+        }
+
+        function getDistanceMeters(lat1, lon1, lat2, lon2) {
+            const toRad = x => x * Math.PI / 180;
+            const R = 6371e3;
+            const phi1 = toRad(lat1), phi2 = toRad(lat2);
+            const dPhi = toRad(lat2 - lat1), dLambda = toRad(lon2 - lon1);
+            const a = Math.sin(dPhi/2)*Math.sin(dPhi/2) + Math.cos(phi1)*Math.cos(phi2)*Math.sin(dLambda/2)*Math.sin(dLambda/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        function convertLatLonToVn2000(lat, lon) {
+            const toRad = x => x * Math.PI / 180;
+            const a = 6378137.0, f = 1/298.257222101;
+            const e2 = 2*f - f*f, k0 = 0.9996;
+            const zone = Math.floor((lon + 180)/6) + 1;
+            const lon0 = toRad(zone*6 - 183);
+            const phi = toRad(lat), lambda = toRad(lon);
+            const sinPhi = Math.sin(phi), cosPhi = Math.cos(phi), tanPhi = Math.tan(phi);
+            const N = a / Math.sqrt(1 - e2*sinPhi*sinPhi);
+            const T = tanPhi*tanPhi, C = e2/(1-e2)*cosPhi*cosPhi;
+            const A = (lambda - lon0)*cosPhi;
+            const M = a * ((1-e2/4-3*Math.pow(e2,2)/64-5*Math.pow(e2,3)/256)*phi
+                - (3*e2/8+3*Math.pow(e2,2)/32+45*Math.pow(e2,3)/1024)*Math.sin(2*phi)
+                + (15*Math.pow(e2,2)/256+45*Math.pow(e2,3)/1024)*Math.sin(4*phi)
+                - (35*Math.pow(e2,3)/3072)*Math.sin(6*phi));
+            const x = k0*N*(A+(1-T+C)*Math.pow(A,3)/6+(5-18*T+T*T+72*C-58*e2/(1-e2))*Math.pow(A,5)/120);
+            const y = k0*(M+N*tanPhi*(Math.pow(A,2)/2+(5-T+9*C+4*C*C)*Math.pow(A,4)/24+(61-58*T+T*T+600*C-330*e2/(1-e2))*Math.pow(A,6)/720));
+            return { x: x+500000, y, zone };
+        }
+
+        // Tính số ngày từ chuỗi ngày vi-VN hoặc ISO
+        function daysSinceDate(str) {
+            if (!str) return null;
+            let d = null;
+            const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+            if (m) d = new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1]));
+            else { const p = new Date(str); if (!isNaN(p)) d = p; }
+            if (!d) return null;
+            return Math.floor((Date.now() - d.getTime()) / 86400000);
+        }
+
+        // Kiểm tra ghi chú có chứa từ khóa sự cố không
+        function parseDamageNote(note) {
+            const kw = ['hư','hỏng','đứt','không sáng','mất điện','cháy','bể','gãy','ngã','sự cố'];
+            const n = (note||'').toLowerCase();
+            return kw.some(k => n.includes(k));
+        }
+
+        function createMarkerPopupContent(row) {
+            const name   = row[1] || row[0] || 'Không có tên';
+            const id     = row[0] || '';
+            const lat    = parseFloat(row[2]), lon = parseFloat(row[3]);
+            const note   = (row[4] || '').trim();
+            const person = (row[5] || '').trim();
+            const tudk   = (row[7] || '').trim();
+            const loaitru = (row[8] || '').trim();
+            const loaican = (row[9] || '').trim();
+            const loaiden = (row[10] || '').trim();
+            const imgUrl  = (row[11] || '').trim();
+            const updatedAt = (row[12] || '').trim();
+            const markerGoc = (row[13] || '').trim();
+            const khoangCach = row[14];
+            const latStr = isNaN(lat) ? '—' : lat.toFixed(6);
+            const lonStr = isNaN(lon) ? '—' : lon.toFixed(6);
+
+            // Thumbnail
+            const isDataUrl = imgUrl.startsWith('data:image/');
+            const isRealUrl = imgUrl && (imgUrl.startsWith('http') || isDataUrl);
+            const thumb = isRealUrl
+                ? `<img class="mpu-thumb" src="${imgUrl}" alt="Ảnh" loading="lazy">`
+                : `<div class="mpu-thumb-ph"><i class="fa fa-lightbulb-o"></i></div>`;
+
+            // Badges trạng thái
+            const badges = [];
+            const damaged = parseDamageNote(note);
+            if (damaged) {
+                const lampInfo = loaiden || 'Đèn';
+                badges.push(`<span class="mpu-badge danger"><i class="fa fa-bolt"></i>${lampInfo} đang hư</span>`);
+            }
+            const days = daysSinceDate(updatedAt);
+            if (days !== null && days > 3) {
+                badges.push(`<span class="mpu-badge warn"><i class="fa fa-clock-o"></i>${days} ngày chưa sửa</span>`);
+            }
+            if (!damaged && days !== null && days <= 3) {
+                badges.push(`<span class="mpu-badge ok"><i class="fa fa-check"></i>Mới cập nhật</span>`);
+            }
+            const badgesHtml = badges.length
+                ? `<div class="mpu-badges">${badges.join('')}</div>`
+                : '';
+
+            // Các hàng thông tin — chỉ hiện khi có dữ liệu
+            const rows = [];
+            if (loaiden) {
+                const detail = [loaiden, loaican, loaitru].filter(Boolean).join(' · ');
+                rows.push(`<div class="mpu-row"><span class="mpu-row-icon"><i class="fa fa-lightbulb-o"></i></span><span class="mpu-row-lbl">Loại đèn</span><span class="mpu-row-val">${detail}</span></div>`);
+            }
+            if (tudk) {
+                rows.push(`<div class="mpu-row"><span class="mpu-row-icon"><i class="fa fa-server"></i></span><span class="mpu-row-lbl">Tủ ĐK</span><span class="mpu-row-val">${tudk}</span></div>`);
+            }
+            if (note && !damaged) {
+                rows.push(`<div class="mpu-row"><span class="mpu-row-icon"><i class="fa fa-map-marker"></i></span><span class="mpu-row-lbl">Địa chỉ</span><span class="mpu-row-val">${note}</span></div>`);
+            } else if (note && damaged) {
+                rows.push(`<div class="mpu-row"><span class="mpu-row-icon"><i class="fa fa-exclamation-triangle" style="color:#f59e0b"></i></span><span class="mpu-row-lbl">Ghi chú</span><span class="mpu-row-val">${note}</span></div>`);
+            }
+            if (updatedAt) {
+                const personPart = person ? ` · ${person}` : '';
+                rows.push(`<div class="mpu-row"><span class="mpu-row-icon"><i class="fa fa-calendar"></i></span><span class="mpu-row-lbl">Phát hiện</span><span class="mpu-row-val">${updatedAt}${personPart}</span></div>`);
+            }
+            if (markerGoc && khoangCach) {
+                rows.push(`<div class="mpu-row"><span class="mpu-row-icon"><i class="fa fa-arrows-h"></i></span><span class="mpu-row-lbl">Từ ${markerGoc}</span><span class="mpu-row-val">${Math.round(khoangCach)} m</span></div>`);
+            }
+
+            // Khoảng cách giữa các marker cùng tên
+            const sameNames = getSameNameMarkers(name);
+            if (!sameNames.some(m => m.lat === lat && m.lon === lon)) sameNames.push({ lat, lon, name });
+            if (sameNames.length > 1) {
+                let total = 0;
+                const segs = [];
+                for (let i = 1; i < sameNames.length; i++) {
+                    const p = sameNames[i-1], c = sameNames[i];
+                    const d = getDistanceMeters(p.lat, p.lon, c.lat, c.lon);
+                    total += d;
+                    segs.push(`${(p.name||'?')}→${(c.name||'?')}: ${Math.round(d)}m`);
+                }
+                rows.push(`<div class="mpu-row"><span class="mpu-row-icon"><i class="fa fa-link"></i></span><span class="mpu-row-lbl">Tuyến</span><span class="mpu-row-val">${segs.join(', ')} (Σ ${Math.round(total)} m)</span></div>`);
+            }
+
+            const rowsHtml = rows.length
+                ? `<div class="mpu-divider"></div><div class="mpu-rows">${rows.join('')}</div>`
+                : '';
+
+            // Encode lat/lon cho onclick (tránh lỗi JS)
+            const latE = isNaN(lat) ? 0 : lat;
+            const lonE = isNaN(lon) ? 0 : lon;
+
+            return `<div class="mpu">
+                <div class="mpu-header">
+                    ${thumb}
+                    <div class="mpu-title-wrap">
+                        <div class="mpu-title">${name}</div>
+                        ${id ? `<div class="mpu-id">ID: ${id}</div>` : ''}
+                    </div>
+                </div>
+                ${badgesHtml}
+                ${rowsHtml}
+                <div class="mpu-coords"><i class="fa fa-crosshairs"></i>${latStr}, ${lonStr}</div>
+                <div class="mpu-actions">
+                    <button class="mpu-btn nav" onclick="routeToMarkerByCoord(${latE},${lonE})">
+                        <i class="fa fa-compass"></i>Đi đến
+                    </button>
+                    <button class="mpu-btn edit" onclick="editMarkerByCoord(${latE},${lonE})">
+                        <i class="fa fa-pencil"></i>Chỉnh sửa
+                    </button>
+                    <button class="mpu-btn done" onclick="markFixedByCoord(${latE},${lonE},this)">
+                        <i class="fa fa-check"></i>Đã sửa
+                    </button>
+                </div>
+            </div>`;
+        }
+
+        function updateMarkerCoordinatesInData(markerName, newLat, newLon) {
+            [loadedData, newMarkerRows].forEach(arr => {
+                if (Array.isArray(arr)) arr.forEach(row => {
+                    if (Array.isArray(row) && (row[1]===markerName||row[0]===markerName)) { row[2]=newLat; row[3]=newLon; }
+                });
+            });
+        }
+
+        function addMarkerRowToMap(row) {
+            const name = row[1] || row[0] || '';
+            const lat = parseFloat(row[2]), lon = parseFloat(row[3]);
+            if (isNaN(lat) || isNaN(lon)) return null;
+
+            const type = parseInt(row[6]);
+            const note = row[4] || '';
+            const icon = customIcons[type] || customIcons.default;
+            const marker = L.marker([lat, lon], { icon, draggable: true });
+
+            marker.bindPopup(createMarkerPopupContent(row));
+            marker.on('popupopen', function() { marker.setPopupContent(createMarkerPopupContent(row)); });
+            marker.on('dragend', function(e) {
+                const ll = e.target.getLatLng();
+                const newLat = ll.lat, newLon = ll.lng;
+                const md = markers.find(m => m.marker === marker);
+                if (md) { md.lat = newLat; md.lon = newLon; }
+                updateMarkerCoordinatesInData(name, newLat, newLon);
+                marker.setPopupContent(createMarkerPopupContent(row));
+                labelLayerGroup.getLayers().forEach(layer => {
+                    if (layer.getIcon().options.html && layer.getIcon().options.html.includes(name))
+                        layer.setLatLng([newLat, newLon]);
+                });
+                displayError(`Marker "${name}" đã di chuyển đến (${newLat.toFixed(6)}, ${newLon.toFixed(6)})`);
+            });
+
+            markersCluster.addLayer(marker);
+            markers.push({ lat, lon, name, note, marker });
+
+            if (name) {
+                labelLayerGroup.addLayer(L.marker([lat, lon], {
+                    icon: L.divIcon({ className: 'custom-label', html: `<div style="font-size:12px;font-weight:bold">${name}</div>`, iconSize: [80,20], iconAnchor: [40,30] }),
+                    interactive: false
+                }));
+            }
+
+            setTimeout(() => {
+                document.querySelectorAll('.marker-image-preview img, .marker-popup-card img').forEach(img => {
+                    if (!img.hasAttribute('loading')) img.setAttribute('loading', 'lazy');
+                });
+            }, 100);
+
+            return marker;
+        }
+
+        function updateAddMarkerButton() {
+            const btn = document.getElementById('addMarkerBtn');
+            if (!btn) return;
+            btn.textContent = addMarkerMode ? 'Dừng thêm marker' : 'Thêm marker';
+            btn.classList.toggle('btn-danger', addMarkerMode);
+            btn.classList.toggle('btn-warning', !addMarkerMode);
+        }
+
+        function enableAddMarkerMode() {
+            addMarkerMode = true; pendingNewMarker = true; pendingMarkerLocation = null;
+            updateAddMarkerButton();
+            displayError('Chế độ thêm marker bật. Nhấp vào bản đồ để chọn vị trí trụ mới.');
+        }
+
+        function disableAddMarkerMode() {
+            addMarkerMode = false; pendingNewMarker = false; pendingMarkerLocation = null;
+            hideMarkerPopup(); updateAddMarkerButton();
+            displayError('Chế độ thêm marker đã tắt.');
+        }
+
+        // Custom Icons
+        const customIcons = {
+            1: L.icon({ iconUrl: 'images/1.png', iconSize:[10,10], iconAnchor:[5,5], popupAnchor:[0,-10] }),
+            2: L.icon({ iconUrl: 'images/2.png', iconSize:[10,10], iconAnchor:[5,5], popupAnchor:[0,-10] }),
+            3: L.icon({ iconUrl: 'images/3.png', iconSize:[10,10], iconAnchor:[5,5], popupAnchor:[0,-10] }),
+            4: L.icon({ iconUrl: 'images/4.png', iconSize:[10,10], iconAnchor:[5,5], popupAnchor:[0,-10] }),
+            5: L.icon({ iconUrl: 'images/5.png', iconSize:[10,10], iconAnchor:[5,5], popupAnchor:[0,-10] }),
+            6: L.icon({ iconUrl: 'images/9.png', iconSize:[16,20], iconAnchor:[8,10], popupAnchor:[0,-10] }),
+            7: L.icon({ iconUrl: 'images/7.png', iconSize:[10,10], iconAnchor:[5,5], popupAnchor:[0,-10] }),
+            currentPos: L.divIcon({
+                className: 'custom-crosshair-icon',
+                html: '<i class="fa fa-plus" style="color:#2563eb;font-size:20px;text-shadow:0 0 3px white"></i>',
+                iconSize:[10,10], iconAnchor:[5,5], popupAnchor:[0,-10]
+            }),
+            default: L.icon({ iconUrl: 'images/8.png', iconSize:[10,10], iconAnchor:[5,5], popupAnchor:[0,-10] })
+        };
+
+        function initializeMap() {
+            const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:33, attribution:'© OpenStreetMap' });
+            const googleSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom:20, attribution:'© Google' });
+            const bingLayer = L.tileLayer('https://ecn.t{s}.tiles.virtualearth.net/tiles/a{q}.jpeg?g=1', { subdomains:['0','1','2','3','4'], maxZoom:19, attribution:'© Bing' });
+            const hcmcAdmin = L.tileLayer.wms('https://ows.mundialis.de/services/service?', { layers:'OSM-Overlay-WMS', format:'image/png', transparent:true, attribution:'© OSM' });
+            const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom:33, subdomains:['mt0','mt1','mt2','mt3'], attribution:'© Google' });
+
+            map = L.map('map', { center:[10.762622,106.660172], zoom:13, maxZoom:33, layers:[osm] });
+
+            L.control.layers({
+                'OpenStreetMap': osm,
+                'Google Satellite': googleSat,
+                'Bing Maps': bingLayer,
+                'Hành chính TP.HCM': hcmcAdmin,
+                'Satellite (old)': satellite
+            }).addTo(map);
+
+            // Zoom display control
+            L.Control.ZoomDisplay = L.Control.extend({
+                options: { position: 'topright' },
+                onAdd: function(m) {
+                    this._container = L.DomUtil.create('div', 'leaflet-control-zoom-display');
+                    Object.assign(this._container.style, { background:'white', padding:'5px 10px', border:'2px solid rgba(0,0,0,.2)', borderRadius:'4px', fontSize:'14px', fontWeight:'bold', color:'#333', boxShadow:'0 1px 5px rgba(0,0,0,.4)' });
+                    this._updateZoom();
+                    m.on('zoomend', this._updateZoom, this);
+                    return this._container;
+                },
+                onRemove: function(m) { m.off('zoomend', this._updateZoom, this); },
+                _updateZoom: function() { if (this._container) this._container.innerHTML = 'Zoom: ' + this._map.getZoom(); }
+            });
+            new L.Control.ZoomDisplay().addTo(map);
+
+            createMapControls();
+            map.addLayer(markersCluster);
+            map.addLayer(labelLayerGroup);
+
+            // Click handler — xử lý cả pendingNewMarker và pickMarkerMode
+            map.on('click', function(e) {
+                closeControlsModal();
+                if (pickMarkerMode && document.getElementById('markerPopupForm').style.display === 'flex') {
+                    markerPopupLocation = [e.latlng.lat, e.latlng.lng];
+                    pendingMarkerLocation = [e.latlng.lat, e.latlng.lng];
+                    if (tempMarker) tempMarker.setLatLng(e.latlng);
+                    document.getElementById('markerCoordsText').textContent = `Tọa độ: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
+                    displayError('Đã chọn vị trí trên bản đồ.');
+                    pickMarkerMode = false;
+                    return;
+                }
+                if (!pendingNewMarker) return;
+                showMarkerPopupAt(e.latlng.lat, e.latlng.lng);
+            });
+
+            // Ẩn/hiện label theo zoom — đăng ký 1 lần duy nhất tại đây
+            map.on('zoomend', function() {
+                if (map.getZoom() < 17) map.removeLayer(labelLayerGroup);
+                else map.addLayer(labelLayerGroup);
+            });
+
+            return map;
+        }
+
+        function addMarkersToMap(data) {
+            markersCluster.clearLayers();
+            labelLayerGroup.clearLayers();
+            markers = [];
+            data.forEach(row => addMarkerRowToMap(row));
+            if (markers.length > 0) map.fitBounds(markersCluster.getBounds().pad(0.1));
+            // Áp dụng trạng thái label ban đầu
+            if (map.getZoom() < 17) map.removeLayer(labelLayerGroup);
+            else map.addLayer(labelLayerGroup);
+        }
+
+        function processFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    loadedData = jsonData;
+                    addMarkersToMap(jsonData);
+                } catch (error) {
+                    displayError('Lỗi xử lý file Excel: ' + error.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function startAddMarker() {
+            if (addMarkerMode) { disableAddMarkerMode(); return; }
+            enableAddMarkerMode();
+        }
+
+        function showMarkerPopupAt(lat, lon) {
+            markerPopupLocation = [lat, lon];
+            pendingMarkerLocation = [lat, lon];
+            pendingNewMarker = true; addMarkerMode = true;
+            updateAddMarkerButton();
+
+            const overlay = document.getElementById('markerPopupForm');
+            const nameInput = document.getElementById('markerNameInput');
+            const noteInput = document.getElementById('markerNoteInput');
+            const cabinetInput = document.getElementById('markerCabinetInput');
+            const poleTypeInput = document.getElementById('markerPoleTypeInput');
+            const lampTypeInput = document.getElementById('markerLampTypeInput');
+            const coordsText = document.getElementById('markerCoordsText');
+            const preview = document.getElementById('markerImagePreview');
+            const fileInput = document.getElementById('markerImageInput');
+            const baseSelect = document.getElementById('markerBaseSelect');
+
+            if (!overlay||!nameInput||!noteInput||!coordsText||!preview||!fileInput) { displayError('Không thể hiển thị form marker.'); return; }
+
+            nameInput.value = lastMarkerName ? getNextMarkerName(lastMarkerName) : '';
+            noteInput.value = lastMarkerNote || '';
+            cabinetInput.value = lastMarkerCabinet || '';
+            poleTypeInput.value = lastMarkerPoleType || '';
+            lampTypeInput.value = lastMarkerLampType || '';
+            preview.innerHTML = ''; fileInput.value = null;
+            coordsText.textContent = `Tọa độ: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+
+            if (baseSelect) {
+                function updateBaseDistanceInfo() {
+                    const clat = markerPopupLocation ? markerPopupLocation[0] : null;
+                    const clon = markerPopupLocation ? markerPopupLocation[1] : null;
+                    let txt = '';
+                    if (baseSelect.value !== '' && clat !== null && clon !== null) {
+                        const baseIdx = parseInt(baseSelect.value, 10);
+                        const bm = markers[baseIdx];
+                        if (bm && normalizeMarkerBaseName(bm.name||'') === normalizeMarkerBaseName(nameInput.value.trim())) {
+                            txt = `Khoảng cách tới marker gốc: <b>${Math.round(getDistanceMeters(bm.lat,bm.lon,clat,clon))} m</b>`;
+                        }
+                    }
+                    let info = document.getElementById('markerBaseDistanceInfo');
+                    if (!info) {
+                        info = document.createElement('div');
+                        info.id = 'markerBaseDistanceInfo';
+                        Object.assign(info.style, { margin:'6px 0 0', fontSize:'13px', color:'#2563eb' });
+                        baseSelect.parentNode.appendChild(info);
+                    }
+                    info.innerHTML = txt;
+                }
+                nameInput.oninput = function() {
+                    const bn = normalizeMarkerBaseName(nameInput.value.trim());
+                    baseSelect.innerHTML = '';
+                    markers.forEach((m, idx) => {
+                        if (normalizeMarkerBaseName(m.name||'') === bn) {
+                            const opt = document.createElement('option');
+                            opt.value = idx; opt.textContent = m.name || 'Không tên';
+                            baseSelect.appendChild(opt);
+                        }
+                    });
+                    updateBaseDistanceInfo();
+                };
+                const newName = nameInput.value.trim();
+                const baseName = normalizeMarkerBaseName(newName);
+                baseSelect.innerHTML = '';
+                markers.forEach((m, idx) => {
+                    if (normalizeMarkerBaseName(m.name||'') === baseName) {
+                        const opt = document.createElement('option');
+                        opt.value = idx; opt.textContent = m.name || 'Không tên';
+                        baseSelect.appendChild(opt);
+                    }
+                });
+                baseSelect.onchange = updateBaseDistanceInfo;
+                baseSelect.onchange();
+            }
+
+            overlay.style.display = 'flex';
+            nameInput.focus();
+        }
+
+        function hideMarkerPopup() {
+            const overlay = document.getElementById('markerPopupForm');
+            if (overlay) overlay.style.display = 'none';
+            if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
+            markerPopupLocation = null; markerImageDataUrl = null;
+            const fi = document.getElementById('markerImageInput');
+            if (fi) fi.value = null;
+        }
+
+        function makeElementDraggable(handle, target) {
+            if (!handle || !target) return;
+            let dragging = false, startX = 0, startY = 0, origLeft = 0, origTop = 0;
+            handle.style.touchAction = 'none';
+            handle.addEventListener('pointerdown', function(e) {
+                if (e.pointerType==='mouse' && e.button!==0) return;
+                dragging = true;
+                const rect = target.getBoundingClientRect();
+                origLeft = rect.left; origTop = rect.top;
+                startX = e.clientX; startY = e.clientY;
+                target.setPointerCapture(e.pointerId);
+                target.classList.add('dragging'); e.preventDefault();
+            });
+            handle.addEventListener('pointermove', function(e) {
+                if (!dragging) return;
+                target.style.left = `${origLeft + e.clientX - startX}px`;
+                target.style.top = `${origTop + e.clientY - startY}px`;
+                target.style.transform = 'none';
+            });
+            const endDrag = function(e) {
+                if (!dragging) return; dragging = false;
+                try { target.releasePointerCapture(e.pointerId); } catch(err){}
+                target.classList.remove('dragging');
+            };
+            handle.addEventListener('pointerup', endDrag);
+            handle.addEventListener('pointercancel', endDrag);
+        }
+
+        function triggerMarkerImageInput() {
+            const fi = document.getElementById('markerImageInput');
+            if (fi) { fi.value = null; fi.click(); }
+        }
+
+        function resizeImageDataUrl(dataUrl, callback) {
+            const img = new Image();
+            img.onload = function() {
+                let width = img.width, height = img.height;
+                const scale = Math.min(1, 800 / Math.max(width, height));
+                width = Math.round(width*scale); height = Math.round(height*scale);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const m = dataUrl.match(/^data:(image\/[^;]+);base64,/i);
+                const mime = m ? m[1].toLowerCase() : 'image/png';
+                const supported = ['image/png','image/jpeg','image/webp'];
+                const target = supported.includes(mime) ? mime : 'image/png';
+                function render() {
+                    canvas.width = width; canvas.height = height;
+                    ctx.clearRect(0,0,width,height);
+                    ctx.drawImage(img,0,0,width,height);
+                    return (target==='image/jpeg'||target==='image/webp') ? canvas.toDataURL(target,0.8) : canvas.toDataURL(target);
+                }
+                let result = render();
+                while (result.length > MAX_EXCEL_TEXT_LENGTH && Math.max(width,height) > 120) {
+                    width = Math.round(width*.85); height = Math.round(height*.85); result = render();
+                }
+                if (result.length > MAX_EXCEL_TEXT_LENGTH) { callback('','Ảnh quá lớn. Vui lòng chọn ảnh nhỏ hơn.'); return; }
+                callback(result);
+            };
+            img.onerror = function() { callback('','Không thể đọc ảnh.'); };
+            img.src = dataUrl;
+        }
+
+        function handleMarkerImageFile(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                resizeImageDataUrl(e.target.result, function(resizedDataUrl, errorMessage) {
+                    const preview = document.getElementById('markerImagePreview');
+                    if (resizedDataUrl) {
+                        markerImageDataUrl = resizedDataUrl;
+                        if (preview) preview.innerHTML = `<img src="${markerImageDataUrl}" alt="Ảnh trụ">`;
+                        displayError('Ảnh đã sẵn sàng.');
+                    } else {
+                        markerImageDataUrl = '';
+                        if (preview) preview.innerHTML = '';
+                        displayError(errorMessage);
+                    }
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function saveMarkerPopup() {
+            try {
+                if (!markerPopupLocation || !Array.isArray(markerPopupLocation) || markerPopupLocation.length !== 2) {
+                    displayError('Không có vị trí marker để lưu.'); hideMarkerPopup(); return;
+                }
+                const lat = Number(markerPopupLocation[0]), lon = Number(markerPopupLocation[1]);
+                if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+                    displayError('Tọa độ không hợp lệ.'); hideMarkerPopup(); return;
+                }
+                const nameInput = document.getElementById('markerNameInput');
+                const noteInput = document.getElementById('markerNoteInput');
+                const baseSelect = document.getElementById('markerBaseSelect');
+                const name = nameInput.value.trim();
+                if (!name) { displayError('Vui lòng nhập tên trụ.'); nameInput.focus(); return; }
+                const note = noteInput.value.trim();
+                const cabinetName = document.getElementById('markerCabinetInput').value.trim();
+                const poleType = document.getElementById('markerPoleTypeInput').value.trim();
+                const lampType = document.getElementById('markerLampTypeInput').value.trim();
+                lastMarkerName = name; lastMarkerNote = note; lastMarkerCabinet = cabinetName;
+                lastMarkerPoleType = poleType; lastMarkerLampType = lampType;
+                let type = 1;
+                if (cabinetName) type = 6;
+                else if (poleType.toUpperCase()==='STK') type = 2;
+                let baseMarkerName = '', distanceToBase = '';
+                if (baseSelect && baseSelect.value !== '') {
+                    const bm = markers[parseInt(baseSelect.value, 10)];
+                    if (bm) { baseMarkerName = bm.name||''; distanceToBase = Math.round(getDistanceMeters(bm.lat,bm.lon,lat,lon)); }
+                }
+                if (!Array.isArray(loadedData)) loadedData = [];
+                if (!Array.isArray(newMarkerRows)) newMarkerRows = [];
+                const updatedAt = new Date().toLocaleString('vi-VN');
+                const newRow = ['',name,lat,lon,note,'',type,cabinetName,poleType,'',lampType,markerImageDataUrl||'',updatedAt,baseMarkerName,distanceToBase];
+                loadedData.push(newRow); newMarkerRows.push(newRow);
+                markerImageDataUrl = null;
+                const newMarker = addMarkerRowToMap(newRow);
+                if (newMarker) { map.setView([newMarker.getLatLng().lat, newMarker.getLatLng().lng], 19); newMarker.openPopup(); }
+                hideMarkerPopup();
+                pendingNewMarker = true; addMarkerMode = true; pendingMarkerLocation = null;
+                updateAddMarkerButton();
+                displayError('Đã thêm marker mới. Nhấn Lưu dữ liệu để lưu xuống Excel.');
+            } catch (error) {
+                console.error('saveMarkerPopup error:', error);
+                displayError('Lỗi khi lưu marker: ' + (error.message || error));
+            }
+        }
+
+        function cancelMarkerPopup() {
+            hideMarkerPopup();
+            displayError(addMarkerMode ? 'Đã hủy nhập marker. Nhấn Thêm marker để tắt.' : 'Đã hủy nhập marker.');
+            pendingNewMarker = addMarkerMode;
+            if (!addMarkerMode) pendingMarkerLocation = null;
+        }
+
+        function downloadTextFile(filename, content) {
+            const blob = new Blob([content], { type:'application/dxf;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display='none'; a.href=url; a.download=filename;
+            document.body.appendChild(a); a.click();
+            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+        }
+
+        function createDxfForMarkers(rows) {
+            const lines = [];
+            const L2 = t => lines.push(t);
+            L2('0');L2('SECTION');L2('2');L2('HEADER');L2('0');L2('ENDSEC');
+            L2('0');L2('SECTION');L2('2');L2('ENTITIES');
+            let previousPoint = null;
+            rows.forEach((row, index) => {
+                const name = row[1]||row[0]||`Marker ${index+1}`;
+                const rawX = parseFloat(row[3]), rawY = parseFloat(row[2]);
+                if (!Number.isFinite(rawX)||!Number.isFinite(rawY)) return;
+                const label = name.replace(/\r?\n/g,' ');
+                const vn = convertLatLonToVn2000(rawY, rawX);
+                const x = vn.x, y = vn.y;
+                L2('0');L2('CIRCLE');L2('8');L2('0');L2('10');L2(x.toFixed(6));L2('20');L2(y.toFixed(6));L2('30');L2('0');L2('40');L2('1.0');
+                if (previousPoint) {
+                    L2('0');L2('LINE');L2('8');L2('0');
+                    L2('10');L2(previousPoint.x.toFixed(6));L2('20');L2(previousPoint.y.toFixed(6));L2('30');L2('0');
+                    L2('11');L2(x.toFixed(6));L2('21');L2(y.toFixed(6));L2('31');L2('0');
+                    const dist = Math.sqrt((x-previousPoint.x)**2+(y-previousPoint.y)**2);
+                    L2('0');L2('TEXT');L2('8');L2('0');
+                    L2('10');L2(((x+previousPoint.x)/2).toFixed(6));L2('20');L2(((y+previousPoint.y)/2).toFixed(6));L2('30');L2('0');L2('40');L2('1.0');L2('1');L2(`${Math.round(dist)}m`);
+                }
+                L2('0');L2('TEXT');L2('8');L2('0');L2('10');L2(x.toFixed(6));L2('20');L2((y+0.0015).toFixed(6));L2('30');L2('0');L2('40');L2('1.0');L2('1');L2(label);
+                previousPoint = { x, y };
+            });
+            L2('0');L2('ENDSEC');L2('0');L2('EOF');
+            return lines.join('\r\n');
+        }
+
+        function exportMarkersToCad() { displayError('Vui lòng dùng nút Export to CAD để chọn marker!'); }
+
+        function getImageExtensionFromDataUrl(dataUrl) {
+            const m = dataUrl.match(/^data:image\/(png|jpeg|jpg|webp);base64,/i);
+            if (!m) return 'png';
+            return m[1].toLowerCase()==='jpg' ? 'jpeg' : m[1].toLowerCase();
+        }
+
+        function sanitizeFileName(name) {
+            return (name||'marker').toString().trim().toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-_.]/g,'').replace(/\-+/g,'-').replace(/^[-_.]+|[-_.]+$/g,'')||'marker';
+        }
+
+        function getImagePathForMarker(name, dataUrl) {
+            const ext = getImageExtensionFromDataUrl(dataUrl);
+            return `images/${sanitizeFileName(name)}-${new Date().toISOString().replace(/[:.]/g,'-')}.${ext}`;
+        }
+
+        function downloadDataUrlFile(dataUrl, suggestedPath) {
+            try {
+                const ext = getImageExtensionFromDataUrl(dataUrl);
+                const fileName = suggestedPath ? suggestedPath.replace(/^.*[\\/]/,'') : `marker-image.${ext}`;
+                fetch(dataUrl).then(r=>r.blob()).then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display='none'; a.href=url; a.download=fileName;
+                    document.body.appendChild(a); a.click();
+                    setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); },100);
+                });
+            } catch(e) { console.warn('Không thể tải ảnh:', e); }
+        }
+
+        function getBase64FromDataUrl(dataUrl) { return dataUrl.replace(/^data:image\/[^;]+;base64,/,''); }
+
+        async function uploadGitHubImageFile(owner, repo, path, branch, token, dataUrl, message) {
+            if (!dataUrl||typeof dataUrl!=='string'||!dataUrl.startsWith('data:image/')) return null;
+            const existing = await getGitHubFileContent(owner, repo, path, branch, token);
+            const body = { message: message||`Upload image ${path}`, content: getBase64FromDataUrl(dataUrl), branch };
+            if (existing.sha) body.sha = existing.sha;
+            const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`, {
+                method:'PUT', headers:{ Authorization:`token ${token}`, Accept:'application/vnd.github+json', 'Content-Type':'application/json' }, body: JSON.stringify(body)
+            });
+            if (!response.ok) throw new Error(`GitHub upload failed: ${response.status}`);
+            return await response.json();
+        }
+
+        async function prepareImagePathsForGitHub(rows, owner, repo, branch, token) {
+            if (!Array.isArray(rows)) return [];
+            const uploaded = [];
+            for (const row of rows) {
+                if (!Array.isArray(row)) continue;
+                const img = row[11];
+                if (typeof img==='string' && img.startsWith('data:image/')) {
+                    const path = getImagePathForMarker(row[1]||row[0]||'marker', img);
+                    await uploadGitHubImageFile(owner,repo,path,branch,token,img,`Upload marker image ${path}`);
+                    row[11] = path; uploaded.push(path);
+                }
+            }
+            return uploaded;
+        }
+
+        function prepareImagePathsForSave(rows) {
+            if (!Array.isArray(rows)) return [];
+            const downloaded = [];
+            rows.forEach(row => {
+                if (!Array.isArray(row)) return;
+                const img = row[11];
+                if (typeof img==='string' && img.startsWith('data:image/')) {
+                    const path = getImagePathForMarker(row[1]||row[0]||'marker', img);
+                    row[11] = path; downloaded.push({ dataUrl: img, path });
+                }
+            });
+            downloaded.forEach(item => downloadDataUrlFile(item.dataUrl, item.path));
+            return downloaded;
+        }
+
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            const chunk = 0x8000;
+            for (let i=0; i<bytes.length; i+=chunk) binary += String.fromCharCode.apply(null, bytes.subarray(i, i+chunk));
+            return btoa(binary);
+        }
+
+        async function createExcelBufferWithImages(rows) {
+            const ExcelJSGlobal = typeof ExcelJS!=='undefined' ? ExcelJS : (typeof window!=='undefined' ? window.ExcelJS : undefined);
+            if (!ExcelJSGlobal) return null;
+            const workbook = new ExcelJSGlobal.Workbook();
+            const ws = workbook.addWorksheet('Sheet1');
+            const header = ['ID','Tên trụ','Lat','Lon','Ghi chú','Trống','Loại','Tủ điều khiển','Loại trụ','Loại cần','Loại đèn','Ảnh','Thời gian cập nhật','Tên marker gốc','Khoảng cách (m)'];
+            ws.addRow(header);
+            [8,20,12,12,24,8,10,18,14,12,14,24,20,20,16].forEach((w,i)=>{ ws.getColumn(i+1).width = w; });
+            for (let i=0; i<rows.length; i++) {
+                const row = Array.isArray(rows[i]) ? [...rows[i]] : [];
+                const imgData = row[11]||'';
+                const rowData = [...row];
+                if (typeof imgData==='string' && imgData.startsWith('data:image/')) rowData[11]='';
+                const excelRow = ws.addRow(rowData);
+                if (typeof imgData==='string' && imgData.startsWith('data:image/')) {
+                    const ext = getImageExtensionFromDataUrl(imgData);
+                    const imageId = workbook.addImage({ base64: imgData.replace(/^data:image\/[^;]+;base64,/,''), extension: ext });
+                    ws.addImage(imageId, { tl:{col:11,row:excelRow.number-1}, ext:{width:180,height:120}, editAs:'oneCell' });
+                    ws.getRow(excelRow.number).height = 95;
+                }
+            }
+            return await workbook.xlsx.writeBuffer();
+        }
+
+        function attachImagesToWorksheet(worksheet, rows, startRow=1) {
+            if (!worksheet || !Array.isArray(rows)) return;
+            const images = [];
+            rows.forEach((row, index) => {
+                const imgData = row[11];
+                const rowIndex = startRow + index;
+                const cellAddress = XLSX.utils.encode_cell({ r:rowIndex, c:11 });
+                if (typeof imgData==='string' && imgData.startsWith('data:image/')) {
+                    worksheet[cellAddress] = { t:'s', v:'' };
+                    images.push({ image:imgData, origin:{r:rowIndex,c:11}, base64:true });
+                    worksheet['!cols'] = worksheet['!cols']||[];
+                    worksheet['!cols'][11] = { wpx:140 };
+                    worksheet['!rows'] = worksheet['!rows']||[];
+                    worksheet['!rows'][rowIndex] = { hpx:120 };
+                } else if (typeof imgData==='string' && imgData) {
+                    worksheet[cellAddress] = { t:'s', v:imgData };
+                }
+            });
+            if (images.length > 0) worksheet['!images'] = images;
+        }
+
+        async function saveMarkerData() {
+            try {
+                if (!newMarkerRows || newMarkerRows.length===0) { displayError('Không có marker mới để lưu.'); return; }
+                prepareImagePathsForSave(newMarkerRows);
+                let downloadBlob = null;
+                if (typeof ExcelJS!=='undefined' || (typeof window!=='undefined' && window.ExcelJS)) {
+                    const buffer = await createExcelBufferWithImages(newMarkerRows);
+                    if (buffer) downloadBlob = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                }
+                if (downloadBlob) {
+                    const url = URL.createObjectURL(downloadBlob);
+                    const a = document.createElement('a'); a.style.display='none'; a.href=url; a.download='khaosat-updated.xlsx';
+                    document.body.appendChild(a); a.click();
+                    setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); },100);
+                } else {
+                    const header = ['ID','Tên trụ','Lat','Lon','Ghi chú','Trống','Loại','Tủ điều khiển','Loại trụ','Loại cần','Loại đèn','Ảnh','Thời gian cập nhật','Tên marker gốc','Khoảng cách (m)'];
+                    const ws = XLSX.utils.aoa_to_sheet([header, ...newMarkerRows.map(r=>Array.isArray(r)?[...r]:[])]);
+                    attachImagesToWorksheet(ws, newMarkerRows);
+                    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+                    XLSX.writeFile(wb, 'khaosat-updated.xlsx');
+                }
+                displayError('File dữ liệu đã được tạo và tải xuống.');
+            } catch (error) {
+                console.error('saveMarkerData error:', error);
+                displayError('Lỗi khi lưu: ' + (error.message||error));
+            }
+        }
+
+        async function getGitHubFileContent(owner, repo, path, branch, token) {
+            const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`, {
+                headers:{ Authorization:`Bearer ${token}`, Accept:'application/vnd.github+json' }
+            });
+            if (response.status===404) return { sha:null, content:null };
+            if (!response.ok) throw new Error(`GitHub read failed: ${response.status}`);
+            const data = await response.json();
+            return { sha: data.sha, content: data.content };
+        }
+
+        async function updateGitHubFile(owner, repo, path, branch, token, contentBase64, sha) {
+            const body = { message:'Cập nhật file excel từ bản đồ', content:contentBase64, branch };
+            if (sha) body.sha = sha;
+            const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`, {
+                method:'PUT', headers:{ Authorization:`token ${token}`, Accept:'application/vnd.github+json', 'Content-Type':'application/json' }, body:JSON.stringify(body)
+            });
+            if (!response.ok) throw new Error(`GitHub update failed: ${response.status}`);
+            return await response.json();
+        }
+
+        async function getGitHubRepoContents(owner, repo, path, branch, token) {
+            const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`, {
+                headers:{ Authorization:`token ${token}`, Accept:'application/vnd.github+json' }
+            });
+            if (!response.ok) throw new Error(`GitHub list failed: ${response.status}`);
+            return await response.json();
+        }
+
+        function renderGitHubContents(contents, currentPath) {
+            const div = document.getElementById('githubContents');
+            if (!div) return;
+            const folderPath = currentPath||'';
+            const items = Array.isArray(contents) ? contents : [];
+            let html = `<div class="github-path">Branch: <strong>${githubOwner}/${githubRepo}@${githubBranch}</strong> — Thư mục: <strong>${folderPath||'/'}</strong></div><ul>`;
+            if (folderPath) {
+                const parent = folderPath.split('/').slice(0,-1).join('/');
+                html += `<li class="github-item" data-path="${parent}"><span class="github-item-name">.. (Lên trên)</span><span class="github-item-type">folder</span></li>`;
+            }
+            items.sort((a,b)=>{if(a.type===b.type) return a.name.localeCompare(b.name,'vi',{sensitivity:'base'}); return a.type==='dir'?-1:1;}).forEach(item=>{
+                const ip = folderPath ? `${folderPath}/${item.name}` : item.name;
+                const it = item.type==='dir' ? 'folder' : 'file';
+                html += `<li class="github-item" data-path="${ip}" data-type="${it}"><span class="github-item-name">${item.name}</span><span class="github-item-type">${it}</span></li>`;
+            });
+            html += '</ul>';
+            div.innerHTML = html;
+            div.querySelectorAll('.github-item').forEach(el=>{
+                el.addEventListener('click', async()=>{
+                    const ip = el.getAttribute('data-path'), it = el.getAttribute('data-type');
+                    if (it==='folder'||ip==='') await browseGitHubPath(ip||'');
+                    else selectGitHubFilePath(ip);
+                });
+            });
+        }
+
+        async function browseGitHubPath(path) {
+            try {
+                displayError(`Đang tải: ${path||'/'}...`);
+                renderGitHubContents(await getGitHubRepoContents(githubOwner, githubRepo, path, githubBranch, githubToken), path);
+            } catch(e) { displayError('Lỗi GitHub: ' + (e.message||e)); }
+        }
+
+        function selectGitHubFilePath(filePath) {
+            const input = document.getElementById('githubPathInput');
+            if (input) input.value = filePath;
+            displayError(`Đã chọn: ${filePath}`);
+        }
+
+        async function checkGitHubBranchExists(owner, repo, branch, token) {
+            const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}`, {
+                headers:{ Authorization:`token ${token}`, Accept:'application/vnd.github+json' }
+            });
+            return r.ok;
+        }
+
+        function base64ToBinary(base64) {
+            const s = atob(base64.replace(/\s/g,''));
+            const bytes = new Uint8Array(s.length);
+            for (let i=0; i<s.length; i++) bytes[i] = s.charCodeAt(i);
+            return bytes;
+        }
+
+        async function updateGitHubExcel() {
+            try {
+                if (!newMarkerRows || newMarkerRows.length===0) { displayError('Không có marker mới để cập nhật lên GitHub.'); return; }
+                if (!githubOwner||!githubRepo||!githubBranch||!githubToken) {
+                    githubOwner='neo-era'; githubRepo='cskvtt'; githubBranch='sub1';
+                    githubToken = prompt('Nhập GitHub token (repo scope):');
+                    if (!githubToken) return;
+                }
+                const pathInput = document.getElementById('githubPathInput');
+                const path = pathInput && pathInput.value.trim() ? pathInput.value.trim() : '';
+                displayError('Đang kiểm tra repo GitHub...');
+                if (!await checkGitHubBranchExists(githubOwner,githubRepo,githubBranch,githubToken)) {
+                    displayError(`Branch '${githubBranch}' không tồn tại.`); return;
+                }
+                await browseGitHubPath('');
+                if (!path) { displayError('Chọn file trong danh sách hoặc nhập đường dẫn.'); return; }
+                displayError('Đang cập nhật GitHub...');
+                await prepareImagePathsForGitHub(newMarkerRows, githubOwner, githubRepo, githubBranch, githubToken);
+                const header = ['ID','Tên trụ','Lat','Lon','Ghi chú','Trống','Loại','Tủ điều khiển','Loại trụ','Loại cần','Loại đèn','Ảnh','Thời gian cập nhật'];
+                const fileData = await getGitHubFileContent(githubOwner, githubRepo, path, githubBranch, githubToken);
+                let combinedRows = [header, ...newMarkerRows];
+                let sheetName = 'Sheet1';
+                if (fileData.content) {
+                    const wb = XLSX.read(base64ToBinary(fileData.content), { type:'array' });
+                    sheetName = wb.SheetNames[0]||sheetName;
+                    const existing = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header:1, defval:'' });
+                    if (existing.length>0) combinedRows = [header, ...existing.slice(1), ...newMarkerRows];
+                }
+                let contentBase64='';
+                if (typeof ExcelJS!=='undefined'||(typeof window!=='undefined'&&window.ExcelJS)) {
+                    const buffer = await createExcelBufferWithImages(combinedRows.slice(1));
+                    if (buffer) contentBase64 = arrayBufferToBase64(buffer);
+                }
+                if (!contentBase64) {
+                    const wb = XLSX.utils.book_new();
+                    const exportRows = combinedRows.slice(1).map(r=>{ const c=Array.isArray(r)?[...r]:[]; c[11]=''; return c; });
+                    const ws = XLSX.utils.aoa_to_sheet([header,...exportRows]);
+                    attachImagesToWorksheet(ws, combinedRows.slice(1));
+                    XLSX.utils.book_append_sheet(wb,ws,sheetName);
+                    contentBase64 = XLSX.write(wb,{bookType:'xlsx',type:'base64'});
+                }
+                await updateGitHubFile(githubOwner, githubRepo, path, githubBranch, githubToken, contentBase64, fileData.sha);
+                newMarkerRows=[]; pendingNewMarker=false; addMarkerMode=false; updateAddMarkerButton();
+                displayError('Đã cập nhật GitHub thành công.');
+            } catch(e) { console.error('updateGitHubExcel error:', e); displayError('Lỗi GitHub: '+(e.message||e)); }
+        }
+
+        function loadDefaultFile() {
+            fetch('data/khaosat.xlsx')
+                .then(r=>{ if(!r.ok) throw new Error('File không tồn tại'); return r.blob(); })
+                .then(blob=>{ processFile(new File([blob],'khaosat.xlsx')); })
+                .catch(e=>{ displayError('Không thể tải file mặc định: '+e.message); });
+        }
+
+        function navigateToPage() {
+            const s = document.getElementById('pages');
+            if (s && s.value) window.location.href = s.value;
+        }
+
+        function normalizeText(text) {
+            return (text||'').toString().normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
+        }
+
+        function clearSearchResults() {
+            const r = document.getElementById('searchResults');
+            if (r) r.innerHTML = '';
+        }
+
+        function closeControlsModal() {
+            const modal = document.getElementById('controlsModal');
+            if (!modal) return;
+            if (typeof $!=='undefined' && $.fn.modal) {
+                $('#controlsModal').modal('hide');
+            } else {
+                modal.classList.remove('show'); modal.style.display='none';
+                document.body.classList.remove('modal-open');
+                const bd = document.querySelector('.modal-backdrop');
+                if (bd) bd.remove();
+            }
+        }
+
+        function goToMarker(index) {
+            const item = markers[index];
+            if (!item) return;
+            map.setView([item.lat, item.lon], 18);
+            item.marker.openPopup();
+            closeControlsModal();
+        }
+
+        function searchMarkers() {
+            const rawInput = document.getElementById('searchInput').value.trim();
+            clearSearchResults();
+            if (!rawInput) { displayError('Vui lòng nhập tên trụ hoặc tọa độ.'); return; }
+            const input = normalizeText(rawInput);
+            const matches = [];
+            for (let i=0; i<markers.length; i++) {
+                const item = markers[i];
+                if (normalizeText(item.name||'').includes(input) || normalizeText(item.note||'').includes(input))
+                    matches.push({ index:i, item });
+            }
+            if (matches.length===1) {
+                map.setView([matches[0].item.lat, matches[0].item.lon], 18);
+                matches[0].item.marker.openPopup();
+                displayError(`Tìm thấy: ${matches[0].item.name||'Không có tên'}`);
+                return;
+            }
+            if (matches.length>1) {
+                map.setView([matches[0].item.lat, matches[0].item.lon], 18);
+                matches[0].item.marker.openPopup();
+                const results = document.getElementById('searchResults');
+                const list = document.createElement('ul');
+                matches.forEach(match=>{
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    a.href='#';
+                    a.textContent = `${match.item.name||'Không có tên'} (${match.item.lat.toFixed(5)}, ${match.item.lon.toFixed(5)})`;
+                    a.onclick = e=>{ e.preventDefault(); goToMarker(match.index); clearSearchResults(); };
+                    li.appendChild(a); list.appendChild(li);
+                });
+                results.appendChild(list);
+                displayError(`Tìm thấy ${matches.length} kết quả.`);
+                return;
+            }
+            if (rawInput.includes(',')) {
+                const coords = rawInput.split(',').map(c=>parseFloat(c.trim()));
+                if (coords.length===2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+                    map.setView([coords[0], coords[1]], 18);
+                    displayError(`Đã nhảy tới: ${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`);
+                    return;
+                }
+            }
+            displayError('Không tìm thấy điểm phù hợp.');
+        }
+
+        function displayError(message) {
+            const div = document.getElementById('error');
+            div.textContent = message;
+            div.style.display = message ? 'block' : 'none';
+        }
+
+        // --- Tracking vị trí ---
+        let currentLocationWatchId = null;
+
+        function startTrackingCurrentLocation() {
+            if (!navigator.geolocation) { displayError('Trình duyệt không hỗ trợ định vị.'); return; }
+            if (currentLocationWatchId !== null) return;
+            currentLocationWatchId = navigator.geolocation.watchPosition(
+                pos=>updateCurrentLocationMarker(pos.coords.latitude, pos.coords.longitude),
+                err=>displayError('Không thể lấy vị trí: '+err.message),
+                { enableHighAccuracy:true, maximumAge:5000, timeout:20000 }
+            );
+            displayError('Đang theo dõi vị trí...');
+        }
+
+        function stopTrackingCurrentLocation() {
+            if (currentLocationWatchId !== null) {
+                navigator.geolocation.clearWatch(currentLocationWatchId);
+                currentLocationWatchId = null;
+                displayError('Đã dừng theo dõi vị trí.');
+            }
+        }
+
+        function updateCurrentLocationMarker(lat, lon) {
+            currentLocation = [lat, lon];
+            if (currentLocationMarker) currentLocationMarker.setLatLng(currentLocation);
+            else currentLocationMarker = L.marker(currentLocation, { icon:customIcons.currentPos }).addTo(map).bindPopup('Vị trí hiện tại');
+            if (currentLocationWatchId !== null) map.setView(currentLocation, Math.max(map.getZoom(), 17));
+        }
+
+        function createMapControls() {
+            const CustomControl = L.Control.extend({
+                options: { position: 'bottomright' },
+                onAdd: function(map) {
+                    const container = L.DomUtil.create('div', 'leaflet-control-custom');
+                    L.DomEvent.disableClickPropagation(container);
+                    L.DomEvent.disableScrollPropagation(container);
+
+                    const trackingBtn = L.DomUtil.create('button','',container);
+                    trackingBtn.type='button'; trackingBtn.title='Bật/tắt tracking';
+                    trackingBtn.innerHTML='<i class="fa fa-street-view"></i>';
+                    trackingBtn.style.color='#10b981';
+                    let trackingActive = false;
+                    trackingBtn.onclick = function() {
+                        if (!trackingActive) { startTrackingCurrentLocation(); trackingBtn.style.color='#ef4444'; trackingActive=true; }
+                        else { stopTrackingCurrentLocation(); trackingBtn.style.color='#10b981'; trackingActive=false; }
+                    };
+
+                    const locateBtn = L.DomUtil.create('button','',container);
+                    locateBtn.type='button'; locateBtn.title='Về vị trí hiện tại';
+                    locateBtn.innerHTML='<i class="fa fa-location-arrow"></i>';
+                    L.DomEvent.on(locateBtn,'click',L.DomEvent.stopPropagation)
+                              .on(locateBtn,'click',L.DomEvent.preventDefault)
+                              .on(locateBtn,'click',()=>centerOnUserLocation());
+
+                    const routeBtn = L.DomUtil.create('button','',container);
+                    routeBtn.type='button'; routeBtn.title='Dẫn đường tới trung tâm';
+                    routeBtn.innerHTML='<i class="fa fa-compass"></i>';
+                    L.DomEvent.on(routeBtn,'click',L.DomEvent.stopPropagation)
+                              .on(routeBtn,'click',L.DomEvent.preventDefault)
+                              .on(routeBtn,'click',()=>routeToMapCenter());
+
+                    const clearBtn = L.DomUtil.create('button','',container);
+                    clearBtn.type='button'; clearBtn.title='Xóa lộ trình';
+                    clearBtn.innerHTML='<i class="fa fa-times"></i>';
+                    L.DomEvent.on(clearBtn,'click',L.DomEvent.stopPropagation)
+                              .on(clearBtn,'click',L.DomEvent.preventDefault)
+                              .on(clearBtn,'click',()=>clearRoute());
+
+                    return container;
+                }
+            });
+            map.addControl(new CustomControl());
+        }
+
+        function routeToMapCenter() {
+            const dest = [map.getCenter().lat, map.getCenter().lng];
+            if (!Number.isFinite(dest[0])||!Number.isFinite(dest[1])) { displayError('Không thể lấy điểm đến.'); return; }
+            function doRoute() {
+                fetchMotorbikeRoute(currentLocation, dest).then(route=>drawRoute(route)).catch(e=>displayError(e.message));
+            }
+            if (currentLocation) { doRoute(); return; }
+            if (!navigator.geolocation) { displayError('Trình duyệt không hỗ trợ định vị.'); return; }
+            navigator.geolocation.getCurrentPosition(
+                pos=>{ updateCurrentLocationMarker(pos.coords.latitude, pos.coords.longitude); doRoute(); },
+                err=>displayError('Không thể lấy vị trí: '+err.message),
+                { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
+            );
+        }
+
+        function clearRoute() {
+            if (routeLine) { map.removeLayer(routeLine); routeLine = null; }
+        }
+
+        function fetchMotorbikeRoute(origin, destination) {
+            return fetch(`https://router.project-osrm.org/route/v1/driving/${origin[1]},${origin[0]};${destination[1]},${destination[0]}?overview=full&geometries=geojson`)
+                .then(r=>{ if(!r.ok) throw new Error('Không thể tải lộ trình.'); return r.json(); })
+                .then(data=>{ if(!data.routes||data.routes.length===0||data.code!=='Ok') throw new Error('Không tìm thấy lộ trình.'); return data.routes[0]; });
+        }
+
+        function drawRoute(route) {
+            clearRoute();
+            routeLine = L.geoJSON(route.geometry, { style:{ color:'#ef4444', weight:5, opacity:.8 } }).addTo(map);
+            if (routeLine && routeLine.getBounds) map.fitBounds(routeLine.getBounds().pad(.15));
+            if (route.distance!=null && route.duration!=null)
+                displayError(`Lộ trình: ${(route.distance/1000).toFixed(1)} km, ~${Math.round(route.duration/60)} phút.`);
+        }
+
+        function routeToMarker(index) {
+            const target = markers[index];
+            if (!target) { displayError('Marker không tồn tại.'); return; }
+            function go() { fetchMotorbikeRoute(currentLocation,[target.lat,target.lon]).then(r=>{ drawRoute(r); target.marker.openPopup(); }).catch(e=>displayError(e.message)); }
+            if (currentLocation) { go(); return; }
+            if (!navigator.geolocation) { displayError('Trình duyệt không hỗ trợ định vị.'); return; }
+            navigator.geolocation.getCurrentPosition(pos=>{ updateCurrentLocationMarker(pos.coords.latitude, pos.coords.longitude); go(); }, err=>displayError('Không thể lấy vị trí: '+err.message));
+        }
+
+        function centerOnUserLocation() {
+            if (!navigator.geolocation) { displayError('Trình duyệt không hỗ trợ định vị.'); return; }
+            navigator.geolocation.getCurrentPosition(
+                pos=>{ updateCurrentLocationMarker(pos.coords.latitude, pos.coords.longitude); map.setView([pos.coords.latitude, pos.coords.longitude], 19); },
+                err=>displayError('Không thể lấy vị trí: '+err.message),
+                { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
+            );
+        }
+
+        // --- Khởi tạo ---
+        window.onload = function() {
+            map = initializeMap();
+            loadDefaultFile();
+
+            // Detect offline
+            window.addEventListener('offline', ()=>document.body.classList.add('offline'));
+            window.addEventListener('online',  ()=>document.body.classList.remove('offline'));
+
+            // Nút về đầu trang (desktop)
+            const backBtn = document.getElementById('backToTopBtn');
+            window.addEventListener('scroll', ()=>{ if(backBtn) backBtn.style.display = window.scrollY>200?'flex':'none'; });
+            if (backBtn) backBtn.onclick = ()=>window.scrollTo({top:0,behavior:'smooth'});
+
+            // Mở side panel
+            const controlsBtn = document.getElementById('controlsBtn');
+            if (controlsBtn) {
+                controlsBtn.addEventListener('click', function() {
+                    if (typeof $!=='undefined' && $.fn.modal) {
+                        $('#controlsModal').modal({ backdrop:true, keyboard:true, show:true });
+                    } else {
+                        const modal = document.getElementById('controlsModal');
+                        if (modal) {
+                            modal.style.display='block';
+                            modal.offsetHeight;
+                            modal.classList.add('show');
+                            document.body.classList.add('modal-open');
+                            const bd = document.createElement('div');
+                            bd.className='modal-backdrop show';
+                            document.body.appendChild(bd);
+                            const close = ()=>{
+                                modal.classList.remove('show');
+                                setTimeout(()=>{ modal.style.display='none'; document.body.classList.remove('modal-open'); if(bd.parentNode) document.body.removeChild(bd); },300);
+                            };
+                            bd.onclick = close;
+                            const closeBtn = modal.querySelector('.close');
+                            if (closeBtn) closeBtn.onclick = close;
+                        }
+                    }
+                });
+            }
+
+            // Đóng modal khi click backdrop
+            const controlsModal = document.getElementById('controlsModal');
+            if (controlsModal) controlsModal.addEventListener('click', e=>{ if(e.target===controlsModal) closeControlsModal(); });
+            document.addEventListener('click', e=>{ if(e.target&&e.target.classList&&e.target.classList.contains('modal-backdrop')) closeControlsModal(); });
+
+            // Save/cancel buttons trong form
+            const saveBtn = document.getElementById('markerPopupSave');
+            const cancelBtn = document.getElementById('markerPopupCancel');
+            if (saveBtn) saveBtn.addEventListener('click', saveMarkerPopup);
+            if (cancelBtn) cancelBtn.addEventListener('click', cancelMarkerPopup);
+
+            // Lazy load ảnh
+            document.body.addEventListener('click', e=>{ if(e.target&&e.target.tagName==='IMG') e.target.setAttribute('loading','lazy'); });
+
+            // Kéo được form marker (desktop)
+            const header = document.querySelector('#markerPopupForm .marker-popup-card header');
+            const card = document.querySelector('#markerPopupForm .marker-popup-card');
+            makeElementDraggable(header, card);
+
+            // Export CAD modal
+            const exportCadModal = document.getElementById('exportCadModal');
+            if (exportCadModal) exportCadModal.addEventListener('click', e=>{ if(e.target===exportCadModal) closeExportCadModal(); });
+            const exportCadBtn = document.getElementById('exportCadBtn');
+            if (exportCadBtn) exportCadBtn.onclick = confirmExportCad;
+        };
+
+        // Đặt marker về vị trí hiện tại
+        function setMarkerToCurrentLocation() {
+            if (!navigator.geolocation) { displayError('Trình duyệt không hỗ trợ định vị.'); return; }
+            navigator.geolocation.getCurrentPosition(
+                pos=>{
+                    const lat=pos.coords.latitude, lon=pos.coords.longitude;
+                    markerPopupLocation=[lat,lon]; pendingMarkerLocation=[lat,lon];
+                    if (tempMarker) tempMarker.setLatLng([lat,lon]);
+                    else tempMarker = L.marker([lat,lon], { icon:customIcons.currentPos }).addTo(map);
+                    document.getElementById('markerCoordsText').textContent = `Tọa độ: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+                    displayError('Đã lấy vị trí hiện tại.');
+                },
+                err=>displayError('Không thể lấy vị trí: '+err.message),
+                { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
+            );
+        }
+
+        function setMarkerToPickOnMap() {
+            pickMarkerMode = true;
+            displayError('Nhấp vào bản đồ để chọn vị trí marker mới.');
+        }
+    </script>
+</body>
+</html>

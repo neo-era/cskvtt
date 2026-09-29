@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Hoàn công CSKVTT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+<style>
+/* Bố cục: thanh tiêu đề mảnh; lưới 2 cột (thao tác | kết quả kiểm tra), xếp 1 cột trên điện thoại.
+   Màu: xanh đêm của lưới điện + vàng natri của đèn đường làm điểm nhấn. */
+:root{
+  --bg:#f3f4f6; --panel:#ffffff; --ink:#172033; --muted:#5b6475; --line:#dde1e8;
+  --accent:#c9820a; --accent-ink:#ffffff; --accent-soft:#fdf3e1;
+  --night:#14213d; --night-ink:#f5f1e6;
+  --ok:#1f7a4d; --ok-soft:#e5f4ec; --bad:#b3261e; --bad-soft:#fbe9e7; --wait:#8a93a6;
+  --font:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141f; --panel:#171e2c; --ink:#e7eaf0; --muted:#a3abbb; --line:#2a3345;
+  --accent:#f0a830; --accent-ink:#1a1204; --accent-soft:#2c2412;
+  --night:#0a1020; --night-ink:#f5f1e6;
+  --ok:#5cc58f; --ok-soft:#15291f; --bad:#f08a80; --bad-soft:#2e1816; --wait:#6f788b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141f; --panel:#171e2c; --ink:#e7eaf0; --muted:#a3abbb; --line:#2a3345;
+  --accent:#f0a830; --accent-ink:#1a1204; --accent-soft:#2c2412;
+  --night:#0a1020; --night-ink:#f5f1e6;
+  --ok:#5cc58f; --ok-soft:#15291f; --bad:#f08a80; --bad-soft:#2e1816; --wait:#6f788b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;margin:0}
+.top{background:var(--night);color:var(--night-ink);padding-block:18px;padding-inline:16px}
+.top .in{max-width:1120px;margin:0 auto;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;justify-content:space-between}
+.top h1{margin:0;font-size:1.35rem;font-weight:700;letter-spacing:.01em}
+.top h1 span{color:var(--accent)}
+.top p{margin:0;font-size:.85rem;opacity:.8}
+main{max-width:1120px;margin:0 auto;padding-block:22px 40px;padding-inline:16px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){main{grid-template-columns:minmax(0,1fr)}}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
+h2{font-size:1rem;margin:0 0 4px;font-weight:700}
+.sub{color:var(--muted);font-size:.85rem;margin:0 0 14px}
+.step{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;padding-block:14px;border-top:1px solid var(--line)}
+.step:first-of-type{border-top:0;padding-top:4px}
+.num{width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;display:grid;place-items:center;font-size:.85rem}
+label.lb{display:block;font-weight:600;font-size:.9rem;margin-bottom:6px}
+.drop{border:1.5px dashed var(--line);border-radius:var(--r);padding:16px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop b{color:var(--accent)}
+.drop small{display:block;color:var(--muted);margin-top:4px}
+input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+ul.files{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:4px}
+ul.files li{display:flex;gap:10px;justify-content:space-between;font-size:.85rem;padding:5px 8px;border-radius:6px;background:var(--bg);min-width:0}
+ul.files li span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ul.files li span:last-child{color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
+.row{display:flex;flex-wrap:wrap;gap:12px}
+.row>div{flex:1 1 160px;min-width:0}
+select,input[type=text],textarea{width:100%;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+textarea{resize:vertical;min-height:62px}
+select:focus-visible,input:focus-visible,textarea:focus-visible,button:focus-visible,.drop:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hint{color:var(--muted);font-size:.8rem;margin-top:4px}
+.base{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
+.base.ok{border-color:var(--ok);background:var(--ok-soft)}
+.base>div{min-width:0}
+summary{cursor:pointer;font-weight:600;font-size:.9rem}
+.adv{display:grid;gap:12px;margin-top:10px}
+.btn{font:inherit;font-weight:700;border:0;border-radius:8px;padding:11px 18px;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:600}
+.btn.small{padding:6px 10px;font-size:.82rem}
+.go{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:6px}
+.engine{font-size:.82rem;color:var(--muted);display:flex;gap:8px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--wait);flex:none}
+.dot.ok{background:var(--ok)} .dot.bad{background:var(--bad)} .dot.busy{background:var(--accent);animation:p 1s infinite}
+@keyframes p{50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.dot.busy{animation:none}}
+.prog{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:4px;font-size:.85rem}
+.prog li{display:flex;gap:8px;align-items:center;color:var(--muted)}
+.prog li.cur{color:var(--ink);font-weight:600}
+.prog li.done{color:var(--ink)}
+.prog li .dot{width:7px;height:7px}
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.checks li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
+.pill{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:2px 8px;background:var(--bg);color:var(--wait);white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.bad{background:var(--bad-soft);color:var(--bad)}
+.checks b{display:block;font-size:.9rem}
+.checks span.d{color:var(--muted);font-size:.83rem;overflow-wrap:anywhere}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+@media (max-width:420px){.kpis{grid-template-columns:minmax(0,1fr)}}
+.kpi{background:var(--bg);border-radius:8px;padding:10px 12px;min-width:0}
+.kpi small{display:block;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em}
+.kpi strong{font-size:1.25rem;font-variant-numeric:tabular-nums}
+.tbl{overflow-x:auto;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:.84rem}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.db{background:var(--accent-soft);border-radius:8px;padding:10px 12px;font-size:.88rem;margin-top:4px}
+.db b{color:var(--accent)}
+.err{background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:10px 12px;font-size:.88rem;margin-top:12px;overflow-wrap:anywhere}
+.out{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.out .fn{font-size:.85rem;color:var(--muted);overflow-wrap:anywhere;min-width:0}
+h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.rules{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:.83rem;display:grid;gap:3px}
+</style>
+</head>
+<body>
+
+
+<header class="top"><div class="in">
+  <h1>Hoàn công <span>CSKVTT</span></h1>
+  <p>Gói G201NA · Duy tu chiếu sáng · Lập hồ sơ từ biên bản nghiệm thu</p>
+</div></header>
+
+<main>
+  <section class="card" aria-labelledby="h-in">
+    <h2 id="h-in">Lập hồ sơ</h2>
+    <p class="sub">Mọi xử lý chạy ngay trên máy anh trong trình duyệt; biên bản, file mẫu và bảng tra tủ không gửi đi đâu.</p>
+
+    <div class="step">
+      <div class="num">0</div>
+      <div>
+        <label class="lb">Tệp gốc (chọn một lần, trình duyệt tự nhớ)</label>
+        <div class="adv" style="margin-top:0">
+          <div class="base" id="mauBox">
+            <div><b>File mẫu hoàn công</b> <span class="hint">(.xlsm G201)</span><br><span class="hint" id="mauName">Chưa chọn</span></div>
+            <input type="file" id="mau" accept=".xlsm,.xlsx">
+            <button class="btn ghost small" type="button" id="mauBtn">Chọn file mẫu</button>
+          </div>
+          <div class="base" id="masterBox">
+            <div><b>Bảng tra tủ → phường</b> <span class="hint">(Control_Cabinet .xlsx)</span><br><span class="hint" id="masterName">Chưa chọn</span></div>
+            <input type="file" id="master" accept=".xlsx,.json">
+            <button class="btn ghost small" type="button" id="masterBtn">Chọn bảng tra</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">1</div>
+      <div>
+        <label class="lb" for="pdf">Biên bản PDF của kỳ</label>
+        <div class="drop" id="drop" tabindex="0" role="button" aria-controls="pdf">
+          Kéo thả hoặc <b>chọn các file PDF</b>
+          <small>Chọn cả bộ 7 file. Trang tự nhận ra 3 file cần dùng theo nội dung bảng, không phụ thuộc tên file.</small>
+        </div>
+        <input type="file" id="pdf" accept=".pdf,application/pdf" multiple>
+        <ul class="files" id="flist"></ul>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">2</div>
+      <div>
+        <div class="row">
+          <div>
+            <label class="lb" for="thang">Kỳ lập (tháng)</label>
+            <select id="thang"></select>
+          </div>
+          <div>
+            <label class="lb" for="quan">Mã quận trong biên bản</label>
+            <input type="text" id="quan" value="8" inputmode="numeric">
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <label class="lb" for="prefer">Phường của quận (ưu tiên khi tên tủ trùng)</label>
+          <textarea id="prefer">Phường Chánh Hưng; Phường Phú Định; Phường Bình Đông</textarea>
+          <div class="hint">Địa bàn ghi vào hồ sơ lấy theo phường thực có trong dữ liệu kỳ.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">3</div>
+      <div>
+        <div class="go">
+          <button class="btn" id="run" type="button" disabled>Lập hồ sơ</button>
+          <div class="engine"><span class="dot busy" id="edot"></span><span id="etext">Đang tải bộ xử lý (khoảng 20 MB, lần sau nhanh hơn)…</span></div>
+        </div>
+        <ul class="prog" id="prog" hidden></ul>
+        <div class="err" id="err" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-out">
+    <h2 id="h-out">Kiểm tra trước khi trình ký</h2>
+    <p class="sub" id="outSub">Các mục trang sẽ tự kiểm sau khi lập. Kết quả lần chạy gần nhất hiện ở đây.</p>
+    <ul class="checks" id="checks"></ul>
+    <div id="summary" hidden>
+      <div class="kpis">
+        <div class="kpi"><small>Tổng QLVH</small><strong id="k1">–</strong></div>
+        <div class="kpi"><small>Số tủ</small><strong id="k2">–</strong></div>
+        <div class="kpi"><small>KL bảo dưỡng</small><strong id="k3">–</strong></div>
+      </div>
+      <div class="db">Địa bàn: <b id="dban"></b></div>
+      <h3>Quản lý vận hành</h3>
+      <div class="tbl"><table><thead><tr><th>Hạng mục</th><th style="text-align:right">KL</th></tr></thead><tbody id="tq"></tbody></table></div>
+      <h3>Bảo dưỡng</h3>
+      <div class="tbl"><table><thead><tr><th>Hạng mục</th><th style="text-align:right">KL</th></tr></thead><tbody id="tb"></tbody></table></div>
+      <h3>File nguồn đã nhận</h3>
+      <div class="tbl"><table><tbody id="tf"></tbody></table></div>
+    </div>
+    <div class="out" id="out" hidden>
+      <button class="btn" id="save" type="button">Tải file Excel</button>
+      <span class="fn" id="fname"></span>
+    </div>
+    <ol class="rules">
+      <li>Căn cứ pháp lý, Gói thầu, Dự toán, Địa điểm gói thầu giữ nguyên như mẫu.</li>
+      <li>Chỉ đổi Địa bàn, kỳ tháng và số hiệu phiếu/biên bản theo kỳ.</li>
+      <li>Công thức, định dạng, chữ ký giữ đúng mẫu; Excel tự tính lại khi mở.</li>
+    </ol>
+  </section>
+</main>
+
+<script>
+(() => {
+const $ = (id) => document.getElementById(id);
+const BASE = new URL('./', location.href).href;
+const CHECKS0 = ['Quy đổi phường theo tủ','Khối lượng QLVH','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu'];
+const STAGES = ['Đọc bảng tra tủ → phường','Đọc biên bản PDF (bước lâu nhất)','Mở file mẫu','Ghi QLVH (2, 3, 8)','Ghi bảo dưỡng (6)','Ghi chi tiết Mẫu 4','Ghi chi tiết Mẫu 7','Đổi địa bàn, kỳ, số hiệu','Lưu file'];
+let pdfFiles = [], mauRec = null, masterRec = null, ready = false, busy = false, result = null;
+// ---- IndexedDB: nho file mau + bang tra tren may (khong gui di dau) ----
+const IDB = {
+  db: null,
+  open() { return this.db || (this.db = new Promise((res, rej) => { try { const r = indexedDB.open('hoancong-cskvtt', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); } })); },
+  async get(k) { try { const d = await this.open(); return await new Promise((res) => { const q = d.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); } catch (e) { return null; } },
+  async set(k, v) { try { const d = await this.open(); await new Promise((res) => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = res; }); } catch (e) {} }
+};
+const vnDate = (t) => new Date(t).toLocaleDateString('vi-VN');
+function renderBase() {
+  $('mauName').textContent = mauRec ? mauRec.name + ' · lưu ' + vnDate(mauRec.t) : 'Chưa chọn';
+  $('masterName').textContent = masterRec ? masterRec.name + (masterRec.n ? ' · ' + masterRec.n.toLocaleString('vi-VN') + ' tủ' : '') + ' · lưu ' + vnDate(masterRec.t) : 'Chưa chọn';
+  $('mauBox').classList.toggle('ok', !!mauRec); $('masterBox').classList.toggle('ok', !!masterRec);
+  $('mauBtn').textContent = mauRec ? 'Thay' : 'Chọn file mẫu'; $('masterBtn').textContent = masterRec ? 'Thay' : 'Chọn bảng tra';
+  updateRun();
+}
+Promise.all([IDB.get('mau'), IDB.get('master')]).then(([a, b]) => { mauRec = a; masterRec = b; renderBase(); });
+
+// ---- month select: mặc định tháng trước ----
+const now = new Date(); const prev = now.getMonth() === 0 ? 12 : now.getMonth();
+for (let m = 1; m <= 12; m++) { const o = document.createElement('option'); o.value = m; o.textContent = 'Tháng ' + m; if (m === prev) o.selected = true; $('thang').append(o); }
+
+function renderChecks(list) {
+  const ul = $('checks'); ul.textContent = '';
+  (list || CHECKS0.map(l => ({label: l}))).forEach(c => {
+    const li = document.createElement('li');
+    const p = document.createElement('span'); p.className = 'pill' + (c.ok === true ? ' ok' : c.ok === false ? ' bad' : '');
+    p.textContent = c.ok === true ? 'Đạt' : c.ok === false ? 'Xem lại' : 'Chưa chạy';
+    const d = document.createElement('div'); const b = document.createElement('b'); b.textContent = c.label; d.append(b);
+    if (c.detail) { const s = document.createElement('span'); s.className = 'd'; s.textContent = c.detail; d.append(s); }
+    li.append(p, d); ul.append(li);
+  });
+}
+renderChecks();
+
+const kb = (n) => n < 1024 * 1024 ? Math.round(n / 1024) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
+const fmt = (n) => Number(n).toLocaleString('vi-VN', {maximumFractionDigits: 2});
+function renderFiles() {
+  const ul = $('flist'); ul.textContent = '';
+  pdfFiles.forEach(f => { const li = document.createElement('li'); const a = document.createElement('span'); a.textContent = f.name; const b = document.createElement('span'); b.textContent = kb(f.size); li.append(a, b); ul.append(li); });
+  updateRun();
+}
+function updateRun() { $('run').disabled = !(ready && pdfFiles.length && mauRec && masterRec && !busy); }
+function addPdfs(fs) {
+  const arr = [...fs].filter(f => /\.pdf$/i.test(f.name));
+  const names = new Set(pdfFiles.map(f => f.name));
+  arr.forEach(f => { if (!names.has(f.name)) pdfFiles.push(f); });
+  pdfFiles.sort((a, b) => a.name.localeCompare(b.name, 'vi', {numeric: true}));
+  renderFiles();
+}
+const drop = $('drop');
+drop.addEventListener('click', () => $('pdf').click());
+drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('pdf').click(); } });
+$('pdf').addEventListener('change', (e) => { addPdfs(e.target.files); e.target.value = ''; });
+['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(t => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', (e) => addPdfs(e.dataTransfer.files));
+$('mauBtn').addEventListener('click', () => $('mau').click());
+$('masterBtn').addEventListener('click', () => $('master').click());
+$('mau').addEventListener('change', async (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; mauRec = {name: f.name, buf: await f.arrayBuffer(), t: Date.now()}; await IDB.set('mau', mauRec); renderBase(); });
+$('master').addEventListener('change', async (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; masterRec = {name: f.name, buf: await f.arrayBuffer(), t: Date.now(), json: /\.json$/i.test(f.name)}; await IDB.set('master', masterRec); renderBase(); });
+
+function engine(state, text) { $('edot').className = 'dot ' + state; $('etext').textContent = text; }
+function showErr(msg) { const e = $('err'); e.hidden = !msg; e.textContent = msg || ''; }
+function stage(label) {
+  const ul = $('prog'); ul.hidden = false;
+  const idx = STAGES.indexOf(label);
+  [...ul.children].forEach((li, i) => { li.className = i < idx ? 'done' : i === idx ? 'cur' : ''; li.firstChild.className = 'dot ' + (i < idx ? 'ok' : i === idx ? 'busy' : ''); });
+}
+function resetStages() { const ul = $('prog'); ul.textContent = ''; STAGES.forEach(s => { const li = document.createElement('li'); const d = document.createElement('span'); d.className = 'dot'; li.append(d, document.createTextNode(s)); ul.append(li); }); ul.hidden = false; }
+
+// ---------------- Worker (Python chạy trong trình duyệt) ----------------
+const WORKER_SRC = `
+let py = null;
+const post = (m, t) => self.postMessage(m, t || []);
+async function loadScript(url) {
+  try { importScripts(url); }
+  catch (e) {
+    const r = await fetch(url); if (!r.ok) throw new Error('Không tải được ' + url.split('/').pop() + ' (' + r.status + ')');
+    const b = URL.createObjectURL(new Blob([await r.text()], {type: 'text/javascript'}));
+    importScripts(b);
+  }
+}
+async function getBuf(url) { const r = await fetch(url); if (!r.ok) throw new Error('Không tải được ' + url.split('/').pop() + ' (' + r.status + ')'); return new Uint8Array(await r.arrayBuffer()); }
+async function boot(base) {
+  await loadScript(base + 'pyodide/pyodide.asm.js');
+  await loadScript(base + 'pyodide/pyodide.js');
+  py = await loadPyodide({indexURL: base + 'pyodide/', stdout: (s) => { if (s.startsWith('@@')) post({type: 'stage', label: s.slice(2)}); }, stderr: () => {}});
+  const libs = await getBuf(base + 'pylibs.zip');
+  py.FS.mkdirTree('/app'); py.unpackArchive(libs, 'zip', {extractDir: '/app'});
+  py.runPython("import sys; sys.path.insert(0,'/app'); import openpyxl, pdfplumber");
+}
+function rmrf(d) { try { for (const f of py.FS.readdir(d)) { if (f === '.' || f === '..') continue; const p = d + '/' + f; if (py.FS.isDir(py.FS.stat(p).mode)) rmrf(p); else py.FS.unlink(p); } py.FS.rmdir(d); } catch (e) {} }
+self.onmessage = async (ev) => {
+  const m = ev.data;
+  if (m.type === 'init') {
+    try { await boot(m.base); post({type: 'ready'}); }
+    catch (e) { post({type: 'fatal', msg: String(e && e.message || e)}); }
+  }
+  if (m.type === 'run') {
+    try {
+      rmrf('/work/run'); py.FS.mkdirTree('/work/run/pdf');
+      for (const f of m.pdfs) py.FS.writeFile('/work/run/pdf/' + f.name.replace(/[\\\\/]/g, '_'), new Uint8Array(f.buf));
+      const src = '/work/run/mau.' + (m.mau.name.toLowerCase().endsWith('.xlsx') ? 'xlsx' : 'xlsm'); py.FS.writeFile(src, new Uint8Array(m.mau.buf));
+      const master = '/work/run/master.' + (m.master.json ? 'json' : 'xlsx'); py.FS.writeFile(master, new Uint8Array(m.master.buf));
+      py.globals.set('P', py.toPy({SRC_DIR: '/work/run/pdf/', MASTER_XLSX: master, SRC_XLSM: src, OUT_XLSX: '/work/run/out.xlsx', GOI: 'G201NA', QUAN: m.params.QUAN, THANG: m.params.THANG, PREFER: m.params.PREFER}));
+      const js = py.runPython(\`
+import os, sys, runpy, json, traceback
+for k in ('THANG_MAU','QUAN_MAU'): os.environ.pop(k, None)
+for mod in ('refill_lib','report'): sys.modules.pop(mod, None)
+os.environ.update({k: str(v) for k, v in dict(P).items()})
+os.chdir('/app')
+try:
+    G = runpy.run_path('/app/refill_main.py')
+    import report
+    R = report.tieout(G); R['thang_mau'] = os.environ.get('THANG_MAU'); R['quan_mau'] = os.environ.get('QUAN_MAU')
+    import refill_lib
+    if not os.environ['MASTER_XLSX'].endswith('.json'):
+        rows = refill_lib.master_rows()
+        json.dump([[None if x is None else (x if isinstance(x,(int,float)) else str(x)) for x in r] for r in rows], open('/work/run/master.json','w'), ensure_ascii=False)
+    R['master_n'] = len(refill_lib.master_rows()) if os.environ['MASTER_XLSX'].endswith('.json') else len(rows)
+    out = json.dumps({'ok': True, 'report': R}, ensure_ascii=False, default=str)
+except Exception as e:
+    tb = traceback.format_exc()
+    out = json.dumps({'ok': False, 'error': str(e) or e.__class__.__name__, 'trace': tb[-1500:]}, ensure_ascii=False)
+out
+\`);
+      const res = JSON.parse(js);
+      if (res.ok) {
+        const x = py.FS.readFile('/work/run/out.xlsx'); const buf = x.buffer.slice(x.byteOffset, x.byteOffset + x.byteLength);
+        let mj = null; if (!m.master.json) { const y = py.FS.readFile('/work/run/master.json'); mj = y.buffer.slice(y.byteOffset, y.byteOffset + y.byteLength); }
+        post({type: 'done', report: res.report, xlsx: buf, masterJson: mj}, mj ? [buf, mj] : [buf]);
+      }
+      else post({type: 'fail', msg: res.error, trace: res.trace});
+    } catch (e) { post({type: 'fail', msg: String(e && e.message || e)}); }
+  }
+};`;
+
+const worker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], {type: 'text/javascript'})));
+worker.onmessage = (ev) => {
+  const m = ev.data;
+  if (m.type === 'ready') { ready = true; engine('ok', 'Bộ xử lý sẵn sàng'); updateRun(); }
+  else if (m.type === 'fatal') { engine('bad', 'Không khởi động được bộ xử lý'); showErr('Không khởi động được bộ xử lý trong trình duyệt: ' + m.msg + '. Thử tải lại trang bằng Chrome hoặc Edge bản mới.'); }
+  else if (m.type === 'stage') stage(m.label);
+  else if (m.type === 'done') onDone(m);
+  else if (m.type === 'fail') { busy = false; updateRun(); engine('ok', 'Bộ xử lý sẵn sàng'); showErr('Không lập được hồ sơ: ' + m.msg); window.__lastError = m; }
+};
+worker.onerror = (e) => { engine('bad', 'Bộ xử lý gặp lỗi'); showErr('Bộ xử lý gặp lỗi: ' + (e.message || 'không rõ')); };
+worker.postMessage({type: 'init', base: BASE});
+
+$('run').addEventListener('click', async () => {
+  if (busy) return; busy = true; updateRun(); showErr(''); result = null; $('out').hidden = true;
+  engine('busy', 'Đang lập hồ sơ… (khoảng 1–2 phút)'); resetStages();
+  const pdfs = await Promise.all(pdfFiles.map(async f => ({name: f.name, buf: await f.arrayBuffer()})));
+  const msg = {type: 'run', pdfs, params: {THANG: $('thang').value, QUAN: $('quan').value.trim() || '8', PREFER: $('prefer').value.split(/[;\n]/).map(s => s.trim()).filter(Boolean).join(';')}};
+  msg.mau = {name: mauRec.name, buf: mauRec.buf.slice(0)};
+  msg.master = {name: masterRec.name, buf: masterRec.buf.slice(0), json: !!masterRec.json};
+  worker.postMessage(msg, [...pdfs.map(p => p.buf), msg.mau.buf, msg.master.buf]);
+});
+
+function fillRows(id, rows) {
+  const tb = $(id); tb.textContent = '';
+  rows.forEach(([a, b]) => { const tr = document.createElement('tr'); const t1 = document.createElement('td'); t1.textContent = a; const t2 = document.createElement('td'); t2.className = 'n'; t2.textContent = b; tr.append(t1, t2); tb.append(tr); });
+}
+function onDone(m) {
+  busy = false; updateRun(); engine('ok', 'Đã lập xong');
+  [...$('prog').children].forEach(li => { li.className = 'done'; li.firstChild.className = 'dot ok'; });
+  const r = m.report; const th = $('thang').value; const q = $('quan').value.trim() || '8';
+  const yr = (Number(th) > now.getMonth() + 1) ? now.getFullYear() - 1 : now.getFullYear();
+  const fname = 'HO_SO_HOAN_CONG_CSKVTT_Q' + q + '_T' + String(th).padStart(2, '0') + '.' + yr + '.xlsx';
+  result = {blob: new Blob([m.xlsx], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), fname};
+  window.__lastXlsx = m.xlsx; window.__lastReport = r;
+  if (m.masterJson) { masterRec = {name: masterRec.name, buf: m.masterJson, t: masterRec.t, json: true, n: r.master_n}; IDB.set('master', masterRec); renderBase(); }
+  renderChecks(r.checks);
+  const allOk = r.checks.every(c => c.ok);
+  $('outSub').textContent = (allOk ? 'Tất cả mục đạt. ' : 'Có mục cần xem lại. ') + 'Mẫu: tháng ' + r.thang_mau + ', Quận ' + r.quan_mau + ' → Kỳ: tháng ' + th + ', Quận ' + q + '.';
+  $('k1').textContent = fmt(r.tong_qlvh); $('k2').textContent = fmt(r.so_tu);
+  $('k3').textContent = fmt(r.bd_hm.reduce((s, x) => s + x[1], 0));
+  $('dban').textContent = r.dia_ban;
+  fillRows('tq', r.qlvh_hm.map(([a, b]) => [a, fmt(b)]));
+  fillRows('tb', r.bd_hm.length ? r.bd_hm.map(([a, b]) => [a, fmt(b)]) : [['Không có khối lượng bảo dưỡng', '0']]);
+  const roles = {QLVH: 'QLVH chi tiết', BOQ: 'Bảo dưỡng 499 hạng mục', BD: 'Bảo dưỡng chi tiết'};
+  fillRows('tf', Object.entries(r.files).map(([k, v]) => [roles[k] || k, v]));
+  $('tf').querySelectorAll('td.n').forEach(td => { td.style.whiteSpace = 'normal'; td.style.textAlign = 'left'; });
+  $('summary').hidden = false; $('out').hidden = false; $('fname').textContent = fname;
+}
+
+$('save').addEventListener('click', () => {
+  if (!result) return;
+  const a = document.createElement('a'); a.href = URL.createObjectURL(result.blob); a.download = result.fname;
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  $('fname').textContent = 'Đã tải: ' + result.fname;
+});
+})();
+</script>
+
+</body>
+</html>

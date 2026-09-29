@@ -22,7 +22,10 @@ def master_rows():
     if MASTER.lower().endswith('.json'):
         import json
         return [tuple(r) for r in json.load(open(MASTER,encoding='utf-8'))]
-    wb=openpyxl.load_workbook(MASTER,data_only=True,read_only=True); ws=wb['Control_Cabinet_cs(tudieukhien)']
+    wb=openpyxl.load_workbook(MASTER,data_only=True,read_only=True)
+    if 'BANG_TRA_TU' in wb.sheetnames:   # file chuan: B ten tu, C phuong, E duong, F dia chi, G goi
+        return [(r[1],r[2],r[4],r[5],r[6]) for i,r in enumerate(wb['BANG_TRA_TU'].iter_rows(values_only=True)) if i and r[1]]
+    ws=wb['Control_Cabinet_cs(tudieukhien)']
     out=[]
     for i,r in enumerate(ws.iter_rows(values_only=True)):
         if i==0 or not r[7]: continue

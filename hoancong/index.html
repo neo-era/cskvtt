@@ -59,7 +59,8 @@ ul.files li span:last-child{color:var(--muted);font-variant-numeric:tabular-nums
 select,input[type=text],textarea{width:100%;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
 textarea{resize:vertical;min-height:62px}
 select:focus-visible,input:focus-visible,textarea:focus-visible,button:focus-visible,.drop:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.hint{color:var(--muted);font-size:.8rem;margin-top:4px}
+.hint{color:var(--muted);font-size:.8rem;margin-top:4px;overflow-wrap:anywhere}
+.sub,.tbl td{overflow-wrap:anywhere}
 .base{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
 .base.ok{border-color:var(--ok);background:var(--ok-soft)}
 .base>div{min-width:0}
@@ -102,6 +103,10 @@ td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .out{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
 .out .fn{font-size:.85rem;color:var(--muted);overflow-wrap:anywhere;min-width:0}
 h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:12px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:10px 14px;min-height:44px;font:inherit;font-size:.9rem;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff;font-weight:600}
+[hidden]{display:none!important}
 .rules{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:.83rem;display:grid;gap:3px}
 </style>
 </head>
@@ -140,10 +145,21 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
     <div class="step">
       <div class="num">1</div>
       <div>
-        <label class="lb" for="pdf">Biên bản PDF của kỳ</label>
+        <div class="seg" role="group" aria-label="Chế độ">
+          <button type="button" id="mNew" aria-pressed="true">Lập hồ sơ mới</button>
+          <button type="button" id="mAdd" aria-pressed="false">Bổ sung vào hồ sơ có sẵn</button>
+        </div>
+        <div class="adv" id="hsWrap" style="margin:0 0 12px" hidden>
+          <div class="base" id="hsBox">
+            <div><b>File hồ sơ hoàn công</b> <span class="hint">(.xlsx đã lập)</span><br><span class="hint" id="hsName">Chưa chọn</span></div>
+            <input type="file" id="hs" accept=".xlsx">
+            <button class="btn ghost small" type="button" id="hsBtn">Chọn file hồ sơ</button>
+          </div>
+        </div>
+        <label class="lb" for="pdf" id="pdfLb">Biên bản PDF của kỳ</label>
         <div class="drop" id="drop" tabindex="0" role="button" aria-controls="pdf">
           Kéo thả hoặc <b>chọn các file PDF</b>
-          <small>Chọn cả bộ 7 file. Trang tự nhận ra 3 file cần dùng theo nội dung bảng, không phụ thuộc tên file.</small>
+          <small id="dropHint">Chọn cả bộ 7 file; kỳ có phát sinh ngoài kế hoạch thì chọn thêm biên bản 12 và 13. Trang tự nhận ra từng biên bản theo nội dung, không phụ thuộc tên file.</small>
         </div>
         <input type="file" id="pdf" accept=".pdf,application/pdf" multiple>
         <ul class="files" id="flist"></ul>
@@ -153,7 +169,7 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
     <div class="step">
       <div class="num">2</div>
       <div>
-        <div class="row">
+        <div class="row" id="kyRow">
           <div>
             <label class="lb" for="thang">Kỳ lập (tháng)</label>
             <select id="thang"></select>
@@ -189,6 +205,7 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
     <p class="sub" id="outSub">Các mục trang sẽ tự kiểm sau khi lập. Kết quả lần chạy gần nhất hiện ở đây.</p>
     <ul class="checks" id="checks"></ul>
     <div id="summary" hidden>
+      <div id="mainSum">
       <div class="kpis">
         <div class="kpi"><small>Tổng QLVH</small><strong id="k1">–</strong></div>
         <div class="kpi"><small>Số tủ</small><strong id="k2">–</strong></div>
@@ -199,6 +216,12 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
       <div class="tbl"><table><thead><tr><th>Hạng mục</th><th style="text-align:right">KL</th></tr></thead><tbody id="tq"></tbody></table></div>
       <h3>Bảo dưỡng</h3>
       <div class="tbl"><table><thead><tr><th>Hạng mục</th><th style="text-align:right">KL</th></tr></thead><tbody id="tb"></tbody></table></div>
+      </div>
+      <div id="psSum" hidden>
+        <h3>Phát sinh ngoài kế hoạch</h3>
+        <div class="db" id="psInfo"></div>
+        <div class="tbl"><table><thead><tr><th>Hạng mục</th><th style="text-align:right">KL</th></tr></thead><tbody id="tp"></tbody></table></div>
+      </div>
       <h3>File nguồn đã nhận</h3>
       <div class="tbl"><table><tbody id="tf"></tbody></table></div>
     </div>
@@ -210,6 +233,8 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
       <li>Căn cứ pháp lý, Gói thầu, Dự toán, Địa điểm gói thầu giữ nguyên như mẫu.</li>
       <li>Chỉ đổi Địa bàn, kỳ tháng và số hiệu phiếu/biên bản theo kỳ.</li>
       <li>Công thức, định dạng, chữ ký giữ đúng mẫu; Excel tự tính lại khi mở.</li>
+      <li>Biên bản 12, 13 (phát sinh ngoài kế hoạch): chi tiết phải khớp tổng hợp từng hạng mục; định dạng bảng Times New Roman 12 như mẫu.</li>
+      <li>Định dạng in: A4, vừa 1 trang ngang, vùng in tới hết chữ ký, không cắt chữ.</li>
     </ol>
   </section>
 </main>
@@ -218,9 +243,12 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
 (() => {
 const $ = (id) => document.getElementById(id);
 const BASE = new URL('./', location.href).href;
-const CHECKS0 = ['Quy đổi phường theo tủ','Khối lượng QLVH','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu'];
-const STAGES = ['Đọc bảng tra tủ → phường','Đọc biên bản PDF (bước lâu nhất)','Mở file mẫu','Ghi QLVH (2, 3, 8)','Ghi bảo dưỡng (6)','Ghi chi tiết Mẫu 4','Ghi chi tiết Mẫu 7','Đổi địa bàn, kỳ, số hiệu','Lưu file'];
-let pdfFiles = [], mauRec = null, masterRec = null, ready = false, busy = false, result = null;
+const CHECKS_NEW = ['Quy đổi phường theo tủ','Khối lượng QLVH','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu','Định dạng in'];
+const CHECKS_ADD = ['Phát sinh ngoài KH: chi tiết (BB13) khớp tổng hợp (BB12)','Phát sinh ngoài KH: phường theo tủ','Định dạng in'];
+const ST_PS = 'Ghi phát sinh ngoài KH (12, 13)', ST_IN = 'Định dạng in';
+const STAGES_NEW = ['Đọc bảng tra tủ → phường','Đọc biên bản PDF (bước lâu nhất)','Mở file mẫu','Ghi QLVH (2, 3, 8)','Ghi bảo dưỡng (6)','Ghi chi tiết Mẫu 4','Ghi chi tiết Mẫu 7','Đổi địa bàn, kỳ, số hiệu','Lưu file',ST_PS,ST_IN];
+let STAGES = STAGES_NEW;
+let pdfFiles = [], mauRec = null, masterRec = null, ready = false, busy = false, result = null, mode = 'new', hsFile = null;
 // ---- IndexedDB: nho file mau + bang tra tren may (khong gui di dau) ----
 const IDB = {
   db: null,
@@ -244,7 +272,7 @@ for (let m = 1; m <= 12; m++) { const o = document.createElement('option'); o.va
 
 function renderChecks(list) {
   const ul = $('checks'); ul.textContent = '';
-  (list || CHECKS0.map(l => ({label: l}))).forEach(c => {
+  (list || (mode === 'add' ? CHECKS_ADD : CHECKS_NEW).map(l => ({label: l}))).forEach(c => {
     const li = document.createElement('li');
     const p = document.createElement('span'); p.className = 'pill' + (c.ok === true ? ' ok' : c.ok === false ? ' bad' : '');
     p.textContent = c.ok === true ? 'Đạt' : c.ok === false ? 'Xem lại' : 'Chưa chạy';
@@ -262,7 +290,21 @@ function renderFiles() {
   pdfFiles.forEach(f => { const li = document.createElement('li'); const a = document.createElement('span'); a.textContent = f.name; const b = document.createElement('span'); b.textContent = kb(f.size); li.append(a, b); ul.append(li); });
   updateRun();
 }
-function updateRun() { $('run').disabled = !(ready && pdfFiles.length && mauRec && masterRec && !busy); }
+function updateRun() { $('run').disabled = !(ready && (mode === 'add' ? !!hsFile : pdfFiles.length) && mauRec && masterRec && !busy); }
+function setMode(m) {
+  if (busy) return; mode = m;
+  $('mNew').setAttribute('aria-pressed', m === 'new'); $('mAdd').setAttribute('aria-pressed', m === 'add');
+  $('hsWrap').hidden = m !== 'add'; $('kyRow').hidden = m === 'add';
+  $('pdfLb').textContent = m === 'add' ? 'Biên bản 12, 13 phát sinh ngoài kế hoạch (nếu có)' : 'Biên bản PDF của kỳ';
+  $('dropHint').textContent = m === 'add' ? 'Chọn biên bản 12 và 13 để đổ vào 2 sheet phát sinh ngoài kế hoạch. Không chọn PDF thì trang chỉ chỉnh định dạng in cho file hồ sơ.' : 'Chọn cả bộ 7 file; kỳ có phát sinh ngoài kế hoạch thì chọn thêm biên bản 12 và 13. Trang tự nhận ra từng biên bản theo nội dung, không phụ thuộc tên file.';
+  $('run').textContent = m === 'add' ? 'Bổ sung và định dạng' : 'Lập hồ sơ';
+  pdfFiles = []; renderFiles(); renderChecks(); $('summary').hidden = true; $('out').hidden = true; result = null; showErr('');
+  $('outSub').textContent = 'Các mục trang sẽ tự kiểm sau khi chạy. Kết quả lần chạy gần nhất hiện ở đây.';
+}
+$('mNew').addEventListener('click', () => setMode('new'));
+$('mAdd').addEventListener('click', () => setMode('add'));
+$('hsBtn').addEventListener('click', () => $('hs').click());
+$('hs').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; hsFile = f; $('hsName').textContent = f.name + ' · ' + kb(f.size); $('hsBox').classList.add('ok'); $('hsBtn').textContent = 'Thay'; updateRun(); });
 function addPdfs(fs) {
   const arr = [...fs].filter(f => /\.pdf$/i.test(f.name));
   const names = new Set(pdfFiles.map(f => f.name));
@@ -325,23 +367,17 @@ self.onmessage = async (ev) => {
       for (const f of m.pdfs) py.FS.writeFile('/work/run/pdf/' + f.name.replace(/[\\\\/]/g, '_'), new Uint8Array(f.buf));
       const src = '/work/run/mau.' + (m.mau.name.toLowerCase().endsWith('.xlsx') ? 'xlsx' : 'xlsm'); py.FS.writeFile(src, new Uint8Array(m.mau.buf));
       const master = '/work/run/master.' + (m.master.json ? 'json' : 'xlsx'); py.FS.writeFile(master, new Uint8Array(m.master.buf));
-      py.globals.set('P', py.toPy({SRC_DIR: '/work/run/pdf/', MASTER_XLSX: master, SRC_XLSM: src, OUT_XLSX: '/work/run/out.xlsx', GOI: 'G201NA', QUAN: m.params.QUAN, THANG: m.params.THANG, PREFER: m.params.PREFER}));
+      if (m.hs) py.FS.writeFile('/work/run/hs.xlsx', new Uint8Array(m.hs));
+      py.globals.set('P', py.toPy({MODE: m.mode, SRC_DIR: '/work/run/pdf/', HS_XLSX: '/work/run/hs.xlsx', MASTER_XLSX: master, SRC_XLSM: src, GOI: 'G201NA', QUAN: m.params.QUAN, THANG: m.params.THANG, PREFER: m.params.PREFER}));
       const js = py.runPython(\`
-import os, sys, runpy, json, traceback
-for k in ('THANG_MAU','QUAN_MAU'): os.environ.pop(k, None)
-for mod in ('refill_lib','report'): sys.modules.pop(mod, None)
+import os, sys, json, traceback
+for k in ('THANG_MAU','QUAN_MAU','PS_LIB','PDF12','PDF13','OUT_XLSX'): os.environ.pop(k, None)
+for mod in ('refill_lib','report','dinhdang_in','web_run'): sys.modules.pop(mod, None)
 os.environ.update({k: str(v) for k, v in dict(P).items()})
 os.chdir('/app')
 try:
-    G = runpy.run_path('/app/refill_main.py')
-    import report
-    R = report.tieout(G); R['thang_mau'] = os.environ.get('THANG_MAU'); R['quan_mau'] = os.environ.get('QUAN_MAU')
-    import refill_lib
-    if not os.environ['MASTER_XLSX'].endswith('.json'):
-        rows = refill_lib.master_rows()
-        json.dump([[None if x is None else (x if isinstance(x,(int,float)) else str(x)) for x in r] for r in rows], open('/work/run/master.json','w'), ensure_ascii=False)
-    R['master_n'] = len(refill_lib.master_rows()) if os.environ['MASTER_XLSX'].endswith('.json') else len(rows)
-    out = json.dumps({'ok': True, 'report': R}, ensure_ascii=False, default=str)
+    import web_run
+    out = json.dumps({'ok': True, 'report': web_run.run()}, ensure_ascii=False, default=str)
 except Exception as e:
     tb = traceback.format_exc()
     out = json.dumps({'ok': False, 'error': str(e) or e.__class__.__name__, 'trace': tb[-1500:]}, ensure_ascii=False)
@@ -350,7 +386,7 @@ out
       const res = JSON.parse(js);
       if (res.ok) {
         const x = py.FS.readFile('/work/run/out.xlsx'); const buf = x.buffer.slice(x.byteOffset, x.byteOffset + x.byteLength);
-        let mj = null; if (!m.master.json) { const y = py.FS.readFile('/work/run/master.json'); mj = y.buffer.slice(y.byteOffset, y.byteOffset + y.byteLength); }
+        let mj = null; if (!m.master.json && py.FS.analyzePath('/work/run/master.json').exists) { const y = py.FS.readFile('/work/run/master.json'); mj = y.buffer.slice(y.byteOffset, y.byteOffset + y.byteLength); }
         post({type: 'done', report: res.report, xlsx: buf, masterJson: mj}, mj ? [buf, mj] : [buf]);
       }
       else post({type: 'fail', msg: res.error, trace: res.trace});
@@ -372,12 +408,15 @@ worker.postMessage({type: 'init', base: BASE});
 
 $('run').addEventListener('click', async () => {
   if (busy) return; busy = true; updateRun(); showErr(''); result = null; $('out').hidden = true;
-  engine('busy', 'Đang lập hồ sơ… (khoảng 1–2 phút)'); resetStages();
+  STAGES = mode === 'add' ? [ST_PS, ST_IN] : STAGES_NEW;
+  engine('busy', mode === 'add' ? 'Đang xử lý… (khoảng 1 phút)' : 'Đang lập hồ sơ… (khoảng 1–2 phút)'); resetStages();
   const pdfs = await Promise.all(pdfFiles.map(async f => ({name: f.name, buf: await f.arrayBuffer()})));
-  const msg = {type: 'run', pdfs, params: {THANG: $('thang').value, QUAN: $('quan').value.trim() || '8', PREFER: $('prefer').value.split(/[;\n]/).map(s => s.trim()).filter(Boolean).join(';')}};
+  const msg = {type: 'run', mode, pdfs, params: {THANG: $('thang').value, QUAN: $('quan').value.trim() || '8', PREFER: $('prefer').value.split(/[;\n]/).map(s => s.trim()).filter(Boolean).join(';')}};
   msg.mau = {name: mauRec.name, buf: mauRec.buf.slice(0)};
   msg.master = {name: masterRec.name, buf: masterRec.buf.slice(0), json: !!masterRec.json};
-  worker.postMessage(msg, [...pdfs.map(p => p.buf), msg.mau.buf, msg.master.buf]);
+  const tr = [...pdfs.map(p => p.buf), msg.mau.buf, msg.master.buf];
+  if (mode === 'add') { msg.hs = await hsFile.arrayBuffer(); tr.push(msg.hs); }
+  worker.postMessage(msg, tr);
 });
 
 function fillRows(id, rows) {
@@ -388,21 +427,37 @@ function onDone(m) {
   busy = false; updateRun(); engine('ok', 'Đã lập xong');
   [...$('prog').children].forEach(li => { li.className = 'done'; li.firstChild.className = 'dot ok'; });
   const r = m.report; const th = $('thang').value; const q = $('quan').value.trim() || '8';
-  const yr = (Number(th) > now.getMonth() + 1) ? now.getFullYear() - 1 : now.getFullYear();
-  const fname = 'HO_SO_HOAN_CONG_CSKVTT_Q' + q + '_T' + String(th).padStart(2, '0') + '.' + yr + '.xlsx';
+  let fname;
+  if (r.mode === 'add') fname = hsFile.name.replace(/\.xlsx$/i, '') + '_BS.xlsx';
+  else {
+    const yr = (Number(th) > now.getMonth() + 1) ? now.getFullYear() - 1 : now.getFullYear();
+    fname = 'HO_SO_HOAN_CONG_CSKVTT_Q' + q + '_T' + String(th).padStart(2, '0') + '.' + yr + '.xlsx';
+  }
   result = {blob: new Blob([m.xlsx], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), fname};
   window.__lastXlsx = m.xlsx; window.__lastReport = r;
   if (m.masterJson) { masterRec = {name: masterRec.name, buf: m.masterJson, t: masterRec.t, json: true, n: r.master_n}; IDB.set('master', masterRec); renderBase(); }
   renderChecks(r.checks);
   const allOk = r.checks.every(c => c.ok);
-  $('outSub').textContent = (allOk ? 'Tất cả mục đạt. ' : 'Có mục cần xem lại. ') + 'Mẫu: tháng ' + r.thang_mau + ', Quận ' + r.quan_mau + ' → Kỳ: tháng ' + th + ', Quận ' + q + '.';
-  $('k1').textContent = fmt(r.tong_qlvh); $('k2').textContent = fmt(r.so_tu);
-  $('k3').textContent = fmt(r.bd_hm.reduce((s, x) => s + x[1], 0));
-  $('dban').textContent = r.dia_ban;
-  fillRows('tq', r.qlvh_hm.map(([a, b]) => [a, fmt(b)]));
-  fillRows('tb', r.bd_hm.length ? r.bd_hm.map(([a, b]) => [a, fmt(b)]) : [['Không có khối lượng bảo dưỡng', '0']]);
-  const roles = {QLVH: 'QLVH chi tiết', BOQ: 'Bảo dưỡng 499 hạng mục', BD: 'Bảo dưỡng chi tiết'};
-  fillRows('tf', Object.entries(r.files).map(([k, v]) => [roles[k] || k, v]));
+  $('outSub').textContent = (allOk ? 'Tất cả mục đạt. ' : 'Có mục cần xem lại. ') + (r.mode === 'add' ? 'File: ' + hsFile.name + '.' : 'Mẫu: tháng ' + r.thang_mau + ', Quận ' + r.quan_mau + ' → Kỳ: tháng ' + th + ', Quận ' + q + '.');
+  $('mainSum').hidden = r.mode === 'add';
+  const files = [];
+  if (r.mode !== 'add') {
+    $('k1').textContent = fmt(r.tong_qlvh); $('k2').textContent = fmt(r.so_tu);
+    $('k3').textContent = fmt(r.bd_hm.reduce((s, x) => s + x[1], 0));
+    $('dban').textContent = r.dia_ban;
+    fillRows('tq', r.qlvh_hm.map(([a, b]) => [a, fmt(b)]));
+    fillRows('tb', r.bd_hm.length ? r.bd_hm.map(([a, b]) => [a, fmt(b)]) : [['Không có khối lượng bảo dưỡng', '0']]);
+    const roles = {QLVH: 'QLVH chi tiết', BOQ: 'Bảo dưỡng 499 hạng mục', BD: 'Bảo dưỡng chi tiết'};
+    Object.entries(r.files).forEach(([k, v]) => files.push([roles[k] || k, v]));
+  }
+  $('psSum').hidden = !r.ps;
+  if (r.ps) {
+    $('psInfo').textContent = 'Kỳ ' + r.ps.ky + ' · ' + r.ps.hm.length + ' hạng mục, ' + r.ps.n_vitri + ' vị trí · ghi vào sheet ' + r.ps.sheets.join(' và ');
+    fillRows('tp', r.ps.hm.map(([a, d, b]) => [a + ' (' + d + ')', fmt(b)]));
+    files.push(['Biên bản 12 (tổng hợp)', r.ps.files[0]], ['Biên bản 13 (chi tiết)', r.ps.files[1]]);
+  }
+  if (!files.length) files.push(['Biên bản', 'Không chọn PDF — chỉ chỉnh định dạng in']);
+  fillRows('tf', files);
   $('tf').querySelectorAll('td.n').forEach(td => { td.style.whiteSpace = 'normal'; td.style.textAlign = 'left'; });
   $('summary').hidden = false; $('out').hidden = false; $('fname').textContent = fname;
 }

@@ -65,6 +65,7 @@ def detect_files():
     for p in sorted(glob.glob(D+'*.pdf')+glob.glob(D+'*.PDF')):
         c=Counter()
         with pdfplumber.open(p) as pdf:
+            if 'NGOÀI KẾ HOẠCH' in ' '.join((pdf.pages[0].extract_text() or '').split()).upper(): continue   # BB 12/13 phat sinh: xu ly rieng (phatsinh.py)
             for pg in pdf.pages[:2]:
                 for tb in pg.extract_tables():
                     for r in tb: c[len(r)]+=1

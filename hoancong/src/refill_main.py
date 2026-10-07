@@ -294,12 +294,23 @@ def w10(ws,fd,pr):
 _nt=rewrite(ws,first,sig,ncol,len(plan),w10,34); WROTE['10.PYCNT2_BD_G201']=(first,_nt-1)
 
 # ================= 14.VKH_BD + 15 (phat sinh ngoai KH) -> rong =================
-for nm,fd,nc in [('14.VKH_BD_G201',34,7),('15_G201_TTH_PTH_TMY_THU',6,12)]:
-    ws=wb[nm]; ts=find_tail(ws,fd+1)
+# Tim 2 sheet theo TIEU DE (anh co the doi ten 14/15 -> 12/13): khong co thi bo qua
+def _hdr(ws,pred):
+    for r in range(1,min(ws.max_row,60)+1):
+        for c in range(1,14):
+            v=ws.cell(r,c).value
+            if isinstance(v,str) and pred(v.strip()): return r
+for ws in wb.worksheets:
+    if ws.sheet_state!='visible': continue
+    t=' '.join(str(c.value) for row in ws.iter_rows(max_row=12) for c in row if isinstance(c.value,str)).upper()
+    if 'CHI TIẾT' in t and 'NGOÀI KẾ HOẠCH' in t: r0=_hdr(ws,lambda v:v.lower()=='stt'); fd=r0+2 if r0 else None; nc=12
+    elif 'PHÁT SINH NGOÀI KẾ HOẠCH' in t: r0=_hdr(ws,lambda v:v=='(1)'); fd=r0+1 if r0 else None; nc=7
+    else: continue
+    if not fd: print(ws.title,'skip: khong thay dong tieu de bang'); continue
     try:
-        rewrite(ws,fd,ts,nc,0,lambda a,b,c:[],fd)
+        rewrite(ws,fd,find_tail(ws,fd),nc,0,lambda a,b,c:[],fd)
     except Exception as e:
-        print(nm,'skip',e)
+        print(ws.title,'skip',e)
 
 def editable(cell):
     return isinstance(cell.value,str) and not isinstance(cell,openpyxl.cell.cell.MergedCell) and cell.value not in PROTECT

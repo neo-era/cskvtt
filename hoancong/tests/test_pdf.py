@@ -75,6 +75,19 @@ for s in vis:
 check(nkt > 1000 and not thieu, '100%% chữ của %d ô in ra nằm trọn trong khung ô; ô nào bị cắt đều được cảnh báo rõ' % nkt, thieu[:6])
 print('  cảnh báo cắt chữ:', [w for w in R['canh_bao'] if 'bị cắt' in w])
 
+# ---------- khoi ky nam tron 1 trang ----------
+ky_tach = []
+for s_ in vis:
+    ws_ = wb[s_]; rows_ = sorted(set(r for (sh, r, c) in ve if sh == s_))
+    bd = None
+    for r in reversed(rows_):
+        if any(isinstance(ws_.cell(r, c).value, str) and re.match(r'\s*(ĐẠI DIỆN BÊN|Chỉ huy trưởng)', ws_.cell(r, c).value) for c in range(1, ws_.max_column + 1)):
+            bd = r; break
+    if bd is None: continue
+    tr = set(gi for (sh, r, c), v in ve.items() if sh == s_ and r >= bd for (gi, *_ ) in v)
+    if len(tr) > 1: ky_tach.append((s_, bd, sorted(tr)))
+check(not ky_tach, 'khối ký (ĐẠI DIỆN BÊN … / Chỉ huy trưởng → chữ ký) nằm trọn 1 trang ở mọi biên bản', ky_tach)
+
 # ---------- chan trang, kho giay, tieng Viet ----------
 start = 0; bad = []
 for s, n in R['trang']:

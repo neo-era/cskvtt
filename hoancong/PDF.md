@@ -39,3 +39,11 @@
 ## Soát độc lập (subagent) — đã sửa
 IF/IFERROR tính lười (=IF(A1=0;0;B1/A1) không còn trống) · chuỗi tham chiếu sâu tính nhiều lượt (3.000 ô đúng) · TRUE/FALSE, SUM(A:A) · ngày giờ (d/m/yyyy, h:mm, mmmm, ngày + số) · tách từ rất dài bằng tìm nhị phân (3.000 ký tự: 122 giây → tức thì) · PNG 1/2/4-bit · font Carlito nghiêng + dùng serif khi không tải được · khoá "Lập hồ sơ" khi đang tạo PDF · chân trang trang đầu/chẵn · sheet trống không in · định dạng 0.00E+00, "chữ"General, #,##0, · /Length1 font.
 Chưa làm (hiếm): ô gộp vắt qua chỗ chia cột khi bảng quá rộng; vùng in nhiều khối (chỉ in khối đầu); dòng tiêu đề lặp nằm ngoài vùng in.
+
+## v2.4.0 (17/10/2026 tối) — theo góp ý anh Lâm
+- **Khối ký nằm trọn 1 trang**: `giu_khoi_ky` tính ngắt trang như lúc in (cùng mô hình PDF); khối "ĐẠI DIỆN BÊN …"/"Chỉ huy trưởng" → hết vùng in bị cắt → chèn ngắt trang trước khối (kéo theo tối đa 3 dòng cuối bảng để trang ký không chỉ có tiêu đề bảng lặp). Áp cho cả Excel và PDF.
+- **Tiêu đề bảng không mồ côi cuối trang** (`giu_tieu_de`).
+- **Chữ không xuống dòng bị cụt mép** (khối ký, "+ Bên A: …") → thu cỡ chữ vừa đủ (≥ 9); **dòng chấm điền** dài hơn 1 dòng → cắt bớt dấu chấm.
+- **Trang Bìa** (`bia_dep`): phủ kín A4 ngang (lề 1,27 cm, căn giữa 2 chiều), khung viền đôi, logo lớn giữa trang, tiêu đề 40, khối Gói thầu/Địa điểm 14 canh đều, thêm cột C hẹp làm lề phải. Chỉ đổi bố cục/cỡ chữ, không đổi chữ.
+- **Logo trên web**: Pyodide không có Pillow → openpyxl bỏ ảnh / ghi ảnh rỗng. `anh_mini.py` thay thế tối thiểu (đọc kích thước PNG/JPEG/GIF) → giữ nguyên logo 58 KB. Test: `tests/test_anh_mini.py <mẫu>`.
+- Kiểm: Q10 26/26, Q8 17/17, PDF 27/27 (thêm "khối ký trọn 1 trang"), ảnh 2/2; trình duyệt 152 trang ~12 giây.

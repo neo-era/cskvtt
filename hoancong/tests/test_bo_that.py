@@ -79,6 +79,9 @@ for ws in wr.worksheets:
 check(not diff, 'chữ Gói thầu / Dự toán mua sắm giữ nguyên như mẫu', diff[:3])
 pa4 = [w.print_area for w in wb.worksheets if w.title.startswith('4_')]
 check(pa4 and re.search(r'\$C\$1:\$K\$\d+', pa4[0]), 'sheet 4: vùng in C:K như mẫu (mẫu ghi dạng chỉ cột $C:$K)', pa4)
+bia = [w for w in wb.worksheets if w.title.startswith('BIA')][0]
+check(bia['A1'].border.top.style == 'double' and bia['A1'].border.left.style == 'double' and 'A$1:$C$' in (bia.print_area or '') and bia.print_options.verticalCentered,
+      'trang Bìa: khung viền đôi, vùng in A:C, căn giữa trang', (bia.print_area, bia['A1'].border.top.style))
 print('\n'.join('ĐẠT  ' + x for x in OK)); print('\n'.join('LỖI  ' + x for x in FAIL)); print('Tổng: %d đạt, %d lỗi' % (len(OK), len(FAIL)))
 print('FILE', out)
 sys.exit(1 if FAIL else 0)

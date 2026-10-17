@@ -23,6 +23,7 @@ def _run(path):
         raise RuntimeError(str(e.code))
 
 def run():
+    import anh_mini; anh_mini.cai()          # trinh duyet khong co Pillow: van giu anh (logo trang Bia) khi doc/ghi mau
     E = os.environ; mode = E.get('MODE', 'new'); d = E['SRC_DIR']
     pdfs = sorted(os.path.join(d, f) for f in os.listdir(d) if f.lower().endswith('.pdf'))
     ps = {}

@@ -885,8 +885,8 @@ def _tieu_de(ws):
     m = re.search(r'\$?(\d+):\$?(\d+)', t)
     return list(range(int(m.group(1)), int(m.group(2)) + 1)) if m else []
 
-def ve_sheet(ws, ev, pdf, theme, mdw, canh_bao):
-    S = Sheet(ws, ev, pdf, theme, mdw); S.canh = canh_bao
+def kho_giay(ws, S):
+    """-> (pw, ph, ml, mr, mt, mb, aw, ah, k): kho giay, le, vung in duoc, ti le co (nhu Excel)."""
     ps = ws.page_setup; pm = ws.page_margins
     pw, ph = GIAY.get(int(ps.paperSize or 9), GIAY[9])
     if ps.orientation == 'landscape': pw, ph = ph, pw
@@ -903,8 +903,81 @@ def ve_sheet(ws, ev, pdf, theme, mdw, canh_bao):
         k = max(0.1, math.floor(k * 100 + 1e-9) / 100)
     else:
         k = (ps.scale or 100) / 100.0
+    return pw, ph, ml, mr, mt, mb, aw, ah, k
+
+def chia_trang(ws, S):
+    """-> (trang [[dong]], tieu_de, k) giong luc in."""
+    k = kho_giay(ws, S)[8]
     tieu_de = [r for r in _tieu_de(ws) if r in S.rh]
-    trang = _phan_trang(S, ah / k, tieu_de)
+    return _phan_trang(S, kho_giay(ws, S)[7] / k, tieu_de), tieu_de, k
+
+def giu_khoi_ky(ws, S):
+    """Khoi ky (tu dong 'ĐẠI DIỆN BÊN …' / 'Chỉ huy trưởng' cuoi bien ban den het vung in) phai nam tron 1 trang:
+    neu bi chia cat -> chen ngat trang ngay truoc khoi. Tra ve dong bat dau khoi neu da chen."""
+    from openpyxl.worksheet.pagebreak import Break
+    rows = S.rows
+    if not rows: return None
+    bd = None
+    for r in reversed(rows[-40:]):
+        for c in S.cols:
+            v = ws.cell(r, c).value
+            if isinstance(v, str) and re.match(r'\s*(ĐẠI DIỆN BÊN|Chỉ huy trưởng|CHỈ HUY TRƯỞNG|NGƯỜI LẬP|Người lập)', v):
+                bd = r; break
+        if bd == r: break
+    if bd is None: return None
+    ids = [b.id for b in ws.row_breaks.brk if b.id and bd <= b.id < rows[-1]]
+    if ids: ws.row_breaks.brk = [b for b in ws.row_breaks.brk if b.id not in ids]
+    trang, tieu_de, k = chia_trang(ws, S)
+    khoi = [r for r in rows if r >= bd]
+    o = [i for i, p in enumerate(trang) if any(r in p for r in khoi)]
+    if len(o) <= 1: return None
+    ah = kho_giay(ws, S)[7] / k
+    cao = sum(S.rh[r] for r in khoi) + (sum(S.rh[r] for r in tieu_de) if tieu_de and bd > max(tieu_de) else 0)
+    if cao > ah: return None                       # khoi ky dai hon 1 trang: khong the giu tron
+    keo = bd
+    if tieu_de and bd > max(tieu_de):              # trang ky co tieu de bang lap -> keo theo toi da 3 dong cuoi bang
+        truoc_ = [r for r in rows if max(tieu_de) < r < bd and S.rh[r] > 0]
+        while truoc_ and len([r for r in rows if keo <= r < bd]) < 3:
+            r0 = truoc_.pop()
+            if cao + S.rh[r0] > ah: break
+            cao += S.rh[r0]; keo = r0
+    truoc = max([r for r in rows if r < keo] or [0])
+    if truoc: ws.row_breaks.append(Break(id=truoc))
+    return bd
+
+def giu_tieu_de(ws, S):
+    """Dong tieu de bang (lap lai moi trang) khong duoc nam cuoi trang ma khong co dong du lieu nao di kem."""
+    from openpyxl.worksheet.pagebreak import Break
+    trang, tieu_de, k = chia_trang(ws, S)
+    if not tieu_de: return None
+    for i, p in enumerate(trang[:-1]):
+        sau = [r for r in p if r > max(tieu_de)]
+        if any(r in tieu_de for r in p) and not sau and p[0] < min(tieu_de):
+            truoc = max([r for r in S.rows if r < min(tieu_de)] or [0])
+            if truoc and truoc not in [b.id for b in ws.row_breaks.brk]:
+                ws.row_breaks.append(Break(id=truoc)); return min(tieu_de)
+    return None
+
+def rong_tran(S, r, c, ha):
+    """Be rong co the dung cho chu KHONG xuong dong cua o (r,c): ca o tran sang o trong ben canh (nhu Excel)."""
+    w = S.rong_o(r, c)
+    if (r, c) in S.mg: return w
+    cols = S.cols
+    if c not in cols: return w
+    i = cols.index(c)
+    def trong(cc): return (r, cc) not in S.mgcell and S.ws.cell(r, cc).value in (None, '')
+    R_ = L_ = 0.0; j = i
+    while j + 1 < len(cols) and trong(cols[j + 1]): j += 1; R_ += S.cw[cols[j]]
+    j = i
+    while j - 1 >= 0 and trong(cols[j - 1]): j -= 1; L_ += S.cw[cols[j]]
+    if ha in ('left', 'general', 'justify', 'fill', None): return w + R_
+    if ha == 'right': return w + L_
+    return w + 2 * min(L_, R_)
+
+def ve_sheet(ws, ev, pdf, theme, mdw, canh_bao):
+    S = Sheet(ws, ev, pdf, theme, mdw); S.canh = canh_bao
+    pw, ph, ml, mr, mt, mb, aw, ah, k = kho_giay(ws, S)
+    trang, tieu_de, k = chia_trang(ws, S)
     def co_noi_dung(rows):                       # Excel/LibreOffice khong in trang trong
         for r in rows:
             for c in S.cols:
@@ -1170,6 +1243,9 @@ def xuat(src, out, thu_muc_font, log=print):
     """Xuat toan bo sheet dang hien cua file src -> out (PDF). Tra ve {'trang': [(sheet, so trang)], 'canh_bao': [...]}"""
     t0 = time.time()
     os.environ['HC_FONTS'] = thu_muc_font
+    try:
+        import anh_mini; anh_mini.cai()                  # tren trinh duyet: giu anh de ve logo
+    except Exception: pass
     wb = openpyxl.load_workbook(src, rich_text=True, keep_links=False)   # bo lien ket ngoai (doc rat cham, khong can de ve)
     ev = TinhCongThuc(wb); ev.tinh_het(); pdf = PDF(thu_muc_font); theme = _theme(wb); mdw = _mdw(wb, pdf)
     trang = []; canh = []

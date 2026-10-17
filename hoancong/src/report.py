@@ -19,7 +19,8 @@ def tieout(G):
     ngay=tong/ntu if ntu else 0
     add(ntu>0 and abs(ngay-round(ngay))<1e-9,'Khối lượng QLVH','%d tủ × %s ngày = %s'%(ntu,('%g'%ngay),'{:,.0f}'.format(tong).replace(',','.')))
     thb=sum(x['th'] or 0 for x in boq.values()); klbd=sum(x['kl'] or 0 for x in bd)
-    add(len(boq)==499,'Bảng hạng mục bảo dưỡng','%d hạng mục'%len(boq))
+    _n=len(boq); _lt=bool(boq) and sorted(boq)==list(range(1,_n+1)); _ng=Counter(v.get('grp') for v in boq.values())
+    add(_lt,'Bảng hạng mục bảo dưỡng','%d hạng mục (STT 1–%d liên tục) — %s'%(_n,_n,'; '.join('%s: %d'%(k,v) for k,v in _ng.items() if k)) if _lt else '%d hạng mục, STT không liên tục — kiểm tra biên bản'%_n)
     add(abs(thb-klbd)<1e-6,'Bảo dưỡng: chi tiết khớp tổng hợp','Chi tiết %g = Tổng hợp %g'%(klbd,thb))
     _co5='KHQ' in G['detect_files']()
     if not _co5: add(False,'Kế hoạch quý (biên bản số 5)','Chưa có biên bản nghiệm thu QLVH tổng hợp (cột KL kế hoạch quý) — cột kế hoạch quý sheet 3 để trống')

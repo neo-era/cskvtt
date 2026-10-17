@@ -89,8 +89,8 @@ check(all(x[0] for x in __import__('json').loads(ck9[7:]) if 'Không còn' not i
 def sohieu(wb):
     return [(s, c, v) for s, c, v in texts(wb) if re.search(r'(YCNT|NTCV)', v) and s[:2] in ('8.', '9.', '10', '11')]
 sh = sohieu(wb)
-check(sh and all(re.search(r'\d{2}/0?9/(YCNT|NTCV)', v) for s, c, v in sh) and not any(re.search(r'-Q\d', v) for s, c, v in sh),
-      '(4) mẫu cũ → STT/Tháng/YCNT tháng 9, bỏ quận', [v[-40:] for s, c, v in sh][:4])
+check(sh and all(re.search(r'\d{2}/09/(YCNT|NTCV)-Q8\b', v) for s, c, v in sh),
+      '(4) mẫu cũ 01/YCNT-8-Q7 → 01/09/YCNT-Q8 (dạng biên bản thật)', [v[-40:] for s, c, v in sh][:4])
 # mau moi: 01/08/YCNT (2 chu so) -> 01/09/YCNT
 m2 = openpyxl.load_workbook(MAU, keep_vba=True)
 for ws in m2.worksheets:
@@ -101,7 +101,7 @@ for ws in m2.worksheets:
 mau2 = os.path.join(TMP, 'mau_moi.xlsm'); m2.save(mau2)
 out9b = os.path.join(TMP, 't9b.xlsx'); run(9, mau2, out9b)
 sh = sohieu(openpyxl.load_workbook(out9b))
-check(sh and all(re.search(r'\d{2}/09/(YCNT|NTCV)', v) for s, c, v in sh), '(4) mẫu mới 01/08/YCNT → 01/09/YCNT (giữ 2 chữ số)', [v[-40:] for s, c, v in sh][:4])
+check(sh and all(re.search(r'\d{2}/09/(YCNT|NTCV)-Q8\b', v) for s, c, v in sh), '(4) mẫu mới 01/08/YCNT → 01/09/YCNT-Q8', [v[-40:] for s, c, v in sh][:4])
 
 # ---------- ca xau: dong Quyet dinh co ngay cuoi thang mau phai GIU; "Ngày" viet hoa phai sua ----------
 m3 = openpyxl.load_workbook(MAU, keep_vba=True); w1 = m3['1.NTHT_TCXD_G201']

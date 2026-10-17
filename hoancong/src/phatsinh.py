@@ -59,7 +59,18 @@ def parse13(path):
                         cur={'stt':int(st),'ten':J(r[1]),'dvt':J(r[2]),'items':[]}; out.append(cur)
                         if not r[7]: continue
                     if (r[7] or r[3]) and cur is not None:
-                        cur['items'].append({'quan':J(r[3]),'duong':J(r[4]),'tu':J(r[5]),'mota':J(r[6]),'th':num(r[7]),'xn':num(r[8]),'gc':J(r[9])})
+                        mota=r[6]
+                        for k in (7,8):   # PDF cat chu cot Vi tri sang o KL ('u 1,000', '2,000\n)') -> giu 1 so, tra phan chu ve cot Vi tri
+                            tk=(r[k] or '').split(); so=[t for t in tk if re.fullmatch(r'\d[\d.,]*',t)]
+                            if len(so)==1 and len(tk)>1:
+                                if k==7:   # chu lac o dong i cua o KL -> noi vao cuoi dong i cua o Vi tri
+                                    ml=(mota or '').split('\n')
+                                    for i,ln in enumerate((r[k] or '').split('\n')):
+                                        frag=''.join(t for t in ln.split() if t!=so[0])
+                                        if frag: ml[min(i,len(ml)-1)]+=frag
+                                    mota='\n'.join(ml)
+                                r[k]=so[0]
+                        cur['items'].append({'quan':J(r[3]),'duong':J(r[4]),'tu':J(r[5]),'mota':J(mota),'th':num(r[7]),'xn':num(r[8]),'gc':J(r[9])})
     return out
 # ---------- ten chuan ----------
 tpl=openpyxl.load_workbook(SRC)

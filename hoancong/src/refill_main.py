@@ -25,7 +25,7 @@ if not os.environ.get('QUAN_MAU'):
     for _s in wb.worksheets:
         for _row in _s.iter_rows(max_row=12):
             for _c in _row:
-                _mm=re.search(r'(?:YCNT|NTCV)-\d{1,2}-Q(\d+)',_c.value) if isinstance(_c.value,str) else None
+                _mm=re.search(r'(?:YCNT|NTCV)-(?:\d{1,2}-)?Q(\d+)',_c.value) if isinstance(_c.value,str) else None
                 if _mm and not os.environ.get('QUAN_MAU'): os.environ['QUAN_MAU']=_mm.group(1)
 if not os.environ.get('QUAN_MAU'): os.environ['QUAN_MAU']=os.environ.get('QUAN','8')   # mau so hieu moi STT/Thang/YCNT khong ghi quan
 NAM_MAU=next((m.group(1) for row in wb['BIA_G201'].iter_rows() for c in row if isinstance(c.value,str) for m in [re.search(r'TH[ÁA]NG\s+0?\d{1,2}\s+N[ĂA]M\s+(\d{4})',c.value,re.I)] if m),None)
@@ -152,7 +152,9 @@ print('@@Ghi bảo dưỡng (6)')
 # ================= 6.HTCT_BD =================
 ws=wb['6.HTCT_BD_G201']; ncol=8; tong,sig=markers(ws); first=33
 gst=capstyle(ws,33,ncol); dst=capstyle(ws,34,ncol); gh=caph(ws,33); dh=caph(ws,34)
-def bdg(st): return 'Bảo dưỡng thường xuyên' if st<=95 else 'Bảo dưỡng không thường xuyên'
+def bdg(st):   # nhom theo BIEN BAN (Q8: I=1-95; Q10: I=1-55, II=56-375, III=TT dieu khien) -- du phong luat cu khi bien ban khong ghi nhom
+    g=boq.get(st,{}).get('grp')
+    return g or ('Bảo dưỡng thường xuyên' if st<=95 else 'Bảo dưỡng không thường xuyên')
 plan=[]; last=None
 for st in sorted(boq):
     gg=bdg(st)
@@ -373,9 +375,14 @@ if TM and TK and TM!=TK:
 # ===== DONG PHU THUOC KY trong muc can cu (anh da dong y doi): Bien ban / Nhat ky / Phieu YCNT
 #       + SO HIEU van ban (01/YCNT-8-Q7 -> 01/YCNT-7-Q8). Can cu PHAP LY (Nghi dinh, QD, HD, Hop dong, TB, VB) giu nguyen.
 QM=os.environ.get('QUAN_MAU','7'); QK=os.environ.get('QUAN','8')
-_so=re.compile(r'(\d{2})/(YCNT|NTCV)-(\d{1,2})-Q\d+\b')          # mau cu 01/YCNT-8-Q7 -> STT/Thang/YCNT (bo quan)
-_so2=re.compile(r'(\d{2})/(\d{1,2})/(YCNT|NTCV)\b')               # mau moi 01/08/YCNT: chi doi thang, giu so chu so
-def _thang(cu): return ('%0'+str(len(cu))+'d')%int(TK) if TK else cu
+# SO HIEU = dung nhu bien ban 8-11 (vd 01/09/YCNT-Q10). Co bien ban -> lay nguyen; khong co -> dung STT/MM/YCNT-Q<quan>.
+SOHIEU=sohieu_pdf()
+def _sh(stt,kind):
+    k=(int(stt),kind.upper())
+    if k in SOHIEU: return SOHIEU[k]
+    return '%s/%02d/%s-Q%s'%(stt,int(TK or TM),kind.upper(),QK)
+_so=re.compile(r'(\d{2})/(YCNT|NTCV)-\d{1,2}-Q\d+\b')                 # mau cu 01/YCNT-8-Q7
+_so2=re.compile(r'(\d{2})/\d{1,2}/(YCNT|NTCV)(?:-Q\d+)?(?![\w-])')     # mau moi 01/08/YCNT[-Q8]
 _pk=re.compile(r'((?:tháng|THÁNG)\s+)0?%s(?=\s+(?:năm|NĂM)\s+\d{4}|/\d{4})'%(TM or '0'), re.I)
 _QUY=['I','II','III','IV']
 _nhan_quy=(KHQ_NHAN.split('/')[0] if KHQ_NHAN else (_QUY[(int(TK)-1)//3] if TK else None))
@@ -391,8 +398,8 @@ for _n in wb.sheetnames:
                 if TM and TK: nv=_pk.sub(lambda mm: mm.group(1)+TK, nv)
                 if 'trên địa bàn' in nv.lower(): nv=enum_pat.sub(DBSTR, nv)
             if v not in PROTECT or _ky.match(v):
-                nv=_so.sub(lambda mm: '%s/%s/%s'%(mm.group(1),_thang(mm.group(3)),mm.group(2)), nv)
-                nv=_so2.sub(lambda mm: '%s/%s/%s'%(mm.group(1),_thang(mm.group(2)),mm.group(3)), nv)
+                nv=_so.sub(lambda mm: _sh(mm.group(1),mm.group(2)), nv)
+                nv=_so2.sub(lambda mm: _sh(mm.group(1),mm.group(2)), nv)
                 # NHAN QUY o DAU COT 'Ke hoach ... Quy X/YYYY': theo bien ban 5 (neu co) hoac theo thang ky
                 if _nhan_quy and v not in PROTECT and re.search(r'kế\s*hoạch',v,re.I) and not _LEGAL.search(v):
                     nv=re.sub(r'((?:Quý|QUÝ|quý)\s+)([IVX]+)/(\d{4})',lambda mm: mm.group(1)+_nhan_quy+'/'+(_nam_quy or mm.group(3)),nv)

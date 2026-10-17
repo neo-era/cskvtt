@@ -25,3 +25,10 @@ python3 tests/test_v2.py <thư mục PDF> <mẫu .xlsm> <bảng tra .xlsx>
 ## Rủi ro
 - Tên hạng mục ở biên bản 5 bị cắt dòng → khớp qua `canon_hm` + khóa không dấu.
 - Kỳ tháng 12 → tháng 1 đổi năm: không tự đổi năm (ngoài phạm vi), ghi chú.
+
+## Kiểm trên bộ biên bản THẬT Q10 kỳ 9/2026 (17/10/2026) — phát hiện & sửa
+- Số hiệu thật: `01/09/YCNT-Q10` (STT/MM/YCNT-Q<quận>). Anh chốt "đúng như biên bản": có biên bản 8–11 → lấy nguyên số hiệu (`sohieu_pdf`); không có → dựng `STT/MM/YCNT-Q<QUAN>`.
+- Bảng hạng mục bảo dưỡng KHÔNG cố định 499: Q8 = 499 (nhóm I 1–95, II 96–499); Q10 = 378 (I 1–55, II 56–375, III "Trung tâm điều khiển" 376–378). Nhóm lấy theo dòng I/II/III của biên bản (`parse_boq` → `grp`); mục kiểm = STT liên tục 1..N.
+- BB13 Q10: chữ cột "Vị trí" bị PDF cắt sang ô KL ("u 1,000", "2,000\n)") → `parse13` giữ 1 số, trả phần chữ về đúng dòng của ô Vị trí.
+- Một dòng BB13 gốc thiếu ")" ("…(tháo dỡ cáp điện ngầm") — giữ nguyên theo biên bản.
+- Test bộ thật: `python3 tests/test_bo_that.py <PDF/> <mẫu> <bảng tra> 10 9` → 12/12; `tests/test_v2.py` (bộ T08) → 17/17.

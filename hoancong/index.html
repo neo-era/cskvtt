@@ -471,7 +471,7 @@ function onDone(m) {
     $('dban').textContent = r.dia_ban;
     fillRows('tq', r.qlvh_hm.map(([a, b]) => [a, fmt(b)]));
     fillRows('tb', r.bd_hm.length ? r.bd_hm.map(([a, b]) => [a, fmt(b)]) : [['Không có khối lượng bảo dưỡng', '0']]);
-    const roles = {QLVH: 'QLVH chi tiết', BOQ: 'Bảo dưỡng 499 hạng mục', BD: 'Bảo dưỡng chi tiết', KHQ: 'QLVH tổng hợp (kế hoạch quý)'};
+    const roles = {QLVH: 'QLVH chi tiết', BOQ: 'Bảo dưỡng tổng hợp (bảng hạng mục)', BD: 'Bảo dưỡng chi tiết', KHQ: 'QLVH tổng hợp (kế hoạch quý)'};
     Object.entries(r.files).forEach(([k, v]) => files.push([roles[k] || k, v]));
   }
   $('psSum').hidden = !r.ps;

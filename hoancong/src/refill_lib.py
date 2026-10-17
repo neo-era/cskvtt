@@ -140,8 +140,15 @@ def parse_qlvh(by,bn):
                         m=look(c1,by,bn); ph=m[0] if m else '(không rõ)'; du=m[1] if m else ''
                         out.append({'tu':(m[3] if m else c1),'diachi':c2,'kl':num(c6),'hm':hm,'grp':grp,'phuong':ph,'duong':du})
     return out
+def nhom_bd(ten):
+    """Nhan nhom bao duong theo chu cua MAU (ranh gioi nhom moi quan khac nhau -> lay tu bien ban, khong co dinh STT)."""
+    k=norm(ten)
+    if 'khong thuong xuyen' in k or 'khong thuong xuyen' in k.replace('thuong','thuong'): return 'Bảo dưỡng không thường xuyên'
+    if 'thuong xuyen' in k: return 'Bảo dưỡng thường xuyên'
+    if 'trung tam' in k: return 'Trung tâm điều khiển'
+    return ' '.join(ten.split())
 def parse_boq():
-    it={}
+    it={}; grp=None
     with pdfplumber.open(g('2._BBNT_QLVH')) as pdf:
         for pg in pdf.pages:
             for tb in pg.extract_tables():
@@ -149,8 +156,18 @@ def parse_boq():
                     r=[(c or '').strip().replace('\n',' ') for c in r]
                     if len(r)<6: continue
                     st=r[0].strip()
-                    if re.fullmatch(r'\d+',st): it[int(st)]={'ten':r[1],'dvt':r[2],'kh':num(r[3]),'th':num(r[4]),'nt':num(r[5])}
+                    if st in ('I','II','III','IV','V') and r[1]: grp=nhom_bd(r[1]+r[2] if not r[3] else r[1]); continue
+                    if re.fullmatch(r'\d+',st): it[int(st)]={'ten':r[1],'dvt':r[2],'kh':num(r[3]),'th':num(r[4]),'nt':num(r[5]),'grp':grp}
     return it
+def sohieu_pdf():
+    """So hieu that tu bien ban 8-11 (Phieu YCNT / BB nghiem thu cong viec): {(stt,'YCNT'|'NTCV'): '01/09/YCNT-Q10'}."""
+    out={}
+    for p in sorted(glob.glob(D+'*.pdf')+glob.glob(D+'*.PDF')):
+        with pdfplumber.open(p) as pdf:
+            t=' '.join((pdf.pages[0].extract_text() or '').split())
+        m=re.search(r'SỐ\s*:\s*((\d{1,2})/\d{1,2}/(YCNT|NTCV)(?:-Q\d+)?)',t,re.I)
+        if m: out.setdefault((int(m.group(2)),m.group(3).upper()),m.group(1))
+    return out
 def parse_bd(by,bn):
     out=[]; hm=None; dvt=None
     with pdfplumber.open(g('1._BBNTHT_QLVH')) as pdf:

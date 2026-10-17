@@ -22,7 +22,22 @@ QUAN_PHUONG = {
     'CG': ['Xã Cần Giờ', 'Xã Bình Khánh', 'Xã An Thới Đông', 'Xã Thạnh An'],
     'BC': ['Xã Vĩnh Lộc', 'Xã Tân Vĩnh Lộc', 'Xã Bình Lợi', 'Xã Tân Nhựt', 'Xã Bình Chánh', 'Xã Hưng Long', 'Xã Bình Hưng'],
 }
+# Ten quan/huyen (khong dau, chu thuong) -> ma. Nhap "Bình Thạnh", "Quận Bình Thạnh", "Q.BT", "bt" deu ra 'BT'.
+TEN_QUAN = {
+    'binh thanh': 'BT', 'phu nhuan': 'PN', 'tan binh': 'TB', 'tan phu': 'TP', 'go vap': 'GV',
+    'binh tan': 'BTA', 'nha be': 'NB', 'can gio': 'CG', 'binh chanh': 'BC',
+}
+def _khong_dau(s):
+    import unicodedata
+    s = unicodedata.normalize('NFD', (s or '').replace('đ', 'd').replace('Đ', 'D'))
+    return ' '.join(''.join(c for c in s if unicodedata.category(c) != 'Mn').lower().split())
+def quan_key(s):
+    """Chuan hoa ma quan de so khop: '10', 'Q10', 'Quận 10', '010' -> '10'; 'Bình Thạnh', 'Quận Bình Thạnh', 'BT' -> 'BT'."""
+    import re
+    k = _khong_dau(s)
+    k = re.sub(r'^(quan|huyen|q|h)\s*\.?\s*', '', k) if not k in TEN_QUAN else k
+    if k in TEN_QUAN: return TEN_QUAN[k]
+    if k.isdigit(): return k.lstrip('0') or '0'
+    return k.upper().replace(' ', '')
 def phuong_cua_quan(q):
-    q = (q or '').strip().upper()
-    q = q[1:] if q.startswith('Q') and q[1:].isdigit() else q
-    return QUAN_PHUONG.get(q.lstrip('0') or q, [])
+    return QUAN_PHUONG.get(quan_key(q), [])

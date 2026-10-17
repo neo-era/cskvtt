@@ -3,6 +3,7 @@ import re, unicodedata, glob, os, copy
 import pdfplumber, openpyxl
 D=os.environ.get('SRC_DIR','./')            # thu muc PDF nguon (co / cuoi)
 MASTER=os.environ['MASTER_XLSX']           # file Control_Cabinet
+from quan_phuong import quan_key
 QUAN=os.environ.get('QUAN','8')            # ma quan trong bien ban chi tiet
 def sa(s):
     s=unicodedata.normalize('NFD',str(s or '')); s=''.join(c for c in s if unicodedata.category(c)!='Mn')
@@ -136,7 +137,7 @@ def parse_qlvh(by,bn):
                     if c1.startswith('Tổng cộng'): continue
                     if c0 and c1 and not c3 and not c4: hm=canon_hm(c1,c2); continue
                     if not c0 and c1 and not c3 and not c4: continue
-                    if c3==QUAN:
+                    if quan_key(c3)==quan_key(QUAN):
                         m=look(c1,by,bn); ph=m[0] if m else '(không rõ)'; du=m[1] if m else ''
                         out.append({'tu':(m[3] if m else c1),'diachi':c2,'kl':num(c6),'hm':hm,'grp':grp,'phuong':ph,'duong':du})
     return out
@@ -183,7 +184,7 @@ def parse_bd(by,bn):
                     if len(r)<11: continue
                     st,ten,u,quan,duong,tentu,mota,kh,th,nt,gc=r[:11]
                     if re.fullmatch(r'\d+',st.strip()) and ten and not tentu: hm=ten; dvt=u; continue
-                    if quan==QUAN and tentu:
+                    if quan_key(quan)==quan_key(QUAN) and tentu:
                         m=look(tentu,by,bn); ph=m[0] if m else '(không rõ)'
                         out.append({'hm':hm,'dvt':dvt,'duong':duong,'tu':(m[3] if m else tentu),'mota':mota,'kl':num(nt),'phuong':ph})
     return out

@@ -3,15 +3,16 @@
 # cap nhat BUILD, tieu de cua so (<title>) va nhan phien ban tren thanh tieu de trong index.html
 set -e; cd "$(dirname "$0")"; rm -rf src/__pycache__
 V="$(tr -d ' \n' < VERSION)"
-QP="$(cd src && python3 -c 'import json,quan_phuong as q;print(json.dumps(q.QUAN_PHUONG,ensure_ascii=False,separators=(",",":")))')"; rm -rf src/__pycache__
+QP="$(cd src && python3 -c 'import json,quan_phuong as q;print(json.dumps(q.QUAN_PHUONG,ensure_ascii=False,separators=(",",":")))')"; TQ="$(cd src && python3 -c 'import json,quan_phuong as q;print(json.dumps(q.TEN_QUAN,separators=(",",":")))')"; rm -rf src/__pycache__
 B="$V-$(cat src/*.py | sha1sum | cut -c1-6)"
 printf '%s\n' "$B" > src/build.txt
 rm -f py/pylibs.zip.tmp; cp py/pylibs.zip py/pylibs.zip.tmp
 (cd src && zip -q -j ../py/pylibs.zip.tmp *.py build.txt) && mv py/pylibs.zip.tmp py/pylibs.zip
-python3 - "$QP" <<'PY'
+python3 - "$QP" "$TQ" <<'PY'
 import sys,re
 p='index.html'; s=open(p,encoding='utf-8').read()
 s=re.sub(r'^const QUAN_PHUONG = .*;$', lambda m: 'const QUAN_PHUONG = '+sys.argv[1]+';', s, count=1, flags=re.M)
+s=re.sub(r'^const TEN_QUAN = .*;$', lambda m: 'const TEN_QUAN = '+sys.argv[2]+';', s, count=1, flags=re.M)
 open(p,'w',encoding='utf-8').write(s)
 PY
 sed -i -e "s/^const BUILD = '[^']*';/const BUILD = '$B';/" \

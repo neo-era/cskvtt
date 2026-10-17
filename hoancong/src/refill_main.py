@@ -384,12 +384,13 @@ if TM and TK and TM!=TK:
 # ===== DONG PHU THUOC KY trong muc can cu (anh da dong y doi): Bien ban / Nhat ky / Phieu YCNT
 #       + SO HIEU van ban (01/YCNT-8-Q7 -> 01/YCNT-7-Q8). Can cu PHAP LY (Nghi dinh, QD, HD, Hop dong, TB, VB) giu nguyen.
 QM=os.environ.get('QUAN_MAU','7'); QK=os.environ.get('QUAN','8')
+from quan_phuong import quan_key as _qkey
 # SO HIEU = dung nhu bien ban 8-11 (vd 01/09/YCNT-Q10). Co bien ban -> lay nguyen; khong co -> dung STT/MM/YCNT-Q<quan>.
 SOHIEU=sohieu_pdf()
 def _sh(stt,kind):
     k=(int(stt),kind.upper())
     if k in SOHIEU: return SOHIEU[k]
-    return '%s/%02d/%s-Q%s'%(stt,int(TK or TM),kind.upper(),QK)
+    return '%s/%02d/%s-Q%s'%(stt,int(TK or TM),kind.upper(),_qkey(QK))
 _so=re.compile(r'(\d{2})/(YCNT|NTCV)-\d{1,2}-Q\d+\b')                 # mau cu 01/YCNT-8-Q7
 _so2=re.compile(r'(\d{2})/\d{1,2}/(YCNT|NTCV)(?:-Q\d+)?(?![\w-])')     # mau moi 01/08/YCNT[-Q8]
 _pk=re.compile(r'((?:tháng|THÁNG)\s+)0?%s(?=\s+(?:năm|NĂM)\s+\d{4}|/\d{4})'%(TM or '0'), re.I)

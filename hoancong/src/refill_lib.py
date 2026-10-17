@@ -63,19 +63,41 @@ def detect_files():
     from collections import Counter
     res={}
     for p in sorted(glob.glob(D+'*.pdf')+glob.glob(D+'*.PDF')):
-        c=Counter()
+        c=Counter(); khq=duytri=False
         with pdfplumber.open(p) as pdf:
             if 'NGOÀI KẾ HOẠCH' in ' '.join((pdf.pages[0].extract_text() or '').split()).upper(): continue   # BB 12/13 phat sinh: xu ly rieng (phatsinh.py)
             for pg in pdf.pages[:2]:
                 for tb in pg.extract_tables():
-                    for r in tb: c[len(r)]+=1
+                    for r in tb:
+                        c[len(r)]+=1
+                        t=' '.join(' '.join((x or '') for x in r).split()).lower()
+                        if 'kế hoạch quý' in t: khq=True
+                        if len(r)>1 and 'duy trì trạm' in ' '.join((r[1] or '').split()).lower(): duytri=True
         if c[11]>=5: res.setdefault('BD',p)
         elif c[9]>=5: res.setdefault('QLVH',p)
         elif c[7]>=25: res.setdefault('BOQ',p)
+        elif c[7]>=3 and khq and duytri: res.setdefault('KHQ',p)   # bien ban 5: nghiem thu QLVH tong hop (co KL ke hoach QUY)
     miss=[k for k in ('QLVH','BOQ','BD') if k not in res]
     if miss: raise RuntimeError('Không tìm thấy biên bản: '+', '.join({'QLVH':'Xác nhận KL QLVH chi tiết (bảng 9 cột)','BOQ':'Nghiệm thu KL bảo dưỡng 499 hạng mục','BD':'Xác nhận KL bảo dưỡng chi tiết (bảng 11 cột)'}[k] for k in miss))
     _FILES=res; return res
 _KEY={'4._BBXNKLHT_QLVH':'QLVH','2._BBNT_QLVH':'BOQ','1._BBNTHT_QLVH':'BD'}
+def parse_khq():
+    """KL ke hoach QUY tung hang muc QLVH tu bien ban 5 -> {norm_ns(ten chuan): KL}, nhan quy ('III/2026'). Khong co file -> ({}, None)."""
+    p=detect_files().get('KHQ')
+    if not p: return {},None
+    out={}; nhan=None
+    with pdfplumber.open(p) as pdf:
+        for pg in pdf.pages:
+            for tb in pg.extract_tables():
+                for r in tb:
+                    r=[' '.join((c or '').split()) for c in r]
+                    if len(r)<6: continue
+                    m=re.search(r'quý\s+([IVX]+)\s*/\s*(\d{4})',' '.join(r),re.I)
+                    if m and not nhan: nhan='%s/%s'%(m.group(1).upper(),m.group(2))
+                    if re.fullmatch(r'\d+',r[0]) and r[1].lower().startswith('duy trì'):
+                        v=num(r[3])
+                        if v is not None: out[norm_ns(canon_hm(r[1]))]=v
+    return out,nhan
 def g(k): return detect_files()[_KEY[k]]
 _RNG=[('1500m3000m','1500m - 3000m'),('1000m1500m','1000m - 1500m'),('500m1000m','500m - 1000m')]
 def canon_hm(a,b=''):

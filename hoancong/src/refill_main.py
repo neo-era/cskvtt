@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import warnings, copy, re; warnings.filterwarnings('ignore')
+import warnings, copy, re, calendar; warnings.filterwarnings('ignore')
 import openpyxl
 from refill_lib import *
 from collections import OrderedDict
@@ -101,6 +101,9 @@ for d in qlvh:
     agg[d['hm']]=agg.get(d['hm'],0)+(d['kl'] or 0)
     byhm.setdefault(d['hm'],OrderedDict()).setdefault(d['phuong'],[]).append(d)
 TONG=sum(agg.values())
+# KL ke hoach QUY (bien ban 5) cho cot E sheet 3 -- KHONG lay so thang thay the
+KHQ,KHQ_NHAN=parse_khq()
+KHQ_THIEU=[h for h in hm_order if norm_ns(h) not in KHQ]
 
 print('@@Ghi QLVH (2, 3, 8)')
 # ================= 3.HTCT_QLVH =================
@@ -116,7 +119,7 @@ def w3(ws,fd,pr):
         if t=='g': putstyle(ws,r,gst,ncol); seth(ws,r,gh); ws.cell(r,2,hm_grp[h]); mg.append((r,r,2,3)); r+=1
         else:
             putstyle(ws,r,dst,ncol); seth(ws,r,dh); stt+=1; v=agg[h]
-            ws.cell(r,1,stt); ws.cell(r,2,h); ws.cell(r,4,'1 trạm/ngày'); ws.cell(r,5,v); ws.cell(r,6,v); ws.cell(r,7,'=F%d'%r); mg.append((r,r,2,3)); r+=1
+            ws.cell(r,1,stt); ws.cell(r,2,h); ws.cell(r,4,'1 trạm/ngày'); ws.cell(r,5,KHQ.get(norm_ns(h))); ws.cell(r,6,v); ws.cell(r,7,'=F%d'%r); mg.append((r,r,2,3)); r+=1
     return mg
 nt=rewrite(ws,first,tong,ncol,len(plan),w3,33); WROTE['3.HTCT_QLVH_G201']=(first,nt-1)
 for cc in 'EFG': ws[cc+str(nt)]='=SUM(%s%d:%s%d)'%(cc,first,cc,nt-1)
@@ -198,7 +201,7 @@ def w4(ws,fd,pr):
             putstyle(ws,r,p8,ncol); seth(ws,r,H4[2]); ws.cell(r,1,MA); ws.cell(r,2,'HM%03d'%hmn); ws.cell(r,4,'* '+row[1]); mg.append((r,r,4,6)); r+=1
         else:
             x=row[1]; putstyle(ws,r,d9,ncol); seth(ws,r,H4[3]); dstt+=1
-            ws.cell(r,1,MA); ws.cell(r,2,'HM%03d'%hmn); ws.cell(r,3,dstt); ws.cell(r,4,x['tu']); ws.cell(r,5,x['duong'] or x['diachi']); ws.cell(r,6,sphuong(x['phuong']))
+            ws.cell(r,1,MA); ws.cell(r,2,'HM%03d'%hmn); ws.cell(r,3,dstt); ws.cell(r,4,x['tu']); ws.cell(r,5,x['diachi'] or x['duong']); ws.cell(r,6,sphuong(x['phuong']))   # E = VI TRI DAT TU (dia chi trong bien ban)
             ws.cell(r,7,x['kl']); ws.cell(r,8,'=G%d'%r); ws.cell(r,9,'=G%d'%r); ws.cell(r,10,0); r+=1
     close_ph(r-1); close_hm()
     return mg
@@ -348,7 +351,9 @@ if TM and TK and TM!=TK:
 #       + SO HIEU van ban (01/YCNT-8-Q7 -> 01/YCNT-7-Q8). Can cu PHAP LY (Nghi dinh, QD, HD, Hop dong, TB, VB) giu nguyen.
 QM=os.environ.get('QUAN_MAU','7'); QK=os.environ.get('QUAN','8')
 _ky=re.compile(r'^\s*-\s*(Biên bản|Nhật ký|Phiếu yêu cầu)')
-_so=re.compile(r'(\d{2}/(?:YCNT|NTCV))-\d{1,2}-Q%s\b'%QM)
+_so=re.compile(r'(\d{2})/(YCNT|NTCV)-(\d{1,2})-Q\d+\b')          # mau cu 01/YCNT-8-Q7 -> STT/Thang/YCNT (bo quan)
+_so2=re.compile(r'(\d{2})/(\d{1,2})/(YCNT|NTCV)\b')               # mau moi 01/08/YCNT: chi doi thang, giu so chu so
+def _thang(cu): return ('%0'+str(len(cu))+'d')%int(TK) if TK else cu
 _pk=re.compile(r'((?:tháng|THÁNG)\s+)0?%s(?=\s+(?:năm|NĂM)\s+\d{4}|/\d{4})'%(TM or '0'))
 for _n in wb.sheetnames:
     ws=wb[_n]
@@ -361,7 +366,19 @@ for _n in wb.sheetnames:
                 if TM and TK: nv=_pk.sub(lambda mm: mm.group(1)+TK, nv)
                 if 'trên địa bàn' in nv.lower(): nv=enum_pat.sub(DBSTR, nv)
             if v not in PROTECT or _ky.match(v):
-                nv=_so.sub(lambda mm: '%s-%s-Q%s'%(mm.group(1),TK or TM,QK), nv)
+                nv=_so.sub(lambda mm: '%s/%s/%s'%(mm.group(1),_thang(mm.group(3)),mm.group(2)), nv)
+                nv=_so2.sub(lambda mm: '%s/%s/%s'%(mm.group(1),_thang(mm.group(2)),mm.group(3)), nv)
+                # NGAY CUOI THANG: ngay cuoi thang cua mau -> ngay cuoi thang cua ky (thang 9 = 30, thang 2 = 28/29)
+                if TM and TK:
+                    def _cuoi(mm):
+                        d,th,y=int(mm.group(2)),int(mm.group(4)),int(mm.group(6))
+                        if th==int(TK) and d==calendar.monthrange(y,int(TM))[1]:
+                            return mm.group(1)+'%02d'%calendar.monthrange(y,int(TK))[1]+mm.group(3)+mm.group(4)+mm.group(5)+mm.group(6)
+                        return mm.group(0)
+                    nv=re.sub(r'((?:ngày|NGÀY)\s+)(\d{1,2})(\s+(?:tháng|THÁNG)\s+)(0?\d{1,2})(\s+(?:năm|NĂM)\s+)(\d{4})',_cuoi,nv)
+                # NHAN QUY theo ky (Quy III/2026 -> Quy IV/2026 khi ky thang 10..12) -- chi o dau cot, khong o can cu
+                if TK and v not in PROTECT:
+                    nv=re.sub(r'((?:Quý|QUÝ|quý)\s+)([IVX]+)(/\d{4})',lambda mm: mm.group(1)+['I','II','III','IV'][(int(TK)-1)//3]+mm.group(3),nv)
             if nv!=v: cell.value=nv
 
 from openpyxl.utils import get_column_letter as _gcl

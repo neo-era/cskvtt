@@ -31,6 +31,9 @@ def fmt(src,out):
         s.sheet_properties.pageSetUpPr=PageSetupProperties(fitToPage=True)
         ps.fitToWidth=1; ps.fitToHeight=1 if s.title.startswith('BIA') else 0
         if s.title in TITLES and not s.print_title_rows: s.print_title_rows=TITLES[s.title]
+        if not s.title.startswith('BIA'):           # SO TRANG theo mau bien ban: 'Trang x / y' goc phai, nghieng
+            for hf in (s.oddFooter,s.evenFooter,s.firstFooter):
+                hf.right.text='Trang &P / &N'; hf.right.font='Times New Roman,Italic'; hf.right.size=11
         if s.title.startswith('BIA'): log.append((s.title,s.print_area,0)); continue
         span={(m.min_row,m.min_col):(m.max_row-m.min_row+1,m.min_col,m.max_col) for m in s.merged_cells.ranges}
         WD={}                                   # do rong tung cot (openpyxl gop cot lien nhau cung do rong vao 1 muc min..max)

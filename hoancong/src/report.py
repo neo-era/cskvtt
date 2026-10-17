@@ -2,6 +2,7 @@
 """Tie-out tu ket qua chay refill_main (globals) -> dict de trang web hien thi."""
 import re, openpyxl
 from collections import Counter
+from refill_lib import norm_ns as _ns
 def _cells(wb):
     for ws in wb.worksheets:
         for row in ws.iter_rows():
@@ -20,6 +21,8 @@ def tieout(G):
     thb=sum(x['th'] or 0 for x in boq.values()); klbd=sum(x['kl'] or 0 for x in bd)
     add(len(boq)==499,'Bảng hạng mục bảo dưỡng','%d hạng mục'%len(boq))
     add(abs(thb-klbd)<1e-6,'Bảo dưỡng: chi tiết khớp tổng hợp','Chi tiết %g = Tổng hợp %g'%(klbd,thb))
+    if not G.get('KHQ'): add(False,'Kế hoạch quý (biên bản số 5)','Chưa có biên bản nghiệm thu QLVH tổng hợp (cột KL kế hoạch quý) — cột kế hoạch quý sheet 3 để trống')
+    else: add(not G['KHQ_THIEU'],'Kế hoạch quý (biên bản số 5)','Đủ %d hạng mục, tổng %s'%(len(G['hm_order']),'{:,.0f}'.format(sum(G['KHQ'].get(_ns(h),0) for h in G['hm_order'])).replace(',','.')) if not G['KHQ_THIEU'] else 'Thiếu: '+', '.join(G['KHQ_THIEU'][:5]))
     alltxt=set(v for _,_,v in _cells(wb))
     legal=re.compile(r'^\s*-?\s*(Nghị định|Quyết định|Hướng dẫn|Căn cứ|Thông báo|Văn bản số)')
     miss=[t for t in G['PROTECT'] if (legal.match(t) or 'Căn cứ' in t) and t not in alltxt]

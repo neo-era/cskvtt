@@ -35,6 +35,9 @@ def tieout(G):
     add(not miss,'Căn cứ pháp lý giữ nguyên','%d dòng khớp mẫu'%len([t for t in G['PROTECT'] if legal.match(t) or 'Căn cứ' in t]) if not miss else 'Bị đổi: '+miss[0][:80])
     # phuong cua quan mau (lay tu dong Dia ban cua mau)
     wards=[w.strip() for w in re.findall(r'(?:[Pp]hường|[Xx]ã)\s+([^,.:]+)',G.get('DB_MAU_TXT',''))]
+    # bo phuong CUNG THUOC dia ban ky nay (mau cung quan / quan lan can): khong phai noi dung cu con sot
+    _nay=set(re.sub(r'^(Phường|Xã)\s+','',p).strip().lower() for p in G.get('DB',[]))
+    wards=[w for w in wards if w.strip().lower() not in _nay]
     keep=re.compile(r'(Gói thầu|Dự toán|Địa điểm\s*:?\s*Phường|Cung cấp dịch vụ|Phi tư vấn|Văn bản số|Phường Xóm Chiếu)')
     left=[]
     for sh,co,v in _cells(wb):

@@ -292,12 +292,13 @@ function tuDienPhuong() {
 }
 document.getElementById('quan').addEventListener('input', tuDienPhuong);
 tuDienPhuong();
-const BUILD = '2.3.0-2b979b';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
+const BUILD = '2.3.0-156f63';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
 const CHECKS_NEW = ['Quy đổi phường theo tủ','Khối lượng QLVH','Kế hoạch quý (biên bản số 5)','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu','Định dạng in'];
 const CHECKS_ADD = ['Phát sinh ngoài KH: chi tiết (BB13) khớp tổng hợp (BB12)','Phát sinh ngoài KH: phường theo tủ','Định dạng in'];
 const ST_PS = 'Ghi phát sinh ngoài KH (12, 13)', ST_IN = 'Định dạng in';
 const STAGES_NEW = ['Đọc bảng tra tủ → phường','Đọc biên bản PDF (bước lâu nhất)','Mở file mẫu','Ghi QLVH (2, 3, 8)','Ghi bảo dưỡng (6)','Ghi chi tiết Mẫu 4','Ghi chi tiết Mẫu 7','Đổi địa bàn, kỳ, số hiệu','Lưu file',ST_PS,ST_IN];
 let STAGES = STAGES_NEW;
+let pdfDang = false;
 let pdfFiles = [], mauRec = null, masterRec = null, ready = false, busy = false, result = null, mode = 'new', hsFile = null;
 // ---- IndexedDB: nho file mau + bang tra tren may (khong gui di dau) ----
 const IDB = {
@@ -340,7 +341,7 @@ function renderFiles() {
   pdfFiles.forEach(f => { const li = document.createElement('li'); const a = document.createElement('span'); a.textContent = f.name; const b = document.createElement('span'); b.textContent = kb(f.size); li.append(a, b); ul.append(li); });
   updateRun();
 }
-function updateRun() { $('run').disabled = !(ready && (mode === 'add' ? !!hsFile : pdfFiles.length) && mauRec && masterRec && !busy); }
+function updateRun() { $('run').disabled = !(ready && (mode === 'add' ? !!hsFile : pdfFiles.length) && mauRec && masterRec && !busy && !pdfDang); }
 function setMode(m) {
   if (busy) return; mode = m;
   $('mNew').setAttribute('aria-pressed', m === 'new'); $('mAdd').setAttribute('aria-pressed', m === 'add');
@@ -455,10 +456,12 @@ out
       py.FS.mkdirTree('/app/fonts');
       const can = ['LiberationSerif-Regular.ttf', 'LiberationSerif-Bold.ttf', 'LiberationSerif-Italic.ttf', 'LiberationSerif-BoldItalic.ttf'].filter(f => !py.FS.analyzePath('/app/fonts/' + f).exists);
       if (can.length) { post({type: 'stage', label: 'Tải font chữ (lần đầu, ~1,5 MB)'}); const bufs = await Promise.all(can.map(f => getBuf(BASE + 'fonts/' + f))); can.forEach((f, i) => py.FS.writeFile('/app/fonts/' + f, bufs[i])); }
+      const bo = [];
       for (let lan = 0; lan < 8; lan++) {
+        py.globals.set('BO', bo.join(','));
         const js = py.runPython(\`
 import os, sys, json, traceback
-os.environ['HC_FONT_TAI'] = '1'; os.chdir('/app')
+os.environ['HC_FONT_TAI'] = '1'; os.environ['HC_FONT_BO'] = BO; os.chdir('/app')
 try:
     import xuat_pdf
     R = xuat_pdf.xuat('/work/run/out.xlsx', '/work/run/out.pdf', '/app/fonts')
@@ -470,7 +473,11 @@ except Exception as e:
 out
 \`);
         const res = JSON.parse(js);
-        if (res.font) { post({type: 'stage', label: 'Tải font ' + res.font}); py.FS.writeFile('/app/fonts/' + res.font, await getBuf(BASE + 'fonts/' + res.font)); continue; }
+        if (res.font) {
+          post({type: 'stage', label: 'Tải font ' + res.font});
+          try { py.FS.writeFile('/app/fonts/' + res.font, await getBuf(BASE + 'fonts/' + res.font)); } catch (e) { bo.push(res.font); }   // khong tai duoc -> dung font serif thay
+          continue;
+        }
         if (!res.ok) { post({type: 'pdffail', msg: res.error, trace: res.trace}); return; }
         const x = py.FS.readFile('/work/run/out.pdf'); const buf = x.buffer.slice(x.byteOffset, x.byteOffset + x.byteLength);
         post({type: 'pdfdone', pdf: buf, trang: res.trang, canh_bao: res.canh_bao, giay: res.giay}, [buf]); return;
@@ -553,9 +560,10 @@ function onDone(m) {
 
 // ---------------- Tải hồ sơ PDF (vẽ ngay trên máy, không gửi file đi đâu) ----------------
 function note(t, warn) { const n = $('pdfNote'); n.hidden = !t; n.className = 'pdfnote' + (warn ? ' warn' : ''); n.textContent = t || ''; }
-function pdfBusy(on) { const b = $('savePdf'); b.disabled = on; b.classList.toggle('busy', on); b.textContent = on ? 'Đang tạo PDF…' : 'Tải hồ sơ PDF'; }
+function pdfBusy(on) { pdfDang = on; updateRun(); const b = $('savePdf'); b.disabled = on; b.classList.toggle('busy', on); b.textContent = on ? 'Đang tạo PDF…' : 'Tải hồ sơ PDF'; }
 function onPdf(m) {
   pdfBusy(false);
+  if (!result) { note('Hồ sơ đã được lập lại trong lúc tạo PDF — bấm "Tải hồ sơ PDF" lần nữa.', true); return; }
   const fn = result.fname.replace(/\.xlsx$/i, '.pdf');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([m.pdf], {type: 'application/pdf'})); a.download = fn;
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);

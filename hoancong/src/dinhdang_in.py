@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Chinh dinh dang in toan bo file ho so: A4, vua 1 trang ngang (Bia 1x1), vung in den het chu ky,
-   lap tieu de bang, noi chieu cao dong chu dai (chi tang, bo dong dem <10pt, bo BIA).  python3 dinhdang_in.py IN.xlsx OUT.xlsx"""
+   lap tieu de bang, noi chieu cao dong chu dai theo cach ngat dong cua Excel (chi tang, bo dong dem <10pt; ca BIA de khong cat chu).  python3 dinhdang_in.py IN.xlsx OUT.xlsx"""
 import openpyxl, warnings, sys, re, math; warnings.filterwarnings('ignore')
 from openpyxl.utils import get_column_letter as L, column_index_from_string as CI
 from openpyxl.worksheet.properties import PageSetupProperties
@@ -31,7 +31,7 @@ def fmt(src,out):
     wb=openpyxl.load_workbook(src); log=[]
     nl=nhan_gach_duoi(wb)          # dinh dang nhan TRUOC khi do chieu cao dong (chu dam rong hon)
     import xuat_pdf as XP
-    EV=XP.TinhCongThuc(wb); DO=XP.PDF(None); TH=XP._theme(wb); MDW=XP._mdw(wb,DO)
+    EV=XP.TinhCongThuc(wb); EV.tinh_het(); DO=XP.PDF(None); TH=XP._theme(wb); MDW=XP._mdw(wb,DO)
     for s in wb.worksheets:
         if s.sheet_state!='visible': continue
         pa=s.print_area; c1,c2=1,s.max_column

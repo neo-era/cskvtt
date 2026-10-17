@@ -106,27 +106,56 @@ def dinh_dang(v, fmt='General'):
     if v > 0 or len(secs) == 1: sec = secs[0]; val = v
     elif v < 0: sec = secs[1] if len(secs) > 1 else secs[0]; val = abs(v) if len(secs) > 1 else v
     else: sec = secs[2] if len(secs) > 2 else secs[0]; val = 0
-    if sec.strip().lower() == 'general': return _so_general(val)
+    if re.search(r'(?i)general', sec):                                 # vd "Tổng: "General
+        return re.sub(r'(?i)general', lambda m: _so_general(val), re.sub(r'"([^"]*)"', r'\1', sec), count=1)
+    me = re.search(r'([0#.,]+)E([+-])([0#]+)', sec)
+    if me and val:                                                     # khoa hoc: 0.00E+00
+        nd = me.group(1).partition('.')[2].count('0'); e = int(math.floor(math.log10(abs(val)))); m = val / 10 ** e
+        if round(abs(m), nd) >= 10: m /= 10; e += 1
+        txt = ('%.' + str(nd) + 'f') % m
+        return sec[:me.start()] + txt.replace('.', TP) + 'E' + ('-' if e < 0 else '+') + str(abs(e)).zfill(len(me.group(3))) + sec[me.end():]
+    mk = re.search(r'[0#](,+)(?=[^0#,]*$)', sec.split('.')[0] if '.' in sec else sec)
+    if mk and '"' not in sec[:mk.end()]:                                 # #,##0, -> chia 1000
+        val = val / (1000 ** len(mk.group(1))); sec = sec[:mk.start() + 1] + sec[mk.end():]
     return _muc_so(val, sec)
 
+_THU = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật']
 def _ngay(v, fmt):
-    f = fmt.replace('\\', '').replace('"', '')
+    f = re.sub(r'\[[^\]]*\]', '', fmt or '')
     if isinstance(v, datetime.time): v = datetime.datetime(1900, 1, 1, v.hour, v.minute, v.second)
     if not isinstance(v, datetime.datetime): v = datetime.datetime(v.year, v.month, v.day)
-    rep = [('yyyy', '%Y'), ('yy', '%y'), ('dd', '%d'), ('hh', '%H'), ('ss', '%S')]
-    s = f
-    for a, b in rep: s = s.replace(a, b)
-    s = re.sub(r'(%H:)mm', r'\1%M', s); s = s.replace('mm', '%m')
-    try: return v.strftime(s)
-    except Exception: return v.strftime('%d/%m/%Y')
+    if not re.search(r'[dmyhs]', f, re.I): f = 'dd/mm/yyyy' if (v.hour, v.minute, v.second) == (0, 0, 0) else 'dd/mm/yyyy hh:mm'
+    toks = re.findall(r'"[^"]*"|\\.|yyyy|yy|d{1,4}|m{1,5}|h{1,2}|s{1,2}|AM/PM|am/pm|.', f, re.I)
+    out = []; pm = any(t.upper() == 'AM/PM' for t in toks)
+    for i, t in enumerate(toks):
+        tl = t.lower()
+        if t.startswith('"'): out.append(t[1:-1]); continue
+        if t.startswith('\\'): out.append(t[1:]); continue
+        if tl == 'yyyy': out.append('%04d' % v.year)
+        elif tl == 'yy': out.append('%02d' % (v.year % 100))
+        elif tl in ('d', 'dd'): out.append(('%02d' if tl == 'dd' else '%d') % v.day)
+        elif tl in ('ddd', 'dddd'): out.append(_THU[v.weekday()])
+        elif tl[0] == 'm':
+            gio = any(x.lower().startswith('h') for x in toks[max(0, i - 3):i]) or any(x.lower().startswith('s') for x in toks[i + 1:i + 4])
+            if gio and len(tl) <= 2: out.append(('%02d' if tl == 'mm' else '%d') % v.minute)
+            elif len(tl) <= 2: out.append(('%02d' if tl == 'mm' else '%d') % v.month)
+            else: out.append('Tháng %d' % v.month if len(tl) == 4 else 'Th%d' % v.month)
+        elif tl[0] == 'h':
+            hh = v.hour % 12 or 12 if pm else v.hour; out.append(('%02d' if tl == 'hh' else '%d') % hh)
+        elif tl[0] == 's': out.append(('%02d' if tl == 'ss' else '%d') % v.second)
+        elif tl == 'am/pm': out.append('SA' if v.hour < 12 else 'CH')
+        else: out.append(t)
+    return ''.join(out)
 
 # =====================================================================================
 # 2. TINH CONG THUC (SUM, ROUND, + - * /, tham chieu o / vung / sheet khac)
 # =====================================================================================
 class KhongTinhDuoc(Exception): pass
+class _QuaSau(Exception): pass          # chuoi tham chieu qua sau: hoan, tinh o luot sau
 _TOK = re.compile(r"""\s*(?:
   (?P<str>"(?:[^"]|"")*")
- |(?P<ref>(?:(?:'(?:[^']|'')+'|[A-Za-z0-9_.À-ỹ]+)!)?\$?[A-Z]{1,3}\$?\d+(?::\$?[A-Z]{1,3}\$?\d+)?)
+ |(?P<bool>TRUE|FALSE)(?![A-Z0-9(])
+ |(?P<ref>(?:(?:'(?:[^']|'')+'|[A-Za-z0-9_.À-ỹ]+)!)?(?:\$?[A-Z]{1,3}\$?\d+(?::\$?[A-Z]{1,3}\$?\d+)?|\$?[A-Z]{1,3}:\$?[A-Z]{1,3}(?![A-Z0-9])))
  |(?P<fn>[A-Z][A-Z0-9.]*)\(
  |(?P<num>\d+(?:\.\d*)?(?:[eE][+-]?\d+)?|\.\d+)
  |(?P<op><>|<=|>=|[-+*/^&=<>(),:%])
@@ -134,15 +163,22 @@ _TOK = re.compile(r"""\s*(?:
 
 class TinhCongThuc:
     def __init__(self, wb):
-        self.wb = wb; self.cache = {}; self.dang = set(); self.loi = []
+        self.wb = wb; self.cache = {}; self.dang = set(); self.loi = []; self.luot = False
     def gia_tri(self, sh, r, c):
         k = (sh, r, c)
         if k in self.cache: return self.cache[k]
         v = self.wb[sh].cell(r, c).value
         if isinstance(v, str) and v.startswith('='):
             if k in self.dang: return 0
+            if len(self.dang) > 120 and self.luot: raise _QuaSau()
             self.dang.add(k)
             try: v = self._tinh(v[1:], sh)
+            except _QuaSau:
+                self.dang.discard(k); raise
+            except RecursionError:
+                self.dang.discard(k)
+                if self.luot: raise _QuaSau()
+                raise
             except KhongTinhDuoc as e:
                 self.loi.append('%s!%s%d: =%s (%s)' % (sh, CL(c), r, str(self.wb[sh].cell(r, c).value)[1:60], e)); v = None
             except Exception as e:
@@ -160,50 +196,58 @@ class TinhCongThuc:
                 if s[pos:].strip() == '': break
                 raise KhongTinhDuoc('không đọc được "%s"' % s[pos:pos + 15])
             toks.append((m.lastgroup, m.group(m.lastgroup))); pos = m.end()
-        luu = (getattr(self, 't', None), getattr(self, 'i', 0), getattr(self, 'sh', None))   # cong thuc long nhau
-        self.t = toks; self.i = 0; self.sh = sh
+        luu = (getattr(self, 't', None), getattr(self, 'i', 0), getattr(self, 'sh', None), getattr(self, 'bo', False))   # cong thuc long nhau
+        self.t = toks; self.i = 0; self.sh = sh; self.bo = False
         try:
             v = self._cmp()
             if self.i != len(self.t): raise KhongTinhDuoc('thừa "%s"' % self.t[self.i][1])
             return v
         finally:
-            self.t, self.i, self.sh = luu
+            self.t, self.i, self.sh, self.bo = luu
     def _peek(self): return self.t[self.i] if self.i < len(self.t) else (None, None)
     def _eat(self): x = self.t[self.i]; self.i += 1; return x
     def _cmp(self):
         a = self._add()
         while self._peek()[1] in ('=', '<>', '<', '>', '<=', '>='):
-            op = self._eat()[1]; b = self._add(); a, b = self._sc(a), self._sc(b)
+            op = self._eat()[1]; b = self._add()
+            if self.bo: a = 0; continue
+            a, b = self._sc(a), self._sc(b)
             a = {'=': a == b, '<>': a != b, '<': a < b, '>': a > b, '<=': a <= b, '>=': a >= b}[op]
         return a
     def _add(self):
         a = self._mul()
         while self._peek()[1] in ('+', '-', '&'):
             op = self._eat()[1]; b = self._mul()
+            if self.bo: a = 0; continue
             if op == '&': a = dinh_dang(self._sc(a)) + dinh_dang(self._sc(b)) if False else _txt(self._sc(a)) + _txt(self._sc(b))
             else: a = _n(self._sc(a)) + (_n(self._sc(b)) if op == '+' else -_n(self._sc(b)))
         return a
     def _mul(self):
         a = self._pow()
         while self._peek()[1] in ('*', '/'):
-            op = self._eat()[1]; b = _n(self._sc(self._pow()))
+            op = self._eat()[1]; b = self._pow()
+            if self.bo: a = 0; continue
+            b = _n(self._sc(b))
             if op == '/' and b == 0: raise KhongTinhDuoc('chia cho 0')
             a = _n(self._sc(a)) * b if op == '*' else _n(self._sc(a)) / b
         return a
     def _pow(self):
         a = self._un()
-        while self._peek()[1] == '^': self._eat(); a = _n(self._sc(a)) ** _n(self._sc(self._un()))
+        while self._peek()[1] == '^':
+            self._eat(); b = self._un(); a = 0 if self.bo else _n(self._sc(a)) ** _n(self._sc(b))
         return a
     def _un(self):
-        if self._peek()[1] == '-': self._eat(); return -_n(self._sc(self._un()))
+        if self._peek()[1] == '-':
+            self._eat(); v = self._un(); return 0 if self.bo else -_n(self._sc(v))
         if self._peek()[1] == '+': self._eat(); return self._un()
         v = self._atom()
-        if self._peek()[1] == '%': self._eat(); v = _n(self._sc(v)) / 100
+        if self._peek()[1] == '%': self._eat(); v = 0 if self.bo else _n(self._sc(v)) / 100
         return v
     def _atom(self):
         k, t = self._peek()
         if k is None: raise KhongTinhDuoc('thiếu toán hạng')
         self._eat()
+        if k == 'bool': return t == 'TRUE'
         if k == 'num': return float(t) if ('.' in t or 'e' in t.lower()) else int(t)
         if k == 'str': return t[1:-1].replace('""', '"')
         if k == 'ref': return self._ref(t)
@@ -211,6 +255,8 @@ class TinhCongThuc:
             v = self._cmp()
             if self._eat()[1] != ')': raise KhongTinhDuoc('thiếu ")"')
             return v
+        if k == 'fn' and t.upper() in ('IF', 'IFERROR'):
+            return self._if(t.upper())
         if k == 'fn':
             args = []
             if self._peek()[1] != ')':
@@ -219,14 +265,52 @@ class TinhCongThuc:
                     if self._peek()[1] == ',': self._eat(); continue
                     break
             if self._eat()[1] != ')': raise KhongTinhDuoc('thiếu ")"')
-            return self._ham(t.upper(), args)
+            return 0 if self.bo else self._ham(t.upper(), args)
         raise KhongTinhDuoc('không hiểu "%s"' % t)
+    def _bo(self, bo):
+        """Doc 1 doi so; bo=True: chi doc qua, khong tinh (nhanh khong duoc chon cua IF)."""
+        cu = self.bo; self.bo = cu or bo
+        try: return self._cmp()
+        finally: self.bo = cu
+    def _if(self, f):
+        if f == 'IF':
+            c = self._bo(False); cv = False if self.bo else bool(_n(self._sc(c)) if not isinstance(self._sc(c), str) else self._sc(c))
+            a = b = False
+            if self._peek()[1] == ',': self._eat(); a = self._bo(not cv)
+            if self._peek()[1] == ',': self._eat(); b = self._bo(cv)
+            if self._eat()[1] != ')': raise KhongTinhDuoc('thiếu ")"')
+            return 0 if self.bo else self._sc(a if cv else b)
+        i0 = self.i; loi = False
+        try: a = self._bo(False)
+        except KhongTinhDuoc:
+            loi = True; self.i = i0; self._bo(True)
+        if self._eat()[1] != ',': raise KhongTinhDuoc('IFERROR thiếu đối số')
+        b = self._bo(not loi)
+        if self._eat()[1] != ')': raise KhongTinhDuoc('thiếu ")"')
+        return 0 if self.bo else self._sc(b if loi else a)
+    def tinh_het(self):
+        """Tinh truoc moi o cong thuc theo thu tu dong (chuoi tham chieu dai khong bi qua do sau de quy)."""
+        o = [(ws.title, c.row, c.column) for ws in self.wb.worksheets for row in ws.iter_rows() for c in row
+             if isinstance(c.value, str) and c.value.startswith('=')]
+        self.luot = True
+        for _ in range(200):                     # moi luot tinh duoc them 1 doan chuoi (do sau <= 120)
+            con = []
+            for k in o:
+                if k in self.cache: continue
+                try: self.gia_tri(*k)
+                except _QuaSau: self.dang.clear(); con.append(k)
+            if not con or len(con) == len(o): break
+            o = con
+        self.luot = False
     def _ref(self, t):
+        if self.bo: return 0
         sh = self.sh
         if '!' in t:
             p, t = t.rsplit('!', 1); sh = p[1:-1].replace("''", "'") if p.startswith("'") else p
             if sh not in self.wb.sheetnames: raise KhongTinhDuoc('không có sheet "%s"' % sh)
         t = t.replace('$', '')
+        if re.fullmatch(r'[A-Z]+:[A-Z]+', t):                      # ca cot A:A
+            a, b = t.split(':'); t = '%s1:%s%d' % (a, b, max(1, self.wb[sh].max_row))
         if ':' in t:
             a, b = t.split(':')
             ma = re.match(r'([A-Z]+)(\d+)', a); mb = re.match(r'([A-Z]+)(\d+)', b)
@@ -262,12 +346,12 @@ class TinhCongThuc:
             from decimal import ROUND_UP, ROUND_DOWN
             mode = {'ROUND': ROUND_HALF_UP, 'ROUNDUP': ROUND_UP, 'ROUNDDOWN': ROUND_DOWN}[f]
             return float(Decimal(repr(float(x))).quantize(q, rounding=mode))
-        if f == 'IF':
-            c = self._sc(a[0]); return self._sc(a[1]) if c else (self._sc(a[2]) if len(a) > 2 else False)
         raise KhongTinhDuoc('hàm %s chưa hỗ trợ' % f)
 
 def _n(v):
     if v is None or v == '': return 0
+    if isinstance(v, datetime.datetime): d = v - datetime.datetime(1899, 12, 30); return d.days + d.seconds / 86400.0
+    if isinstance(v, datetime.date): return (v - datetime.date(1899, 12, 30)).days
     if isinstance(v, bool): return int(v)
     if isinstance(v, (int, float)): return v
     try: return float(str(v).replace(',', '.'))
@@ -412,7 +496,7 @@ class PDF:
             return self.ttf[k]
         if f not in self.ttf:
             p = os.path.join(self.fd, f)
-            if not os.path.exists(p) and os.environ.get('HC_FONT_TAI'):
+            if not os.path.exists(p) and os.environ.get('HC_FONT_TAI') and f not in os.environ.get('HC_FONT_BO', '').split(','):
                 raise ThieuFont(f)                             # tren web: trang tai font roi chay lai
             if not os.path.exists(p):
                 f2 = FONT_FILE[('serif', k[1], k[2])]          # thieu font sans -> dung serif
@@ -443,7 +527,7 @@ class PDF:
             f = [t for t in self.ttf.values() if t.ten == n][0]; u = self.used[n]
             if not u: continue
             ps = 'HC%c%c%c%c%c+' % tuple(chr(65 + (i * 7 + k) % 26) for k in range(5)) + n.split('.')[0].replace('-', '')
-            ff = add(stream(b'/Length1 %d' % 0, f.subset(list(u))))
+            sub = f.subset(list(u)); ff = add(stream(b'/Length1 %d' % len(sub), sub))
             sc = 1000.0 / f.upm
             fl = 2 | (64 if f.italic else 0) | 32
             fdsc = add(('<</Type/FontDescriptor/FontName/%s/Flags %d/FontBBox[%d %d %d %d]/ItalicAngle %d/Ascent %d/Descent %d/CapHeight %d/StemV 80/FontFile2 %d 0 R>>'
@@ -515,7 +599,21 @@ def _doc_anh(data):
         elif t == b'IDAT': idat += ch
         elif t == b'IEND': break
         p += 12 + ln
-    if il or bd != 8: raise ValueError('PNG interlace/16-bit chưa hỗ trợ')
+    if il: raise ValueError('PNG xen dòng (interlace) chưa hỗ trợ')
+    if bd == 16: raise ValueError('PNG 16-bit chưa hỗ trợ')
+    if bd < 8:                                                          # anh chu ky/con dau 1-2-4 bit (gray/bang mau)
+        st = (w * bd + 7) // 8; raw = _unfilter(zlib.decompress(idat), st, h, 1, bpp_px=1)
+        px = bytearray(); mx = (1 << bd) - 1
+        for y in range(h):
+            row = raw[y * st:(y + 1) * st]
+            for x in range(w):
+                b = row[(x * bd) // 8]; sh = 8 - bd - (x * bd) % 8; px.append((b >> sh) & mx)
+        if ct == 0:
+            g = bytes(int(v * 255 / mx) for v in px)
+            return (w, h, b'/DeviceGray', 8, g, 'raw', None, None)
+        rgb = bytearray(); a = bytearray()
+        for k in px: rgb += plte[3 * k:3 * k + 3]; a.append(trns[k] if k < len(trns) else 255)
+        return (w, h, b'/DeviceRGB', 8, bytes(rgb), 'raw', None, bytes(a) if trns else None)
     if ct in (0, 2) and not trns:                                   # khong trong suot: nhung truc tiep
         nc = 1 if ct == 0 else 3
         return (w, h, b'/DeviceGray' if nc == 1 else b'/DeviceRGB', 8, idat, 'FlateDecode', b'/DecodeParms<</Predictor 15/Colors %d/BitsPerComponent 8/Columns %d>>' % (nc, w), None)
@@ -536,8 +634,8 @@ def _doc_anh(data):
         return (w, h, b'/DeviceRGB' if n == 3 else b'/DeviceGray', 8, bytes(px), 'raw', None, a)
     return (w, h, b'/DeviceRGB' if nc == 3 else b'/DeviceGray', 8, bytes(raw), 'raw', None, None)
 
-def _unfilter(d, w, h, bpp):
-    st = w * bpp; out = bytearray(st * h); prev = bytearray(st); p = 0
+def _unfilter(d, w, h, bpp, bpp_px=None):
+    st = w * bpp; bpp = bpp_px or bpp; out = bytearray(st * h); prev = bytearray(st); p = 0
     for y in range(h):
         ft = d[p]; line = bytearray(d[p + 1:p + 1 + st]); p += 1 + st
         if ft == 1:
@@ -718,11 +816,17 @@ class Sheet:
                         continue
                     if cw + w > wmax + 0.01 and cur: flush()
                     while w > wmax + 0.01 and len(tok) > 1:
-                        k = len(tok)
-                        while k > 1 and f.rong(tok[:k], sz) > wmax - cw + 0.01: k -= 1
-                        if cur and k < len(tok) and f.rong(tok[:k], sz) < wmax * 0.3: flush(); continue
-                        cur.append((tok[:k], rn, f.rong(tok[:k], sz))); lh = max(lh, h); cw += cur[-1][2]; flush()
-                        tok = tok[k:]; w = f.rong(tok, sz)
+                        cs = [0.0]
+                        for ch in tok: cs.append(cs[-1] + f.rong(ch, sz))          # cong don be rong tung chu
+                        lo_, hi_ = 1, len(tok)
+                        while lo_ < hi_:                                          # k lon nhat ma tok[:k] vua phan con lai
+                            mid = (lo_ + hi_ + 1) // 2
+                            if cs[mid] <= wmax - cw + 0.01: lo_ = mid
+                            else: hi_ = mid - 1
+                        k = lo_
+                        if cur and k < len(tok) and cs[k] < wmax * 0.3: flush(); continue
+                        cur.append((tok[:k], rn, cs[k])); lh = max(lh, h); cw += cs[k]; flush()
+                        tok = tok[k:]; w = cs[-1] - cs[k]
                     cur.append((tok, rn, w)); cw += w; lh = max(lh, h)
         if cur or not lines: lh = lh or max(r[5] * DONG[r[6]] for r in runs); flush()
         return lines
@@ -809,7 +913,8 @@ def ve_sheet(ws, ev, pdf, theme, mdw, canh_bao):
                 if b is not None and any(getattr(b, sd) is not None and getattr(b, sd).style for sd in ('left', 'right', 'top', 'bottom')): return True
                 if cell.fill is not None and cell.fill.fill_type == 'solid': return True
         return False
-    trang = [p for p in trang if co_noi_dung(p)] or trang[:1]
+    trang = [p for p in trang if co_noi_dung(p)]
+    if not trang: return 0                                     # sheet trong: Excel khong in
     # chia cot neu qua rong (khi khong vua 1 trang ngang)
     nhom_cot = []; cur = []; w = 0
     for c in S.cols:
@@ -868,7 +973,11 @@ def _hf_parse(t):
 
 def _ve_hf(ws, V, pdf, pw, ph, ml, mr, so, tong, k):
     pm = ws.page_margins
-    for hf, top in ((ws.oddHeader, True), (ws.oddFooter, False)):
+    hfo = getattr(ws, 'HeaderFooter', None)
+    dau = bool(hfo is not None and hfo.differentFirst) and so == 1
+    chan = bool(hfo is not None and hfo.differentOddEven) and so % 2 == 0
+    for hf, top in (((ws.firstHeader if dau else ws.evenHeader if chan else ws.oddHeader), True),
+                    ((ws.firstFooter if dau else ws.evenFooter if chan else ws.oddFooter), False)):
         for part, al in ((hf.left, 'l'), (hf.center, 'c'), (hf.right, 'r')):
             if not part or not part.text: continue
             t, fn, st, sz = _hf_parse(part.text)
@@ -983,7 +1092,8 @@ def _ve_o(S, V, cell, r, c, x0, y0, w, h, cols, colset, X, P, k):
                         L_ -= 1; ww += S.cw[cols[L_]]; xx -= S.cw[cols[L_]]; moved = True
                     if not moved: break
                 # can giua theo o goc: lay doi xung quanh o goc
-                ctr = x0 + w / 2; half = min(ctr - xx, xx + ww - ctr); xx, ww = ctr - half, 2 * half if half * 2 >= tw else ww
+                ctr = x0 + w / 2; half = min(ctr - xx, xx + ww - ctr)
+                if half * 2 >= tw: xx, ww = ctr - half, 2 * half                 # doi xung quanh o goc (nhu Excel)
     tot = sum(l[1] for l in lines)
     canh = getattr(S, 'canh', None)
     if canh is not None and S.rh.get(r, 99) >= 10:
@@ -1060,7 +1170,7 @@ def xuat(src, out, thu_muc_font, log=print):
     t0 = time.time()
     os.environ['HC_FONTS'] = thu_muc_font
     wb = openpyxl.load_workbook(src, rich_text=True)
-    ev = TinhCongThuc(wb); pdf = PDF(thu_muc_font); theme = _theme(wb); mdw = _mdw(wb, pdf)
+    ev = TinhCongThuc(wb); ev.tinh_het(); pdf = PDF(thu_muc_font); theme = _theme(wb); mdw = _mdw(wb, pdf)
     trang = []; canh = []
     for ws in wb.worksheets:
         if ws.sheet_state != 'visible': continue

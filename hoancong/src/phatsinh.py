@@ -8,6 +8,8 @@ import pdfplumber, openpyxl
 import refill_lib as RL
 from refill_lib import norm, rewrite, look, load_master
 RL.GOI=os.environ.get('GOI','G201NA'); RL.PREFER=set(p.strip() for p in os.environ.get('PREFER','').split(';') if p.strip())
+if not RL.PREFER:   # de trong -> tu lay theo ma quan
+    from quan_phuong import phuong_cua_quan; RL.PREFER=set(phuong_cua_quan(os.environ.get('QUAN','')))
 HS=os.environ['HS_XLSX']; OUT=os.environ.get('OUT_XLSX',''); SRC=os.environ['SRC_XLSM']
 if not OUT or os.path.abspath(OUT)==os.path.abspath(HS): sys.exit('THIẾU OUT_XLSX: phải ghi ra file KHÁC file hồ sơ gốc')
 CTX={}   # vi tri dang doc (file, trang, hang muc, vi tri) de bao loi ro rang

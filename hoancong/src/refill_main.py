@@ -8,6 +8,8 @@ SRC=os.environ['SRC_XLSM']; OUT=os.environ.get('OUT_XLSX','HO_SO_HOAN_CONG.xlsx'
 import refill_lib as _RL
 _RL.GOI=os.environ.get('GOI','G201NA')
 _RL.PREFER=set(p.strip() for p in os.environ.get('PREFER','').split(';') if p.strip())
+if not _RL.PREFER:   # de trong -> tu lay theo ma quan
+    from quan_phuong import phuong_cua_quan; _RL.PREFER=set(phuong_cua_quan(os.environ.get('QUAN','')))
 print('@@Đọc bảng tra tủ → phường')
 by,bn=load_master()
 print('@@Đọc biên bản PDF (bước lâu nhất)')
@@ -95,6 +97,13 @@ for _r in range(20,_g3.max_row+1):
     if isinstance(_v,str) and _g3.cell(_r,1).value is None and _v.strip().lower().startswith('tủ'):
         if 'kết nối' in _v.lower(): GRP_KN=_v.strip()
         else: GRP_THUONG=_v.strip()
+GRP_KN_PDF=[]; GRP_TH_PDF=[]
+# Nhan nhom: uu tien DUNG CHU bien ban 4 (vd "Tủ kết nối về trung tâm"); bien ban khong co thi dung chu cua mau
+for _d in qlvh:
+    _p=(_d.get('grp') or '')
+    if _p: (GRP_KN_PDF.append(_p) if 'kết nối' in _p.lower() else GRP_TH_PDF.append(_p))
+if GRP_KN_PDF: GRP_KN=GRP_KN_PDF[0]
+if GRP_TH_PDF: GRP_THUONG=GRP_TH_PDF[0]
 for _d in qlvh: _d['grp']=GRP_KN if 'kết nối' in (_d['hm'] or '').lower() else GRP_THUONG
 qlvh.sort(key=lambda d: 0 if d['grp']==GRP_THUONG else 1)   # nhom Tu thuong truoc (sort on dinh)
 hm_order=[]; hm_grp={}; agg={}; byhm=OrderedDict()
@@ -258,7 +267,7 @@ ws.column_dimensions['A'].hidden=True; ws.column_dimensions['B'].hidden=True
 
 
 # ================= 8.PYCNT1 (QLVH phieu YCNT) =================
-ws=wb['8.PYCNT1_QLVH_G201']; ncol=5; first=33; sig=find_tail(ws,40)
+ws=wb['8.PYCNT1_QLVH_G201']; ncol=5; first=33; sig=find_tail(ws,first)   # tim muc '3. Thoi gian' ngay sau dong tieu de bang (mau co the chi co vai dong)
 gst=capstyle(ws,33,ncol); dst=capstyle(ws,34,ncol); gh=caph(ws,33); dh=caph(ws,34)
 plan=[]; last=None
 for h in hm_order:
@@ -275,7 +284,7 @@ def w8(ws,fd,pr):
 _nt=rewrite(ws,first,sig,ncol,len(plan),w8,34); WROTE['8.PYCNT1_QLVH_G201']=(first,_nt-1)
 
 # ================= 10.PYCNT2 (BD phieu YCNT) =================
-ws=wb['10.PYCNT2_BD_G201']; ncol=5; first=33; sig=find_tail(ws,40)
+ws=wb['10.PYCNT2_BD_G201']; ncol=5; first=33; sig=find_tail(ws,first)   # tim muc '3. Thoi gian' ngay sau dong tieu de bang (mau co the chi co vai dong)
 gst=capstyle(ws,33,ncol); dst=capstyle(ws,34,ncol); gh=caph(ws,33); dh=caph(ws,34)
 # BD hang muc co KL, group theo BoQ stt
 bqn2={norm(v['ten']):k for k,v in boq.items()}

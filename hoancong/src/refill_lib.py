@@ -132,7 +132,7 @@ def parse_qlvh(by,bn):
                     r=[(c or '').strip().replace('\n',' ') for c in r]
                     if len(r)<9: continue
                     c0,c1,c2,c3,c4,c5,c6,c7,c8=r[:9]
-                    if c1 in ('Tủ Thường','Tủ kết nối về trung tâm') and not c4: grp=c1; continue
+                    if (not c0 or c0 in ('I','II','III','IV','V')) and norm(c1).startswith('tu ') and not c3 and not c4: grp=sua_dau(' '.join(c1.split())); continue   # nhan nhom DUNG CHU bien ban
                     if c1.startswith('Tổng cộng'): continue
                     if c0 and c1 and not c3 and not c4: hm=canon_hm(c1,c2); continue
                     if not c0 and c1 and not c3 and not c4: continue
@@ -140,13 +140,18 @@ def parse_qlvh(by,bn):
                         m=look(c1,by,bn); ph=m[0] if m else '(không rõ)'; du=m[1] if m else ''
                         out.append({'tu':(m[3] if m else c1),'diachi':c2,'kl':num(c6),'hm':hm,'grp':grp,'phuong':ph,'duong':du})
     return out
+_MAT_HUYEN={'vê':'về','điêu':'điều','nhiêu':'nhiều','đêu':'đều'}
+def sua_dau(t):
+    """Mot so bien ban (font cua ban Word) doc ra mat dau huyen cua chu 'ề' (PDF van hien dung 'điều').
+    Chi tra lai dau cho cac tu chac chan (khong dung 'đê', 'chiêu' vi la tu hop le)."""
+    if not t: return t
+    def f(m):
+        w=m.group(0); r=_MAT_HUYEN.get(w.lower())
+        return w if r is None else (r[0].upper()+r[1:] if w[0].isupper() else r)
+    return re.sub(r'(?<!\w)(?:vê|điêu|nhiêu|đêu)(?!\w)',f,t,flags=re.I)
 def nhom_bd(ten):
-    """Nhan nhom bao duong theo chu cua MAU (ranh gioi nhom moi quan khac nhau -> lay tu bien ban, khong co dinh STT)."""
-    k=norm(ten)
-    if 'khong thuong xuyen' in k or 'khong thuong xuyen' in k.replace('thuong','thuong'): return 'Bảo dưỡng không thường xuyên'
-    if 'thuong xuyen' in k: return 'Bảo dưỡng thường xuyên'
-    if 'trung tam' in k: return 'Trung tâm điều khiển'
-    return ' '.join(ten.split())
+    """Nhan nhom bao duong: lay DUNG CHU bien ban (anh Lam chot 17/10/2026), chi gom khoang trang."""
+    return sua_dau(' '.join((ten or '').split()))
 def parse_boq():
     it={}; grp=None
     with pdfplumber.open(g('2._BBNT_QLVH')) as pdf:
@@ -157,7 +162,7 @@ def parse_boq():
                     if len(r)<6: continue
                     st=r[0].strip()
                     if st in ('I','II','III','IV','V') and r[1]: grp=nhom_bd(r[1]+r[2] if not r[3] else r[1]); continue
-                    if re.fullmatch(r'\d+',st): it[int(st)]={'ten':r[1],'dvt':r[2],'kh':num(r[3]),'th':num(r[4]),'nt':num(r[5]),'grp':grp}
+                    if re.fullmatch(r'\d+',st): it[int(st)]={'ten':sua_dau(r[1]),'dvt':r[2],'kh':num(r[3]),'th':num(r[4]),'nt':num(r[5]),'grp':grp}
     return it
 def sohieu_pdf():
     """So hieu that tu bien ban 8-11 (Phieu YCNT / BB nghiem thu cong viec): {(stt,'YCNT'|'NTCV'): '01/09/YCNT-Q10'}."""

@@ -38,3 +38,11 @@ python3 tests/test_v2.py <thư mục PDF> <mẫu .xlsm> <bảng tra .xlsx>
 - Sửa: mã xử lý nạp từ `py/pylibs.zip?v=<BUILD>`; service worker lưu theo ĐÚNG phiên bản; trong zip có `build.txt`, worker so khớp với `BUILD` của trang, lệch → báo "bấm Ctrl + F5".
 - `VERSION` (vd 2.1.0) + `./build.sh` → `BUILD = VERSION-sha1(src)[:6]`; hiện ở tiêu đề cửa sổ ("Hoàn công CSKVTT v2.1.0"), nhãn cạnh tên app và dòng "Phiên bản …" cuối trang.
 - Lỗi số liệu (`phatsinh.num`): ô số lẫn chữ tràn từ cột bên cạnh mà chỉ có 1 số → tự lấy số; còn sai → báo rõ biên bản, file, trang, hạng mục, nguyên nhân, cách kiểm tra, cách khắc phục.
+
+## Đợt góp ý 17/10/2026 (tối) — v2.2.0
+- Sheet 10 (và 8) mất mục "3. Thời gian / 4. Địa điểm / câu đề nghị": mã chỉ tìm mục này từ dòng 41 trở xuống; mẫu có bảng ngắn thì mục 3 nằm trên dòng 41 → bị bảng hạng mục ghi đè. Sửa: tìm ngay sau dòng tiêu đề bảng (`find_tail(ws, first)`). Test: mẫu rút ngắn bảng (`mau_ngan`).
+- Ô "Phường của quận" tự điền theo mã quận (`src/quan_phuong.py`, NQ 1685/2025; build.sh chép sang index.html). Mã lạ → xoá phần tự điền, giữ phần nhập tay. Python: PREFER trống → lấy theo QUAN.
+- Nhãn nhóm lấy ĐÚNG CHỮ biên bản: QLVH "Tủ kết nối về trung tâm"; BD "Công tác duy tu thường xuyên / không thường xuyên", "Trung tâm điều khiển".
+- Font một số biên bản (3, 6, 8, 10…) đọc ra mất dấu huyền của "ề" (PDF vẫn hiện đúng): `sua_dau` trả lại cho vê/điêu/nhiêu/đêu (không đụng "đê", "chiêu").
+- Bỏ dòng "Phiên bản … Ctrl + F5" cuối trang; số phiên bản giữ ở tiêu đề cửa sổ + nhãn (rê chuột xem bản dựng).
+- Test bộ thật: 22/22; T08: 17/17.

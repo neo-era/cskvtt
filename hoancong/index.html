@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>Hoàn công CSKVTT v2.1.1</title>
+<title>Hoàn công CSKVTT v2.2.0</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#14213d">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -135,7 +135,7 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
 
 
 <header class="top"><div class="in">
-  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.1.1</small></h1>
+  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.2.0</small></h1>
   <p class="tsub"><b>Chiếu sáng khu vực Trung Tâm</b><br>Hồ sơ hoàn công các gói Duy tu chiếu sáng</p>
   <button class="inst" id="instBtn" type="button" hidden aria-label="Cài ứng dụng Hoàn công lên máy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Cài ứng dụng</button>
 </div></header>
@@ -198,13 +198,13 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
           </div>
           <div>
             <label class="lb" for="quan">Mã quận trong biên bản</label>
-            <input type="text" id="quan" value="8" inputmode="numeric">
+            <input type="text" id="quan" value="8" autocomplete="off" aria-describedby="preferHint">
           </div>
         </div>
         <div style="margin-top:12px">
           <label class="lb" for="prefer">Phường của quận (ưu tiên khi tên tủ trùng)</label>
           <textarea id="prefer">Phường Chánh Hưng; Phường Phú Định; Phường Bình Đông</textarea>
-          <div class="hint">Địa bàn ghi vào hồ sơ lấy theo phường thực có trong dữ liệu kỳ.</div>
+          <div class="hint" id="preferHint">Tự điền theo mã quận (có thể sửa). Địa bàn ghi vào hồ sơ lấy theo phường thực có trong dữ liệu kỳ.</div>
         </div>
       </div>
     </div>
@@ -216,7 +216,6 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
           <button class="btn" id="run" type="button" disabled>Lập hồ sơ</button>
           <div class="engine"><span class="dot busy" id="edot"></span><span id="etext">Đang tải bộ xử lý (khoảng 20 MB, lần sau nhanh hơn)…</span></div>
         </div>
-        <div class="ver" id="ver"></div>
         <ul class="prog" id="prog" hidden></ul>
         <div class="err" id="err" hidden></div>
       </div>
@@ -267,7 +266,22 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
 (() => {
 const $ = (id) => document.getElementById(id);
 const BASE = new URL('./', location.href).href;
-const BUILD = '2.1.1-733145';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
+// Quan cu -> phuong moi: sinh tu src/quan_phuong.py boi build.sh (KHONG sua tay dong duoi)
+const QUAN_PHUONG = {"1":["Phường Sài Gòn","Phường Tân Định","Phường Bến Thành","Phường Cầu Ông Lãnh"],"3":["Phường Bàn Cờ","Phường Xuân Hòa","Phường Nhiêu Lộc"],"4":["Phường Xóm Chiếu","Phường Khánh Hội","Phường Vĩnh Hội"],"5":["Phường Chợ Quán","Phường An Đông","Phường Chợ Lớn"],"6":["Phường Bình Tây","Phường Bình Tiên","Phường Bình Phú","Phường Phú Lâm"],"7":["Phường Tân Thuận","Phường Phú Thuận","Phường Tân Mỹ","Phường Tân Hưng"],"8":["Phường Chánh Hưng","Phường Phú Định","Phường Bình Đông"],"10":["Phường Diên Hồng","Phường Vườn Lài","Phường Hòa Hưng"],"11":["Phường Hòa Bình","Phường Phú Thọ","Phường Bình Thới","Phường Minh Phụng"],"12":["Phường Đông Hưng Thuận","Phường Trung Mỹ Tây","Phường Tân Thới Hiệp","Phường Thới An","Phường An Phú Đông"],"BT":["Phường Gia Định","Phường Bình Thạnh","Phường Bình Lợi Trung","Phường Thạnh Mỹ Tây","Phường Bình Quới"],"PN":["Phường Đức Nhuận","Phường Cầu Kiệu","Phường Phú Nhuận"],"TB":["Phường Tân Sơn Hòa","Phường Tân Sơn Nhất","Phường Tân Hòa","Phường Bảy Hiền","Phường Tân Bình","Phường Tân Sơn"],"TP":["Phường Tây Thạnh","Phường Tân Sơn Nhì","Phường Phú Thọ Hòa","Phường Tân Phú","Phường Phú Thạnh"],"GV":["Phường Hạnh Thông","Phường An Nhơn","Phường Gò Vấp","Phường An Hội Đông","Phường Thông Tây Hội","Phường An Hội Tây"],"BTA":["Phường Bình Tân","Phường Bình Hưng Hòa","Phường Bình Trị Đông","Phường An Lạc","Phường Tân Tạo"],"NB":["Xã Nhà Bè","Xã Hiệp Phước"],"CG":["Xã Cần Giờ","Xã Bình Khánh","Xã An Thới Đông","Xã Thạnh An"],"BC":["Xã Vĩnh Lộc","Xã Tân Vĩnh Lộc","Xã Bình Lợi","Xã Tân Nhựt","Xã Bình Chánh","Xã Hưng Long","Xã Bình Hưng"]};
+function phuongCuaQuan(q) {
+  q = (q || '').trim().toUpperCase(); if (/^Q\d+$/.test(q)) q = q.slice(1);
+  return QUAN_PHUONG[q.replace(/^0+(?=.)/, '')] || [];
+}
+function tuDienPhuong() {
+  const L = phuongCuaQuan(document.getElementById('quan').value), h = document.getElementById('preferHint');
+  const pf = document.getElementById('prefer');
+  if (L.length) { pf.value = tuDienPhuong.last = L.join('; '); h.textContent = 'Đã tự điền ' + L.length + ' phường/xã theo mã quận (có thể sửa). Địa bàn ghi vào hồ sơ lấy theo phường thực có trong dữ liệu kỳ.'; }
+  else { if (pf.value === tuDienPhuong.last) pf.value = '';   // chi xoa phan da tu dien, giu phan anh nhap tay
+    h.textContent = 'Không có sẵn danh sách phường cho mã quận này — anh nhập tay, cách nhau bằng dấu ";".'; }
+}
+document.getElementById('quan').addEventListener('input', tuDienPhuong);
+tuDienPhuong();
+const BUILD = '2.2.0-c88029';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
 const CHECKS_NEW = ['Quy đổi phường theo tủ','Khối lượng QLVH','Kế hoạch quý (biên bản số 5)','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu','Định dạng in'];
 const CHECKS_ADD = ['Phát sinh ngoài KH: chi tiết (BB13) khớp tổng hợp (BB12)','Phát sinh ngoài KH: phường theo tủ','Định dạng in'];
 const ST_PS = 'Ghi phát sinh ngoài KH (12, 13)', ST_IN = 'Định dạng in';
@@ -438,7 +452,7 @@ worker.onmessage = (ev) => {
 };
 worker.onerror = (e) => { engine('bad', 'Bộ xử lý gặp lỗi'); showErr('Bộ xử lý gặp lỗi: ' + (e.message || 'không rõ')); };
 worker.postMessage({type: 'init', base: BASE, build: BUILD});
-$('ver').textContent = 'Phiên bản ' + BUILD + ' — nếu số này khác số trên GitHub, bấm Ctrl + F5';
+$('appver').title = 'Bản dựng ' + BUILD;
 
 $('run').addEventListener('click', async () => {
   if (busy) return; busy = true; updateRun(); showErr(''); result = null; $('out').hidden = true;

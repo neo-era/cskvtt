@@ -31,6 +31,33 @@ noft = [w.title for w in wb.worksheets if w.sheet_state == 'visible' and not w.t
 check(not noft, 'số trang mọi sheet', noft)
 ws6 = wb['6.HTCT_BD_G201']; grp = [ws6.cell(r, 2).value for r in range(33, ws6.max_row) if ws6.cell(r, 1).value is None and ws6.cell(r, 2).value and not str(ws6.cell(r, 2).value).startswith(('Ông', 'Bà'))]
 check(len(grp) >= 2, 'sheet 6 có nhóm theo biên bản', grp[:5])
+# sheet 8, 10 (phieu YCNT): sau bang phai con du muc 3. Thoi gian, 4. Dia diem, cau de nghi, roi moi den Chi huy truong
+for sn in [w for w in wb.sheetnames if w[:2] in ('8.', '10')]:
+    ws = wb[sn]; col = {}
+    for r in range(33, ws.max_row + 1):
+        for c in range(1, 6):
+            v = ws.cell(r, c).value
+            if isinstance(v, str):
+                for k in ('Thời gian', 'Địa điểm', 'Kính đề nghị', 'Chỉ huy'):
+                    if k in v and k not in col: col[k] = r
+    check(len(col) == 4 and col['Thời gian'] < col['Địa điểm'] < col['Kính đề nghị'] < col['Chỉ huy'], sn + ': đủ mục 3. Thời gian, 4. Địa điểm, câu đề nghị trước chữ ký', col)
+# nhan nhom (dong nhom) lay DUNG CHU bien ban, khong dung chu cua mau
+nhom_pdf = set()
+for f in glob.glob(D + '*.pdf'):
+    with pdfplumber.open(f) as pdf:
+        for pg in pdf.pages[:2]:
+            for t in pg.extract_tables():
+                for r in t:
+                    r = [' '.join((c or '').split()) for c in r]
+                    if len(r) > 3 and (r[0] == '' or re.fullmatch(r'[IVX]+', r[0])) and not r[3] and re.match(r'(Tủ |Công tác duy tu)', r[1]): nhom_pdf.add(' '.join((r[1] + r[2] if not r[3] and len(r[2]) < 6 else r[1]).split()))
+nhom_pdf = {x.replace('vê ', 'về ') for x in nhom_pdf}
+ov = set(v.strip() for s, c, v in T if s[:2] in ('2.', '3.', '4_', '5.', '6.', '7_', '8.', '9.', '10', '11'))
+mau_only = [x for x in ('Tủ có kết nối', 'Tủ thường', 'Bảo dưỡng thường xuyên', 'Bảo dưỡng không thường xuyên') if x in ov and x not in nhom_pdf]
+check(not mau_only, 'nhãn nhóm không còn chữ của mẫu', mau_only)
+for sn, k in (('4_', 'Tủ kết nối về trung tâm'), ('3.', 'Tủ kết nối về trung tâm'), ('2.', 'Tủ kết nối về trung tâm'), ('8.', 'Tủ kết nối về trung tâm'), ('6.', 'Công tác duy tu thường xuyên'), ('10', 'Công tác duy tu không thường xuyên')):
+    if k in nhom_pdf: check(any(s.startswith(sn) and v.strip() == k for s, c, v in T), 'sheet %s có nhãn nhóm "%s" như biên bản' % (sn, k))
+mat = [(s, c, v[:50]) for s, c, v in T if re.search(r'(?<!\w)(vê|điêu|nhiêu|đêu)(?!\w)', v, re.I)]
+check(not mat, 'không còn chữ mất dấu huyền (vê, điêu…) do đọc PDF', mat[:3])
 print('\n'.join('ĐẠT  ' + x for x in OK)); print('\n'.join('LỖI  ' + x for x in FAIL)); print('Tổng: %d đạt, %d lỗi' % (len(OK), len(FAIL)))
 print('FILE', out)
 sys.exit(1 if FAIL else 0)

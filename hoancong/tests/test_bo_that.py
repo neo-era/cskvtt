@@ -77,6 +77,8 @@ for ws in wr.worksheets:
             t = str(c.value) if c.value is not None else ''
             if re.match(r'\s*(Gói thầu|Dự toán mua sắm)\s*:', t) and t != str(mt[ws.title][c.coordinate].value): diff.append((ws.title, c.coordinate))
 check(not diff, 'chữ Gói thầu / Dự toán mua sắm giữ nguyên như mẫu', diff[:3])
+pa4 = [w.print_area for w in wb.worksheets if w.title.startswith('4_')]
+check(pa4 and re.search(r'\$C\$1:\$K\$\d+', pa4[0]), 'sheet 4: vùng in C:K như mẫu (mẫu ghi dạng chỉ cột $C:$K)', pa4)
 print('\n'.join('ĐẠT  ' + x for x in OK)); print('\n'.join('LỖI  ' + x for x in FAIL)); print('Tổng: %d đạt, %d lỗi' % (len(OK), len(FAIL)))
 print('FILE', out)
 sys.exit(1 if FAIL else 0)

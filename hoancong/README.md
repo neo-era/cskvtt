@@ -27,4 +27,5 @@ và **không lưu trong repo này** (repo công khai).
 - `index.html` – giao diện + Web Worker chạy Python.
 - `py/pylibs.zip` – openpyxl, pdfplumber, pdfminer.six (thuần Python) + mã `src/`.
 - `pyodide/` – Pyodide 0.26.4.
-- `src/` – mã nguồn Python: refill_lib.py, refill_main.py, report.py (lập hồ sơ), phatsinh.py (biên bản 12/13), dinhdang_in.py (định dạng in), web_run.py (điều phối 1 lần chạy trên trang). Sửa xong chạy `./build.sh` (đóng gói `py/pylibs.zip` + ghi số phiên bản vào trang). Đổi phiên bản: sửa file `VERSION` rồi chạy `./build.sh`.
+- `fonts/` – font vẽ PDF (Liberation Serif thay Times New Roman, Carlito thay Calibri; SIL OFL).
+- `src/` – mã nguồn Python: refill_lib.py, refill_main.py, report.py (lập hồ sơ), phatsinh.py (biên bản 12/13), dinhdang_in.py (định dạng in), xuat_pdf.py (nút Tải hồ sơ PDF — xem PDF.md), do_rong_chu.py (bề rộng chữ, sinh bởi tools/tao_do_rong_chu.py), quan_phuong.py (quận → phường), web_run.py (điều phối 1 lần chạy trên trang). Sửa xong chạy `./build.sh` (đóng gói `py/pylibs.zip` + ghi số phiên bản vào trang). Đổi phiên bản: sửa file `VERSION` rồi chạy `./build.sh`.

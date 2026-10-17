@@ -27,6 +27,8 @@ if not os.environ.get('QUAN_MAU'):
             for _c in _row:
                 _mm=re.search(r'(?:YCNT|NTCV)-\d{1,2}-Q(\d+)',_c.value) if isinstance(_c.value,str) else None
                 if _mm and not os.environ.get('QUAN_MAU'): os.environ['QUAN_MAU']=_mm.group(1)
+if not os.environ.get('QUAN_MAU'): os.environ['QUAN_MAU']=os.environ.get('QUAN','8')   # mau so hieu moi STT/Thang/YCNT khong ghi quan
+NAM_MAU=next((m.group(1) for row in wb['BIA_G201'].iter_rows() for c in row if isinstance(c.value,str) for m in [re.search(r'TH[ÁA]NG\s+0?\d{1,2}\s+N[ĂA]M\s+(\d{4})',c.value,re.I)] if m),None)
 print('@@Mẫu: kỳ tháng %s, quận %s'%(os.environ.get('THANG_MAU'),os.environ.get('QUAN_MAU')))
 DB_MAU_TXT=next((c.value for row in wb['BIA_G201'].iter_rows() for c in row if isinstance(c.value,str) and c.value.strip().startswith('Địa bàn')),'')
 _t=wb['6.HTCT_BD_G201']; TN={}
@@ -335,13 +337,34 @@ for _n in wb.sheetnames:
 
 # ===== KY: doi thang mau -> thang ky (tru can cu) =====
 TM=os.environ.get('THANG_MAU'); TK=os.environ.get('THANG')
+_ky=re.compile(r'^\s*-\s*(Biên bản|Nhật ký|Phiếu yêu cầu)')
+# NGAY CUOI THANG (lam TRUOC khi doi thang): 'ngay <cuoi thang mau> thang <TM> nam <nam mau>' -> ngay cuoi thang cua ky.
+# Khong dung dong can cu phap ly / Goi thau / Du toan / Dia diem.
+_LEGAL=re.compile(r'(Nghị định|Quyết định|Hướng dẫn|Thông báo|Hợp đồng|Văn bản số|Căn cứ|Gói thầu|Dự toán|Địa điểm)',re.I)
+_ngay=re.compile(r'(ngày\s+)(\d{1,2})(\s+tháng\s+)(0?\d{1,2})(\s+năm\s+)(\d{4})',re.I)
+if TM and TK and TM!=TK and NAM_MAU:
+    _y=int(NAM_MAU); _cm=calendar.monthrange(_y,int(TM))[1]; _ck=calendar.monthrange(_y,int(TK))[1]
+    def _cuoi(mm):
+        if int(mm.group(2))==_cm and int(mm.group(4))==int(TM) and mm.group(6)==NAM_MAU:
+            return mm.group(1)+'%02d'%_ck+mm.group(3)+mm.group(4)+mm.group(5)+mm.group(6)
+        return mm.group(0)
+    for _n in wb.sheetnames:
+        for row in wb[_n].iter_rows():
+            for cell in row:
+                v=cell.value
+                if not isinstance(v,str) or isinstance(cell,openpyxl.cell.cell.MergedCell) or _LEGAL.search(v): continue
+                if v in PROTECT and not _ky.match(v): continue
+                nv=_ngay.sub(_cuoi,v)
+                if nv!=v:
+                    if v in PROTECT: PROTECT.discard(v); PROTECT.add(nv)   # dong phu thuoc ky: van theo luat _ky ben duoi
+                    cell.value=nv
 if TM and TK and TM!=TK:
-    _p=re.compile(r'((?:tháng|THÁNG)\s+)0?%s(?=\s+(?:năm|NĂM)\s+\d{4}|/\d{4})'%TM)
+    _p=re.compile(r'((?:tháng|THÁNG)\s+)0?%s(?=\s+(?:năm|NĂM)\s+\d{4}|/\d{4})'%TM, re.I)
     for _n in wb.sheetnames:
         ws=wb[_n]
         for row in ws.iter_rows():
             for cell in row:
-                if editable(cell) and _p.search(cell.value): cell.value=_p.sub(lambda mm: mm.group(1)+TK, cell.value)
+                if editable(cell) and not _LEGAL.search(cell.value) and _p.search(cell.value): cell.value=_p.sub(lambda mm: mm.group(1)+TK, cell.value)
     ws=wb['4_G201_TTH_PTH_TMY_THU']
     for r in range(1,ws.max_row+1):
         v=ws.cell(r,1).value
@@ -350,11 +373,13 @@ if TM and TK and TM!=TK:
 # ===== DONG PHU THUOC KY trong muc can cu (anh da dong y doi): Bien ban / Nhat ky / Phieu YCNT
 #       + SO HIEU van ban (01/YCNT-8-Q7 -> 01/YCNT-7-Q8). Can cu PHAP LY (Nghi dinh, QD, HD, Hop dong, TB, VB) giu nguyen.
 QM=os.environ.get('QUAN_MAU','7'); QK=os.environ.get('QUAN','8')
-_ky=re.compile(r'^\s*-\s*(Biên bản|Nhật ký|Phiếu yêu cầu)')
 _so=re.compile(r'(\d{2})/(YCNT|NTCV)-(\d{1,2})-Q\d+\b')          # mau cu 01/YCNT-8-Q7 -> STT/Thang/YCNT (bo quan)
 _so2=re.compile(r'(\d{2})/(\d{1,2})/(YCNT|NTCV)\b')               # mau moi 01/08/YCNT: chi doi thang, giu so chu so
 def _thang(cu): return ('%0'+str(len(cu))+'d')%int(TK) if TK else cu
-_pk=re.compile(r'((?:tháng|THÁNG)\s+)0?%s(?=\s+(?:năm|NĂM)\s+\d{4}|/\d{4})'%(TM or '0'))
+_pk=re.compile(r'((?:tháng|THÁNG)\s+)0?%s(?=\s+(?:năm|NĂM)\s+\d{4}|/\d{4})'%(TM or '0'), re.I)
+_QUY=['I','II','III','IV']
+_nhan_quy=(KHQ_NHAN.split('/')[0] if KHQ_NHAN else (_QUY[(int(TK)-1)//3] if TK else None))
+_nam_quy=(KHQ_NHAN.split('/')[1] if KHQ_NHAN else None)
 for _n in wb.sheetnames:
     ws=wb[_n]
     for row in ws.iter_rows():
@@ -368,17 +393,9 @@ for _n in wb.sheetnames:
             if v not in PROTECT or _ky.match(v):
                 nv=_so.sub(lambda mm: '%s/%s/%s'%(mm.group(1),_thang(mm.group(3)),mm.group(2)), nv)
                 nv=_so2.sub(lambda mm: '%s/%s/%s'%(mm.group(1),_thang(mm.group(2)),mm.group(3)), nv)
-                # NGAY CUOI THANG: ngay cuoi thang cua mau -> ngay cuoi thang cua ky (thang 9 = 30, thang 2 = 28/29)
-                if TM and TK:
-                    def _cuoi(mm):
-                        d,th,y=int(mm.group(2)),int(mm.group(4)),int(mm.group(6))
-                        if th==int(TK) and d==calendar.monthrange(y,int(TM))[1]:
-                            return mm.group(1)+'%02d'%calendar.monthrange(y,int(TK))[1]+mm.group(3)+mm.group(4)+mm.group(5)+mm.group(6)
-                        return mm.group(0)
-                    nv=re.sub(r'((?:ngày|NGÀY)\s+)(\d{1,2})(\s+(?:tháng|THÁNG)\s+)(0?\d{1,2})(\s+(?:năm|NĂM)\s+)(\d{4})',_cuoi,nv)
-                # NHAN QUY theo ky (Quy III/2026 -> Quy IV/2026 khi ky thang 10..12) -- chi o dau cot, khong o can cu
-                if TK and v not in PROTECT:
-                    nv=re.sub(r'((?:Quý|QUÝ|quý)\s+)([IVX]+)(/\d{4})',lambda mm: mm.group(1)+['I','II','III','IV'][(int(TK)-1)//3]+mm.group(3),nv)
+                # NHAN QUY o DAU COT 'Ke hoach ... Quy X/YYYY': theo bien ban 5 (neu co) hoac theo thang ky
+                if _nhan_quy and v not in PROTECT and re.search(r'kế\s*hoạch',v,re.I) and not _LEGAL.search(v):
+                    nv=re.sub(r'((?:Quý|QUÝ|quý)\s+)([IVX]+)/(\d{4})',lambda mm: mm.group(1)+_nhan_quy+'/'+(_nam_quy or mm.group(3)),nv)
             if nv!=v: cell.value=nv
 
 from openpyxl.utils import get_column_letter as _gcl

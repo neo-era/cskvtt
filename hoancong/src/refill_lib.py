@@ -75,28 +75,34 @@ def detect_files():
                         if len(r)>1 and 'duy trì trạm' in ' '.join((r[1] or '').split()).lower(): duytri=True
         if c[11]>=5: res.setdefault('BD',p)
         elif c[9]>=5: res.setdefault('QLVH',p)
+        elif c[7]>=3 and khq and duytri: res.setdefault('KHQ',p)   # bien ban 5: nghiem thu QLVH tong hop (co KL ke hoach QUY) -- xet TRUOC BoQ
         elif c[7]>=25: res.setdefault('BOQ',p)
-        elif c[7]>=3 and khq and duytri: res.setdefault('KHQ',p)   # bien ban 5: nghiem thu QLVH tong hop (co KL ke hoach QUY)
     miss=[k for k in ('QLVH','BOQ','BD') if k not in res]
     if miss: raise RuntimeError('Không tìm thấy biên bản: '+', '.join({'QLVH':'Xác nhận KL QLVH chi tiết (bảng 9 cột)','BOQ':'Nghiệm thu KL bảo dưỡng 499 hạng mục','BD':'Xác nhận KL bảo dưỡng chi tiết (bảng 11 cột)'}[k] for k in miss))
     _FILES=res; return res
 _KEY={'4._BBXNKLHT_QLVH':'QLVH','2._BBNT_QLVH':'BOQ','1._BBNTHT_QLVH':'BD'}
+KHQ_TRUNG=[]
 def parse_khq():
-    """KL ke hoach QUY tung hang muc QLVH tu bien ban 5 -> {norm_ns(ten chuan): KL}, nhan quy ('III/2026'). Khong co file -> ({}, None)."""
+    """KL ke hoach QUY tung hang muc QLVH tu bien ban 5 -> {norm_ns(ten chuan): KL}, nhan quy ('III/2026').
+    Cot KL lay theo tieu de 'ke hoach quy' (khong co dinh). Khong co file -> ({}, None)."""
     p=detect_files().get('KHQ')
     if not p: return {},None
-    out={}; nhan=None
+    out={}; nhan=None; col=None; del KHQ_TRUNG[:]
     with pdfplumber.open(p) as pdf:
         for pg in pdf.pages:
             for tb in pg.extract_tables():
                 for r in tb:
                     r=[' '.join((c or '').split()) for c in r]
-                    if len(r)<6: continue
-                    m=re.search(r'quý\s+([IVX]+)\s*/\s*(\d{4})',' '.join(r),re.I)
-                    if m and not nhan: nhan='%s/%s'%(m.group(1).upper(),m.group(2))
+                    for i,c in enumerate(r):
+                        if 'kế hoạch quý' in c.lower():
+                            col=i; m=re.search(r'quý\s+([IVX]+)\s*/\s*(\d{4})',c,re.I)
+                            if m: nhan='%s/%s'%(m.group(1).upper(),m.group(2))
+                    if col is None or len(r)<=col: continue
                     if re.fullmatch(r'\d+',r[0]) and r[1].lower().startswith('duy trì'):
-                        v=num(r[3])
-                        if v is not None: out[norm_ns(canon_hm(r[1]))]=v
+                        v=num(r[col]); k=norm_ns(canon_hm(r[1]))
+                        if v is None: continue
+                        if k in out: KHQ_TRUNG.append(r[1])
+                        out[k]=v
     return out,nhan
 def g(k): return detect_files()[_KEY[k]]
 _RNG=[('1500m3000m','1500m - 3000m'),('1000m1500m','1000m - 1500m'),('500m1000m','500m - 1000m')]

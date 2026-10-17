@@ -103,6 +103,16 @@ out9b = os.path.join(TMP, 't9b.xlsx'); run(9, mau2, out9b)
 sh = sohieu(openpyxl.load_workbook(out9b))
 check(sh and all(re.search(r'\d{2}/09/(YCNT|NTCV)', v) for s, c, v in sh), '(4) mẫu mới 01/08/YCNT → 01/09/YCNT (giữ 2 chữ số)', [v[-40:] for s, c, v in sh][:4])
 
+# ---------- ca xau: dong Quyet dinh co ngay cuoi thang mau phai GIU; "Ngày" viet hoa phai sua ----------
+m3 = openpyxl.load_workbook(MAU, keep_vba=True); w1 = m3['1.NTHT_TCXD_G201']
+w1['J1'] = 'Quyết định số 99/QĐ-TEST ngày 31 tháng 8 năm 2026 của Sở Xây dựng'
+w1['J2'] = 'Ngày 31 tháng 8 năm 2026, tại trụ sở'
+mau3 = os.path.join(TMP, 'mau_cx.xlsm'); m3.save(mau3)
+out3 = os.path.join(TMP, 'cx.xlsx'); run(9, mau3, out3)
+w = openpyxl.load_workbook(out3)['1.NTHT_TCXD_G201']
+check(w['J1'].value == 'Quyết định số 99/QĐ-TEST ngày 31 tháng 8 năm 2026 của Sở Xây dựng', 'ca xấu: dòng Quyết định giữ nguyên ngày/tháng', w['J1'].value)
+check(w['J2'].value == 'Ngày 30 tháng 9 năm 2026, tại trụ sở', 'ca xấu: "Ngày" viết hoa đầu câu → 30 tháng 9', w['J2'].value)
+
 # ---------- ky 2 (28 ngay) ----------
 out2 = os.path.join(TMP, 't2.xlsx'); run(2, MAU, out2)
 t2 = [v for s, c, v in texts(openpyxl.load_workbook(out2))]

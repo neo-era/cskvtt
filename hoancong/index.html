@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Hoàn công CSKVTT v2.1.1</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#14213d">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hoàn công">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+<style>
+/* Bố cục: thanh tiêu đề mảnh; lưới 2 cột (thao tác | kết quả kiểm tra), xếp 1 cột trên điện thoại.
+   Màu: xanh đêm của lưới điện + vàng natri của đèn đường làm điểm nhấn. */
+:root{
+  --bg:#f3f4f6; --panel:#ffffff; --ink:#172033; --muted:#5b6475; --line:#dde1e8;
+  --accent:#c9820a; --accent-ink:#ffffff; --accent-soft:#fdf3e1;
+  --night:#14213d; --night-ink:#f5f1e6;
+  --ok:#1f7a4d; --ok-soft:#e5f4ec; --bad:#b3261e; --bad-soft:#fbe9e7; --wait:#8a93a6;
+  --font:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141f; --panel:#171e2c; --ink:#e7eaf0; --muted:#a3abbb; --line:#2a3345;
+  --accent:#f0a830; --accent-ink:#1a1204; --accent-soft:#2c2412;
+  --night:#0a1020; --night-ink:#f5f1e6;
+  --ok:#5cc58f; --ok-soft:#15291f; --bad:#f08a80; --bad-soft:#2e1816; --wait:#6f788b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141f; --panel:#171e2c; --ink:#e7eaf0; --muted:#a3abbb; --line:#2a3345;
+  --accent:#f0a830; --accent-ink:#1a1204; --accent-soft:#2c2412;
+  --night:#0a1020; --night-ink:#f5f1e6;
+  --ok:#5cc58f; --ok-soft:#15291f; --bad:#f08a80; --bad-soft:#2e1816; --wait:#6f788b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;margin:0}
+.top{background:var(--night);color:var(--night-ink);padding-block:18px;padding-inline:16px}
+.top .in{max-width:1120px;margin:0 auto;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;justify-content:space-between}
+.top h1{margin:0;font-size:1.35rem;font-weight:700;letter-spacing:.01em}
+.top h1 span{color:var(--accent)}
+.top p{margin:0;font-size:.85rem;opacity:.8}
+.top p.tsub{line-height:1.35;text-align:right;opacity:.85}.top p.tsub b{font-weight:600;opacity:1}
+@media (max-width:640px){.top p.tsub{text-align:left}}
+main{max-width:1120px;margin:0 auto;padding-block:22px 40px;padding-inline:16px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){main{grid-template-columns:minmax(0,1fr)}}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
+h2{font-size:1rem;margin:0 0 4px;font-weight:700}
+.sub{color:var(--muted);font-size:.85rem;margin:0 0 14px}
+.step{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;padding-block:14px;border-top:1px solid var(--line)}
+.step:first-of-type{border-top:0;padding-top:4px}
+.num{width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;display:grid;place-items:center;font-size:.85rem}
+label.lb{display:block;font-weight:600;font-size:.9rem;margin-bottom:6px}
+.drop{border:1.5px dashed var(--line);border-radius:var(--r);padding:16px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop b{color:var(--accent)}
+.drop small{display:block;color:var(--muted);margin-top:4px}
+input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+ul.files{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:4px}
+ul.files li{display:flex;gap:10px;justify-content:space-between;font-size:.85rem;padding:5px 8px;border-radius:6px;background:var(--bg);min-width:0}
+ul.files li span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ul.files li span:last-child{color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
+.row{display:flex;flex-wrap:wrap;gap:12px}
+.row>div{flex:1 1 160px;min-width:0}
+select,input[type=text],textarea{width:100%;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+textarea{resize:vertical;min-height:62px}
+select:focus-visible,input:focus-visible,textarea:focus-visible,button:focus-visible,.drop:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hint{color:var(--muted);font-size:.8rem;margin-top:4px;overflow-wrap:anywhere}
+.sub,.tbl td{overflow-wrap:anywhere}
+.base{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
+.base.ok{border-color:var(--ok);background:var(--ok-soft)}
+.base>div{min-width:0}
+summary{cursor:pointer;font-weight:600;font-size:.9rem}
+.adv{display:grid;gap:12px;margin-top:10px}
+.btn{font:inherit;font-weight:700;border:0;border-radius:8px;padding:11px 18px;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:600}
+.btn.small{padding:6px 10px;font-size:.82rem}
+.go{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:6px}
+.engine{font-size:.82rem;color:var(--muted);display:flex;gap:8px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--wait);flex:none}
+.dot.ok{background:var(--ok)} .dot.bad{background:var(--bad)} .dot.busy{background:var(--accent);animation:p 1s infinite}
+@keyframes p{50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.dot.busy{animation:none}}
+.prog{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:4px;font-size:.85rem}
+.prog li{display:flex;gap:8px;align-items:center;color:var(--muted)}
+.prog li.cur{color:var(--ink);font-weight:600}
+.prog li.done{color:var(--ink)}
+.prog li .dot{width:7px;height:7px}
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.checks li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
+.pill{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:2px 8px;background:var(--bg);color:var(--wait);white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.bad{background:var(--bad-soft);color:var(--bad)}
+.checks b{display:block;font-size:.9rem}
+.checks span.d{color:var(--muted);font-size:.83rem;overflow-wrap:anywhere}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+@media (max-width:420px){.kpis{grid-template-columns:minmax(0,1fr)}}
+.kpi{background:var(--bg);border-radius:8px;padding:10px 12px;min-width:0}
+.kpi small{display:block;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em}
+.kpi strong{font-size:1.25rem;font-variant-numeric:tabular-nums}
+.tbl{overflow-x:auto;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:.84rem}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.db{background:var(--accent-soft);border-radius:8px;padding:10px 12px;font-size:.88rem;margin-top:4px}
+.db b{color:var(--accent)}
+.err{background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:10px 12px;font-size:.88rem;margin-top:12px;overflow-wrap:anywhere;white-space:pre-line}
+.ver{font-size:.75rem;color:var(--muted);margin-top:6px}
+.out{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.out .fn{font-size:.85rem;color:var(--muted);overflow-wrap:anywhere;min-width:0}
+h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:12px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:10px 14px;min-height:44px;font:inherit;font-size:.9rem;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff;font-weight:600}
+[hidden]{display:none!important}
+/* Nút cài ứng dụng (PWA) trên thanh tiêu đề — chỉ hiện khi máy cài được */
+.appver{font-size:.72rem;font-weight:600;color:var(--night-ink);opacity:.75;border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:middle;letter-spacing:.02em}
+.inst{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);color:var(--night-ink);font:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:background .18s ease,border-color .18s ease}
+.inst:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.45)}
+.inst:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.inst svg{width:16px;height:16px;flex:none}
+.top .in{align-items:center}
+.ios{position:fixed;inset:auto 16px calc(16px + env(safe-area-inset-bottom)) 16px;max-width:420px;margin:0 auto;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.22);padding:14px 16px;font-size:.92rem;z-index:20}
+.ios b{display:block;margin-bottom:4px}.ios button{margin-top:10px;min-height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;cursor:pointer}
+@media (prefers-reduced-motion: reduce){.inst{transition:none}}
+.rules{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:.83rem;display:grid;gap:3px}
+</style>
+</head>
+<body>
+
+
+<header class="top"><div class="in">
+  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.1.1</small></h1>
+  <p class="tsub"><b>Chiếu sáng khu vực Trung Tâm</b><br>Hồ sơ hoàn công các gói Duy tu chiếu sáng</p>
+  <button class="inst" id="instBtn" type="button" hidden aria-label="Cài ứng dụng Hoàn công lên máy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Cài ứng dụng</button>
+</div></header>
+
+<main>
+  <section class="card" aria-labelledby="h-in">
+    <h2 id="h-in">Lập hồ sơ</h2>
+    <p class="sub">Mọi xử lý chạy ngay trên máy anh trong trình duyệt; biên bản, file mẫu và bảng tra tủ không gửi đi đâu.</p>
+
+    <div class="step">
+      <div class="num">0</div>
+      <div>
+        <label class="lb">Tệp gốc (chọn một lần, trình duyệt tự nhớ)</label>
+        <div class="adv" style="margin-top:0">
+          <div class="base" id="mauBox">
+            <div><b>File mẫu hoàn công</b> <span class="hint">(.xlsm G201)</span><br><span class="hint" id="mauName">Chưa chọn</span></div>
+            <input type="file" id="mau" accept=".xlsm,.xlsx">
+            <button class="btn ghost small" type="button" id="mauBtn">Chọn file mẫu</button>
+          </div>
+          <div class="base" id="masterBox">
+            <div><b>Bảng tra tủ → phường</b> <span class="hint">(BANG_TRA_TU_CHUAN hoặc Control_Cabinet .xlsx)</span><br><span class="hint" id="masterName">Chưa chọn</span></div>
+            <input type="file" id="master" accept=".xlsx,.json">
+            <button class="btn ghost small" type="button" id="masterBtn">Chọn bảng tra</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">1</div>
+      <div>
+        <div class="seg" role="group" aria-label="Chế độ">
+          <button type="button" id="mNew" aria-pressed="true">Lập hồ sơ mới</button>
+          <button type="button" id="mAdd" aria-pressed="false">Bổ sung vào hồ sơ có sẵn</button>
+        </div>
+        <div class="adv" id="hsWrap" style="margin:0 0 12px" hidden>
+          <div class="base" id="hsBox">
+            <div><b>File hồ sơ hoàn công</b> <span class="hint">(.xlsx đã lập)</span><br><span class="hint" id="hsName">Chưa chọn</span></div>
+            <input type="file" id="hs" accept=".xlsx">
+            <button class="btn ghost small" type="button" id="hsBtn">Chọn file hồ sơ</button>
+          </div>
+        </div>
+        <label class="lb" for="pdf" id="pdfLb">Biên bản PDF của kỳ</label>
+        <div class="drop" id="drop" tabindex="0" role="button" aria-controls="pdf">
+          Kéo thả hoặc <b>chọn các file PDF</b>
+          <small id="dropHint">Chọn cả bộ 7 file (có biên bản số 5 — nghiệm thu QLVH tổng hợp, để lấy kế hoạch quý); kỳ có phát sinh ngoài kế hoạch thì chọn thêm biên bản 12 và 13. Trang tự nhận ra từng biên bản theo nội dung, không phụ thuộc tên file.</small>
+        </div>
+        <input type="file" id="pdf" accept=".pdf,application/pdf" multiple>
+        <ul class="files" id="flist"></ul>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">2</div>
+      <div>
+        <div class="row" id="kyRow">
+          <div>
+            <label class="lb" for="thang">Kỳ lập (tháng)</label>
+            <select id="thang"></select>
+          </div>
+          <div>
+            <label class="lb" for="quan">Mã quận trong biên bản</label>
+            <input type="text" id="quan" value="8" inputmode="numeric">
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <label class="lb" for="prefer">Phường của quận (ưu tiên khi tên tủ trùng)</label>
+          <textarea id="prefer">Phường Chánh Hưng; Phường Phú Định; Phường Bình Đông</textarea>
+          <div class="hint">Địa bàn ghi vào hồ sơ lấy theo phường thực có trong dữ liệu kỳ.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">3</div>
+      <div>
+        <div class="go">
+          <button class="btn" id="run" type="button" disabled>Lập hồ sơ</button>
+          <div class="engine"><span class="dot busy" id="edot"></span><span id="etext">Đang tải bộ xử lý (khoảng 20 MB, lần sau nhanh hơn)…</span></div>
+        </div>
+        <div class="ver" id="ver"></div>
+        <ul class="prog" id="prog" hidden></ul>
+        <div class="err" id="err" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-out">
+    <h2 id="h-out">Kiểm tra trước khi trình ký</h2>
+    <p class="sub" id="outSub">Các mục trang sẽ tự kiểm sau khi lập. Kết quả lần chạy gần nhất hiện ở đây.</p>
+    <ul class="checks" id="checks"></ul>
+    <div id="summary" hidden>
+      <div id="mainSum">
+      <div class="kpis">
+        <div class="kpi"><small>Tổng QLVH</small><strong id="k1">–</strong></div>
+        <div class="kpi"><small>Số tủ</small><strong id="k2">–</strong></div>
+        <div class="kpi"><small>KL bảo dưỡng</small><strong id="k3">–</strong></div>
+      </div>
+      <div class="db">Địa bàn: <b id="dban"></b></div>
+      <h3>Quản lý vận hành</h3>
+      <div class="tbl"><table><thead><tr><th>Hạng mục</th><th style="text-align:right">KL</th></tr></thead><tbody id="tq"></tbody></table></div>
+      <h3>Bảo dưỡng</h3>
+      <div class="tbl"><table><thead><tr><th>Hạng mục</th><th style="text-align:right">KL</th></tr></thead><tbody id="tb"></tbody></table></div>
+      </div>
+      <div id="psSum" hidden>
+        <h3>Phát sinh ngoài kế hoạch</h3>
+        <div class="db" id="psInfo"></div>
+        <div class="tbl"><table><thead><tr><th>Hạng mục</th><th style="text-align:right">KL</th></tr></thead><tbody id="tp"></tbody></table></div>
+      </div>
+      <h3>File nguồn đã nhận</h3>
+      <div class="tbl"><table><tbody id="tf"></tbody></table></div>
+    </div>
+    <div class="out" id="out" hidden>
+      <button class="btn" id="save" type="button">Tải file Excel</button>
+      <span class="fn" id="fname"></span>
+    </div>
+    <ol class="rules">
+      <li>Căn cứ pháp lý, Gói thầu, Dự toán, Địa điểm gói thầu giữ nguyên như mẫu.</li>
+      <li>Chỉ đổi Địa bàn, kỳ tháng và số hiệu phiếu/biên bản theo kỳ.</li>
+      <li>Công thức, định dạng, chữ ký giữ đúng mẫu; Excel tự tính lại khi mở.</li>
+      <li>Biên bản 12, 13 (phát sinh ngoài kế hoạch): chi tiết phải khớp tổng hợp từng hạng mục; định dạng bảng Times New Roman 12 như mẫu.</li>
+      <li>Định dạng in: A4, vừa 1 trang ngang, vùng in tới hết chữ ký, không cắt chữ.</li>
+    </ol>
+  </section>
+</main>
+<div class="ios" id="iosHint" role="dialog" aria-labelledby="iosT" hidden><b id="iosT">Cài lên iPhone / iPad</b>Trong Safari, bấm nút <b style="display:inline">Chia sẻ</b> (ô vuông có mũi tên lên) → chọn <b style="display:inline">Thêm vào MH chính</b>.<br><button type="button" id="iosClose">Đã hiểu</button></div>
+
+<script>
+(() => {
+const $ = (id) => document.getElementById(id);
+const BASE = new URL('./', location.href).href;
+const BUILD = '2.1.1-733145';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
+const CHECKS_NEW = ['Quy đổi phường theo tủ','Khối lượng QLVH','Kế hoạch quý (biên bản số 5)','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu','Định dạng in'];
+const CHECKS_ADD = ['Phát sinh ngoài KH: chi tiết (BB13) khớp tổng hợp (BB12)','Phát sinh ngoài KH: phường theo tủ','Định dạng in'];
+const ST_PS = 'Ghi phát sinh ngoài KH (12, 13)', ST_IN = 'Định dạng in';
+const STAGES_NEW = ['Đọc bảng tra tủ → phường','Đọc biên bản PDF (bước lâu nhất)','Mở file mẫu','Ghi QLVH (2, 3, 8)','Ghi bảo dưỡng (6)','Ghi chi tiết Mẫu 4','Ghi chi tiết Mẫu 7','Đổi địa bàn, kỳ, số hiệu','Lưu file',ST_PS,ST_IN];
+let STAGES = STAGES_NEW;
+let pdfFiles = [], mauRec = null, masterRec = null, ready = false, busy = false, result = null, mode = 'new', hsFile = null;
+// ---- IndexedDB: nho file mau + bang tra tren may (khong gui di dau) ----
+const IDB = {
+  db: null,
+  open() { return this.db || (this.db = new Promise((res, rej) => { try { const r = indexedDB.open('hoancong-cskvtt', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); } })); },
+  async get(k) { try { const d = await this.open(); return await new Promise((res) => { const q = d.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); } catch (e) { return null; } },
+  async set(k, v) { try { const d = await this.open(); await new Promise((res) => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = res; }); } catch (e) {} }
+};
+const vnDate = (t) => new Date(t).toLocaleDateString('vi-VN');
+function renderBase() {
+  $('mauName').textContent = mauRec ? mauRec.name + ' · lưu ' + vnDate(mauRec.t) : 'Chưa chọn';
+  $('masterName').textContent = masterRec ? masterRec.name + (masterRec.n ? ' · ' + masterRec.n.toLocaleString('vi-VN') + ' tủ' : '') + ' · lưu ' + vnDate(masterRec.t) : 'Chưa chọn';
+  $('mauBox').classList.toggle('ok', !!mauRec); $('masterBox').classList.toggle('ok', !!masterRec);
+  $('mauBtn').textContent = mauRec ? 'Thay' : 'Chọn file mẫu'; $('masterBtn').textContent = masterRec ? 'Thay' : 'Chọn bảng tra';
+  updateRun();
+}
+Promise.all([IDB.get('mau'), IDB.get('master')]).then(([a, b]) => { mauRec = a; masterRec = b; renderBase(); });
+
+// ---- month select: mặc định tháng trước ----
+const now = new Date(); const prev = now.getMonth() === 0 ? 12 : now.getMonth();
+for (let m = 1; m <= 12; m++) { const o = document.createElement('option'); o.value = m; o.textContent = 'Tháng ' + m; if (m === prev) o.selected = true; $('thang').append(o); }
+
+function renderChecks(list) {
+  const ul = $('checks'); ul.textContent = '';
+  (list || (mode === 'add' ? CHECKS_ADD : CHECKS_NEW).map(l => ({label: l}))).forEach(c => {
+    const li = document.createElement('li');
+    const p = document.createElement('span'); p.className = 'pill' + (c.ok === true ? ' ok' : c.ok === false ? ' bad' : '');
+    p.textContent = c.ok === true ? 'Đạt' : c.ok === false ? 'Xem lại' : 'Chưa chạy';
+    const d = document.createElement('div'); const b = document.createElement('b'); b.textContent = c.label; d.append(b);
+    if (c.detail) { const s = document.createElement('span'); s.className = 'd'; s.textContent = c.detail; d.append(s); }
+    li.append(p, d); ul.append(li);
+  });
+}
+renderChecks();
+
+const kb = (n) => n < 1024 * 1024 ? Math.round(n / 1024) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
+const fmt = (n) => Number(n).toLocaleString('vi-VN', {maximumFractionDigits: 2});
+function renderFiles() {
+  const ul = $('flist'); ul.textContent = '';
+  pdfFiles.forEach(f => { const li = document.createElement('li'); const a = document.createElement('span'); a.textContent = f.name; const b = document.createElement('span'); b.textContent = kb(f.size); li.append(a, b); ul.append(li); });
+  updateRun();
+}
+function updateRun() { $('run').disabled = !(ready && (mode === 'add' ? !!hsFile : pdfFiles.length) && mauRec && masterRec && !busy); }
+function setMode(m) {
+  if (busy) return; mode = m;
+  $('mNew').setAttribute('aria-pressed', m === 'new'); $('mAdd').setAttribute('aria-pressed', m === 'add');
+  $('hsWrap').hidden = m !== 'add'; $('kyRow').hidden = m === 'add';
+  $('pdfLb').textContent = m === 'add' ? 'Biên bản 12, 13 phát sinh ngoài kế hoạch (nếu có)' : 'Biên bản PDF của kỳ';
+  $('dropHint').textContent = m === 'add' ? 'Chọn biên bản 12 và 13 để đổ vào 2 sheet phát sinh ngoài kế hoạch. Không chọn PDF thì trang chỉ chỉnh định dạng in cho file hồ sơ.' : 'Chọn cả bộ 7 file (có biên bản số 5 — nghiệm thu QLVH tổng hợp, để lấy kế hoạch quý); kỳ có phát sinh ngoài kế hoạch thì chọn thêm biên bản 12 và 13. Trang tự nhận ra từng biên bản theo nội dung, không phụ thuộc tên file.';
+  $('run').textContent = m === 'add' ? 'Bổ sung và định dạng' : 'Lập hồ sơ';
+  pdfFiles = []; renderFiles(); renderChecks(); $('summary').hidden = true; $('out').hidden = true; result = null; showErr('');
+  $('outSub').textContent = 'Các mục trang sẽ tự kiểm sau khi chạy. Kết quả lần chạy gần nhất hiện ở đây.';
+}
+$('mNew').addEventListener('click', () => setMode('new'));
+$('mAdd').addEventListener('click', () => setMode('add'));
+$('hsBtn').addEventListener('click', () => $('hs').click());
+$('hs').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; hsFile = f; $('hsName').textContent = f.name + ' · ' + kb(f.size); $('hsBox').classList.add('ok'); $('hsBtn').textContent = 'Thay'; updateRun(); });
+function addPdfs(fs) {
+  const arr = [...fs].filter(f => /\.pdf$/i.test(f.name));
+  const names = new Set(pdfFiles.map(f => f.name));
+  arr.forEach(f => { if (!names.has(f.name)) pdfFiles.push(f); });
+  pdfFiles.sort((a, b) => a.name.localeCompare(b.name, 'vi', {numeric: true}));
+  renderFiles();
+}
+const drop = $('drop');
+drop.addEventListener('click', () => $('pdf').click());
+drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('pdf').click(); } });
+$('pdf').addEventListener('change', (e) => { addPdfs(e.target.files); e.target.value = ''; });
+['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(t => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', (e) => addPdfs(e.dataTransfer.files));
+$('mauBtn').addEventListener('click', () => $('mau').click());
+$('masterBtn').addEventListener('click', () => $('master').click());
+$('mau').addEventListener('change', async (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; mauRec = {name: f.name, buf: await f.arrayBuffer(), t: Date.now()}; await IDB.set('mau', mauRec); renderBase(); });
+$('master').addEventListener('change', async (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; masterRec = {name: f.name, buf: await f.arrayBuffer(), t: Date.now(), json: /\.json$/i.test(f.name)}; await IDB.set('master', masterRec); renderBase(); });
+
+function engine(state, text) { $('edot').className = 'dot ' + state; $('etext').textContent = text; }
+function showErr(msg) { const e = $('err'); e.hidden = !msg; e.textContent = msg || ''; }
+function stage(label) {
+  const ul = $('prog'); ul.hidden = false;
+  const idx = STAGES.indexOf(label);
+  [...ul.children].forEach((li, i) => { li.className = i < idx ? 'done' : i === idx ? 'cur' : ''; li.firstChild.className = 'dot ' + (i < idx ? 'ok' : i === idx ? 'busy' : ''); });
+}
+function resetStages() { const ul = $('prog'); ul.textContent = ''; STAGES.forEach(s => { const li = document.createElement('li'); const d = document.createElement('span'); d.className = 'dot'; li.append(d, document.createTextNode(s)); ul.append(li); }); ul.hidden = false; }
+
+// ---------------- Worker (Python chạy trong trình duyệt) ----------------
+const WORKER_SRC = `
+let py = null; let BUILD = '';
+const post = (m, t) => self.postMessage(m, t || []);
+async function fget(url) {   // mạng trước; mất mạng thì lấy bản đã lưu trong bộ nhớ ứng dụng (PWA)
+  try { const r = await fetch(url); if (r.ok) return r; } catch (e) {}
+  try { const h = await caches.match(url, {ignoreSearch: true}); if (h) return h; } catch (e) {}
+  throw new Error('Không tải được ' + url.split('/').pop() + ' — kiểm tra kết nối mạng');
+}
+async function loadScript(url) {
+  try { importScripts(url); }
+  catch (e) {
+    const r = await fget(url);
+    const b = URL.createObjectURL(new Blob([await r.text()], {type: 'text/javascript'}));
+    importScripts(b);
+  }
+}
+async function getBuf(url) { const r = await fget(url); return new Uint8Array(await r.arrayBuffer()); }
+async function boot(base) {
+  await loadScript(base + 'pyodide/pyodide.asm.js');
+  await loadScript(base + 'pyodide/pyodide.js');
+  py = await loadPyodide({indexURL: base + 'pyodide/', stdout: (s) => { if (s.startsWith('@@')) post({type: 'stage', label: s.slice(2)}); }, stderr: () => {}});
+  const libs = await getBuf(base + 'py/pylibs.zip?v=' + BUILD);
+  py.FS.mkdirTree('/app'); py.unpackArchive(libs, 'zip', {extractDir: '/app'});
+  py.runPython("import sys; sys.path.insert(0,'/app'); import openpyxl, pdfplumber");
+  const got = py.runPython("open('/app/build.txt').read().strip() if __import__('os').path.exists('/app/build.txt') else ''");
+  if (got !== BUILD) throw new Error('Trình duyệt đang giữ bản xử lý cũ (' + (got || 'không rõ') + ', cần ' + BUILD + '). Cách khắc phục: bấm Ctrl + F5 để tải lại trang; nếu vẫn lỗi, mở trang ở cửa sổ ẩn danh.');
+}
+function rmrf(d) { try { for (const f of py.FS.readdir(d)) { if (f === '.' || f === '..') continue; const p = d + '/' + f; if (py.FS.isDir(py.FS.stat(p).mode)) rmrf(p); else py.FS.unlink(p); } py.FS.rmdir(d); } catch (e) {} }
+self.onmessage = async (ev) => {
+  const m = ev.data;
+  if (m.type === 'init') {
+    BUILD = m.build;
+    try { await boot(m.base); post({type: 'ready'}); }
+    catch (e) { post({type: 'fatal', msg: String(e && e.message || e)}); }
+  }
+  if (m.type === 'run') {
+    try {
+      rmrf('/work/run'); py.FS.mkdirTree('/work/run/pdf');
+      for (const f of m.pdfs) py.FS.writeFile('/work/run/pdf/' + f.name.replace(/[\\\\/]/g, '_'), new Uint8Array(f.buf));
+      const src = '/work/run/mau.' + (m.mau.name.toLowerCase().endsWith('.xlsx') ? 'xlsx' : 'xlsm'); py.FS.writeFile(src, new Uint8Array(m.mau.buf));
+      const master = '/work/run/master.' + (m.master.json ? 'json' : 'xlsx'); py.FS.writeFile(master, new Uint8Array(m.master.buf));
+      if (m.hs) py.FS.writeFile('/work/run/hs.xlsx', new Uint8Array(m.hs));
+      py.globals.set('P', py.toPy({MODE: m.mode, SRC_DIR: '/work/run/pdf/', HS_XLSX: '/work/run/hs.xlsx', MASTER_XLSX: master, SRC_XLSM: src, GOI: 'G201NA', QUAN: m.params.QUAN, THANG: m.params.THANG, PREFER: m.params.PREFER}));
+      const js = py.runPython(\`
+import os, sys, json, traceback
+for k in ('THANG_MAU','QUAN_MAU','PS_LIB','PDF12','PDF13','OUT_XLSX'): os.environ.pop(k, None)
+for mod in ('refill_lib','report','dinhdang_in','web_run'): sys.modules.pop(mod, None)
+os.environ.update({k: str(v) for k, v in dict(P).items()})
+os.chdir('/app')
+try:
+    import web_run
+    out = json.dumps({'ok': True, 'report': web_run.run()}, ensure_ascii=False, default=str)
+except Exception as e:
+    tb = traceback.format_exc()
+    out = json.dumps({'ok': False, 'error': str(e) or e.__class__.__name__, 'trace': tb[-1500:]}, ensure_ascii=False)
+out
+\`);
+      const res = JSON.parse(js);
+      if (res.ok) {
+        const x = py.FS.readFile('/work/run/out.xlsx'); const buf = x.buffer.slice(x.byteOffset, x.byteOffset + x.byteLength);
+        let mj = null; if (!m.master.json && py.FS.analyzePath('/work/run/master.json').exists) { const y = py.FS.readFile('/work/run/master.json'); mj = y.buffer.slice(y.byteOffset, y.byteOffset + y.byteLength); }
+        post({type: 'done', report: res.report, xlsx: buf, masterJson: mj}, mj ? [buf, mj] : [buf]);
+      }
+      else post({type: 'fail', msg: res.error, trace: res.trace});
+    } catch (e) { post({type: 'fail', msg: String(e && e.message || e)}); }
+  }
+};`;
+
+const worker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], {type: 'text/javascript'})));
+worker.onmessage = (ev) => {
+  const m = ev.data;
+  if (m.type === 'ready') { ready = true; engine('ok', 'Bộ xử lý sẵn sàng'); updateRun(); }
+  else if (m.type === 'fatal') { engine('bad', 'Không khởi động được bộ xử lý'); showErr('Không khởi động được bộ xử lý trong trình duyệt: ' + m.msg + '. Thử tải lại trang bằng Chrome hoặc Edge bản mới.'); }
+  else if (m.type === 'stage') stage(m.label);
+  else if (m.type === 'done') onDone(m);
+  else if (m.type === 'fail') { busy = false; updateRun(); engine('ok', 'Bộ xử lý sẵn sàng'); showErr('Không lập được hồ sơ: ' + m.msg); window.__lastError = m; }
+};
+worker.onerror = (e) => { engine('bad', 'Bộ xử lý gặp lỗi'); showErr('Bộ xử lý gặp lỗi: ' + (e.message || 'không rõ')); };
+worker.postMessage({type: 'init', base: BASE, build: BUILD});
+$('ver').textContent = 'Phiên bản ' + BUILD + ' — nếu số này khác số trên GitHub, bấm Ctrl + F5';
+
+$('run').addEventListener('click', async () => {
+  if (busy) return; busy = true; updateRun(); showErr(''); result = null; $('out').hidden = true;
+  STAGES = mode === 'add' ? [ST_PS, ST_IN] : STAGES_NEW;
+  engine('busy', mode === 'add' ? 'Đang xử lý… (khoảng 1 phút)' : 'Đang lập hồ sơ… (khoảng 1–2 phút)'); resetStages();
+  const pdfs = await Promise.all(pdfFiles.map(async f => ({name: f.name, buf: await f.arrayBuffer()})));
+  const msg = {type: 'run', mode, pdfs, params: {THANG: $('thang').value, QUAN: $('quan').value.trim() || '8', PREFER: $('prefer').value.split(/[;\n]/).map(s => s.trim()).filter(Boolean).join(';')}};
+  msg.mau = {name: mauRec.name, buf: mauRec.buf.slice(0)};
+  msg.master = {name: masterRec.name, buf: masterRec.buf.slice(0), json: !!masterRec.json};
+  const tr = [...pdfs.map(p => p.buf), msg.mau.buf, msg.master.buf];
+  if (mode === 'add') { msg.hs = await hsFile.arrayBuffer(); tr.push(msg.hs); }
+  worker.postMessage(msg, tr);
+});
+
+function fillRows(id, rows) {
+  const tb = $(id); tb.textContent = '';
+  rows.forEach(([a, b]) => { const tr = document.createElement('tr'); const t1 = document.createElement('td'); t1.textContent = a; const t2 = document.createElement('td'); t2.className = 'n'; t2.textContent = b; tr.append(t1, t2); tb.append(tr); });
+}
+function onDone(m) {
+  busy = false; updateRun(); engine('ok', 'Đã lập xong');
+  [...$('prog').children].forEach(li => { li.className = 'done'; li.firstChild.className = 'dot ok'; });
+  const r = m.report; const th = $('thang').value; const q = $('quan').value.trim() || '8';
+  let fname;
+  if (r.mode === 'add') fname = hsFile.name.replace(/\.xlsx$/i, '') + '_BS.xlsx';
+  else {
+    const yr = (Number(th) > now.getMonth() + 1) ? now.getFullYear() - 1 : now.getFullYear();
+    fname = 'HO_SO_HOAN_CONG_CSKVTT_Q' + q + '_T' + String(th).padStart(2, '0') + '.' + yr + '.xlsx';
+  }
+  result = {blob: new Blob([m.xlsx], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), fname};
+  window.__lastXlsx = m.xlsx; window.__lastReport = r;
+  if (m.masterJson) { masterRec = {name: masterRec.name, buf: m.masterJson, t: masterRec.t, json: true, n: r.master_n}; IDB.set('master', masterRec); renderBase(); }
+  renderChecks(r.checks);
+  const allOk = r.checks.every(c => c.ok);
+  $('outSub').textContent = (allOk ? 'Tất cả mục đạt. ' : 'Có mục cần xem lại. ') + (r.mode === 'add' ? 'File: ' + hsFile.name + '.' : 'Mẫu: tháng ' + r.thang_mau + ', Quận ' + r.quan_mau + ' → Kỳ: tháng ' + th + ', Quận ' + q + '.');
+  $('mainSum').hidden = r.mode === 'add';
+  const files = [];
+  if (r.mode !== 'add') {
+    $('k1').textContent = fmt(r.tong_qlvh); $('k2').textContent = fmt(r.so_tu);
+    $('k3').textContent = fmt(r.bd_hm.reduce((s, x) => s + x[1], 0));
+    $('dban').textContent = r.dia_ban;
+    fillRows('tq', r.qlvh_hm.map(([a, b]) => [a, fmt(b)]));
+    fillRows('tb', r.bd_hm.length ? r.bd_hm.map(([a, b]) => [a, fmt(b)]) : [['Không có khối lượng bảo dưỡng', '0']]);
+    const roles = {QLVH: 'QLVH chi tiết', BOQ: 'Bảo dưỡng tổng hợp (bảng hạng mục)', BD: 'Bảo dưỡng chi tiết', KHQ: 'QLVH tổng hợp (kế hoạch quý)'};
+    Object.entries(r.files).forEach(([k, v]) => files.push([roles[k] || k, v]));
+  }
+  $('psSum').hidden = !r.ps;
+  if (r.ps) {
+    $('psInfo').textContent = 'Kỳ ' + r.ps.ky + ' · ' + r.ps.hm.length + ' hạng mục, ' + r.ps.n_vitri + ' vị trí · ghi vào sheet ' + r.ps.sheets.join(' và ');
+    fillRows('tp', r.ps.hm.map(([a, d, b]) => [a + ' (' + d + ')', fmt(b)]));
+    files.push(['Biên bản 12 (tổng hợp)', r.ps.files[0]], ['Biên bản 13 (chi tiết)', r.ps.files[1]]);
+  }
+  if (!files.length) files.push(['Biên bản', 'Không chọn PDF — chỉ chỉnh định dạng in']);
+  fillRows('tf', files);
+  $('tf').querySelectorAll('td.n').forEach(td => { td.style.whiteSpace = 'normal'; td.style.textAlign = 'left'; });
+  $('summary').hidden = false; $('out').hidden = false; $('fname').textContent = fname;
+}
+
+$('save').addEventListener('click', () => {
+  if (!result) return;
+  const a = document.createElement('a'); a.href = URL.createObjectURL(result.blob); a.download = result.fname;
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  $('fname').textContent = 'Đã tải: ' + result.fname;
+});
+// ---------------- PWA: service worker + nút cài ----------------
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let deferredPrompt = null;
+const instBtn = $('instBtn');
+if (!standalone() && isIOS) instBtn.hidden = false;
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; if (!standalone()) instBtn.hidden = false; });
+window.addEventListener('appinstalled', () => { instBtn.hidden = true; deferredPrompt = null; });
+instBtn.addEventListener('click', async () => {
+  if (deferredPrompt) { deferredPrompt.prompt(); const r = await deferredPrompt.userChoice.catch(() => null); deferredPrompt = null; if (r && r.outcome === 'accepted') instBtn.hidden = true; }
+  else if (isIOS) { $('iosHint').hidden = false; $('iosClose').focus(); }
+});
+$('iosClose').addEventListener('click', () => { $('iosHint').hidden = true; instBtn.focus(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('iosHint').hidden) { $('iosHint').hidden = true; instBtn.focus(); } });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "Hoàn công CSKVTT",
+  "short_name": "Hoàn công",
+  "description": "Lập hồ sơ hoàn công duy tu chiếu sáng CSKVTT từ biên bản nghiệm thu — xử lý ngay trên máy.",
+  "lang": "vi",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#14213d",
+  "background_color": "#f3f4f6",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

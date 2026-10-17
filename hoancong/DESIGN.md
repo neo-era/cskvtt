@@ -32,3 +32,9 @@ python3 tests/test_v2.py <thư mục PDF> <mẫu .xlsm> <bảng tra .xlsx>
 - BB13 Q10: chữ cột "Vị trí" bị PDF cắt sang ô KL ("u 1,000", "2,000\n)") → `parse13` giữ 1 số, trả phần chữ về đúng dòng của ô Vị trí.
 - Một dòng BB13 gốc thiếu ")" ("…(tháo dỡ cáp điện ngầm") — giữ nguyên theo biên bản.
 - Test bộ thật: `python3 tests/test_bo_that.py <PDF/> <mẫu> <bảng tra> 10 9` → 12/12; `tests/test_v2.py` (bộ T08) → 17/17.
+
+## Phiên bản & cập nhật (17/10/2026)
+- Sự cố: trang mới nhưng trình duyệt/app đã cài vẫn chạy mã xử lý cũ (service worker trả `pylibs.zip` cũ) → báo lỗi "u 1,000" dù đã sửa.
+- Sửa: mã xử lý nạp từ `py/pylibs.zip?v=<BUILD>`; service worker lưu theo ĐÚNG phiên bản; trong zip có `build.txt`, worker so khớp với `BUILD` của trang, lệch → báo "bấm Ctrl + F5".
+- `VERSION` (vd 2.1.0) + `./build.sh` → `BUILD = VERSION-sha1(src)[:6]`; hiện ở tiêu đề cửa sổ ("Hoàn công CSKVTT v2.1.0"), nhãn cạnh tên app và dòng "Phiên bản …" cuối trang.
+- Lỗi số liệu (`phatsinh.num`): ô số lẫn chữ tràn từ cột bên cạnh mà chỉ có 1 số → tự lấy số; còn sai → báo rõ biên bản, file, trang, hạng mục, nguyên nhân, cách kiểm tra, cách khắc phục.

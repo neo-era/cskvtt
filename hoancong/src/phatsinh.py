@@ -10,10 +10,21 @@ from refill_lib import norm, rewrite, look, load_master
 RL.GOI=os.environ.get('GOI','G201NA'); RL.PREFER=set(p.strip() for p in os.environ.get('PREFER','').split(';') if p.strip())
 HS=os.environ['HS_XLSX']; OUT=os.environ.get('OUT_XLSX',''); SRC=os.environ['SRC_XLSM']
 if not OUT or os.path.abspath(OUT)==os.path.abspath(HS): sys.exit('THIẾU OUT_XLSX: phải ghi ra file KHÁC file hồ sơ gốc')
-def num(s):
+CTX={}   # vi tri dang doc (file, trang, hang muc, vi tri) de bao loi ro rang
+def num(s,cot='khối lượng'):
     s=(s or '').strip()
     if not s: return None
-    if not re.fullmatch(r'[\d.,]+',s): sys.exit('SAI SỐ LIỆU: ô khối lượng "%s" không phải số — kiểm tra PDF đúng biên bản 12/13 chưa'%s)
+    tk=s.split(); so=[t for t in tk if re.fullmatch(r'\d[\d.,]*',t)]
+    if len(so)==1 and not re.fullmatch(r'[\d.,]+',s): s=so[0]      # TU KHAC PHUC: chu lac dinh vao o so -> giu so
+    if not re.fullmatch(r'[\d.,]+',s):
+        c=CTX
+        sys.exit('SAI SỐ LIỆU trong %s (file "%s"), trang %s%s%s: ô %s đọc được "%s" — không phải số.\n'
+                 'Nguyên nhân thường gặp: chữ của cột bên cạnh bị PDF cắt dính vào ô số, hoặc ô bị ghi nhầm/để trống bằng ký tự.\n'
+                 'Cách kiểm tra: mở file PDF trên, đến trang %s, xem ô %s của dòng nêu trên.\n'
+                 'Cách khắc phục: nếu PDF ghi đúng số mà phần mềm đọc sai → gửi file này để cập nhật phần mềm; nếu PDF ghi sai → xin lại biên bản đã sửa rồi chạy lại.'
+                 %(c.get('bb','biên bản'),c.get('file',''),c.get('trang','?'),
+                   (', hạng mục %s "%s"'%(c['stt'],c.get('ten','')[:60])) if c.get('stt') else '',
+                   (', vị trí "%s"'%c['vitri'][:70]) if c.get('vitri') else '',cot,(s.replace('\n',' '))[:40],c.get('trang','?'),cot))
     return float(s.replace('.','').replace(',','.'))
 def check_title(path,key,ten,cam=None):
     with pdfplumber.open(path) as pdf: t=' '.join((pdf.pages[0].extract_text() or '').split()).upper()
@@ -28,8 +39,10 @@ def ky_pdf(path):
     return (int(m.group(1)),int(m.group(2))) if m else (None,None)
 def parse12(path):
     out=[]
+    CTX.clear(); CTX.update(bb='biên bản 12 (tổng hợp phát sinh)',file=os.path.basename(path))
     with pdfplumber.open(path) as pdf:
-        for pg in pdf.pages:
+        for pi,pg in enumerate(pdf.pages):
+            CTX['trang']=pi+1
             for tb in pg.extract_tables():
                 for r in tb:
                     if len(r)<6: continue
@@ -38,12 +51,15 @@ def parse12(path):
                         g=J(r[1])
                         if not any(x.get('grp')==g for x in out): out.append({'grp':g})
                     elif st.isdigit():
-                        out.append({'stt':int(st),'ten':J(r[1]),'dvt':J(r[2]),'th':num(r[3]),'xn':num(r[4]),'gc':J(r[5])})
+                        CTX.update(stt=st,ten=J(r[1]),vitri='')
+                        out.append({'stt':int(st),'ten':J(r[1]),'dvt':J(r[2]),'th':num(r[3],'Thực hiện'),'xn':num(r[4],'Xác nhận'),'gc':J(r[5])})
     return out
 def parse13(path):
     out=[]; cur=None
+    CTX.clear(); CTX.update(bb='biên bản 13 (chi tiết phát sinh)',file=os.path.basename(path))
     with pdfplumber.open(path) as pdf:
-        for pg in pdf.pages:
+        for pi,pg in enumerate(pdf.pages):
+            CTX['trang']=pi+1
             for tb in pg.extract_tables():
                 for r in tb:
                     if len(r)<10: continue
@@ -70,7 +86,8 @@ def parse13(path):
                                         if frag: ml[min(i,len(ml)-1)]+=frag
                                     mota='\n'.join(ml)
                                 r[k]=so[0]
-                        cur['items'].append({'quan':J(r[3]),'duong':J(r[4]),'tu':J(r[5]),'mota':J(mota),'th':num(r[7]),'xn':num(r[8]),'gc':J(r[9])})
+                        CTX.update(stt=cur['stt'],ten=cur['ten'],vitri=J(mota) or J(r[5]))
+                        cur['items'].append({'quan':J(r[3]),'duong':J(r[4]),'tu':J(r[5]),'mota':J(mota),'th':num(r[7],'Thực hiện'),'xn':num(r[8],'Xác nhận'),'gc':J(r[9])})
     return out
 # ---------- ten chuan ----------
 tpl=openpyxl.load_workbook(SRC)

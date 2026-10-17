@@ -25,6 +25,6 @@ và **không lưu trong repo này** (repo công khai).
 
 ## Cấu trúc
 - `index.html` – giao diện + Web Worker chạy Python.
-- `pylibs.zip` – openpyxl, pdfplumber, pdfminer.six (thuần Python) + mã `src/`.
+- `py/pylibs.zip` – openpyxl, pdfplumber, pdfminer.six (thuần Python) + mã `src/`.
 - `pyodide/` – Pyodide 0.26.4.
-- `src/` – mã nguồn Python: refill_lib.py, refill_main.py, report.py (lập hồ sơ), phatsinh.py (biên bản 12/13), dinhdang_in.py (định dạng in), web_run.py (điều phối 1 lần chạy trên trang). Sửa xong thì đóng gói lại vào `pylibs.zip` (`cd src && zip -j ../pylibs.zip *.py`).
+- `src/` – mã nguồn Python: refill_lib.py, refill_main.py, report.py (lập hồ sơ), phatsinh.py (biên bản 12/13), dinhdang_in.py (định dạng in), web_run.py (điều phối 1 lần chạy trên trang). Sửa xong chạy `./build.sh` (đóng gói `py/pylibs.zip` + ghi số phiên bản vào trang). Đổi phiên bản: sửa file `VERSION` rồi chạy `./build.sh`.

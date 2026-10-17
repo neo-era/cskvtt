@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>Hoàn công CSKVTT</title>
+<title>Hoàn công CSKVTT v2.1.0</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#14213d">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -107,7 +107,8 @@ th{color:var(--muted);font-weight:600;font-size:.75rem;text-transform:uppercase;
 td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .db{background:var(--accent-soft);border-radius:8px;padding:10px 12px;font-size:.88rem;margin-top:4px}
 .db b{color:var(--accent)}
-.err{background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:10px 12px;font-size:.88rem;margin-top:12px;overflow-wrap:anywhere}
+.err{background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:10px 12px;font-size:.88rem;margin-top:12px;overflow-wrap:anywhere;white-space:pre-line}
+.ver{font-size:.75rem;color:var(--muted);margin-top:6px}
 .out{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
 .out .fn{font-size:.85rem;color:var(--muted);overflow-wrap:anywhere;min-width:0}
 h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
@@ -116,6 +117,7 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
 .seg button[aria-pressed="true"]{background:var(--accent);color:#fff;font-weight:600}
 [hidden]{display:none!important}
 /* Nút cài ứng dụng (PWA) trên thanh tiêu đề — chỉ hiện khi máy cài được */
+.appver{font-size:.72rem;font-weight:600;color:var(--night-ink);opacity:.75;border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:middle;letter-spacing:.02em}
 .inst{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);color:var(--night-ink);font:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:background .18s ease,border-color .18s ease}
 .inst:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.45)}
 .inst:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -131,7 +133,7 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
 
 
 <header class="top"><div class="in">
-  <h1>Hoàn công <span>CSKVTT</span></h1>
+  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.1.0</small></h1>
   <p>Gói G201NA · Duy tu chiếu sáng · Lập hồ sơ từ biên bản nghiệm thu</p>
   <button class="inst" id="instBtn" type="button" hidden aria-label="Cài ứng dụng Hoàn công lên máy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Cài ứng dụng</button>
 </div></header>
@@ -212,6 +214,7 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
           <button class="btn" id="run" type="button" disabled>Lập hồ sơ</button>
           <div class="engine"><span class="dot busy" id="edot"></span><span id="etext">Đang tải bộ xử lý (khoảng 20 MB, lần sau nhanh hơn)…</span></div>
         </div>
+        <div class="ver" id="ver"></div>
         <ul class="prog" id="prog" hidden></ul>
         <div class="err" id="err" hidden></div>
       </div>
@@ -262,6 +265,7 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
 (() => {
 const $ = (id) => document.getElementById(id);
 const BASE = new URL('./', location.href).href;
+const BUILD = '2.1.0-733145';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
 const CHECKS_NEW = ['Quy đổi phường theo tủ','Khối lượng QLVH','Kế hoạch quý (biên bản số 5)','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu','Định dạng in'];
 const CHECKS_ADD = ['Phát sinh ngoài KH: chi tiết (BB13) khớp tổng hợp (BB12)','Phát sinh ngoài KH: phường theo tủ','Định dạng in'];
 const ST_PS = 'Ghi phát sinh ngoài KH (12, 13)', ST_IN = 'Định dạng in';
@@ -354,7 +358,7 @@ function resetStages() { const ul = $('prog'); ul.textContent = ''; STAGES.forEa
 
 // ---------------- Worker (Python chạy trong trình duyệt) ----------------
 const WORKER_SRC = `
-let py = null;
+let py = null; let BUILD = '';
 const post = (m, t) => self.postMessage(m, t || []);
 async function fget(url) {   // mạng trước; mất mạng thì lấy bản đã lưu trong bộ nhớ ứng dụng (PWA)
   try { const r = await fetch(url); if (r.ok) return r; } catch (e) {}
@@ -374,14 +378,17 @@ async function boot(base) {
   await loadScript(base + 'pyodide/pyodide.asm.js');
   await loadScript(base + 'pyodide/pyodide.js');
   py = await loadPyodide({indexURL: base + 'pyodide/', stdout: (s) => { if (s.startsWith('@@')) post({type: 'stage', label: s.slice(2)}); }, stderr: () => {}});
-  const libs = await getBuf(base + 'pylibs.zip');
+  const libs = await getBuf(base + 'py/pylibs.zip?v=' + BUILD);
   py.FS.mkdirTree('/app'); py.unpackArchive(libs, 'zip', {extractDir: '/app'});
   py.runPython("import sys; sys.path.insert(0,'/app'); import openpyxl, pdfplumber");
+  const got = py.runPython("open('/app/build.txt').read().strip() if __import__('os').path.exists('/app/build.txt') else ''");
+  if (got !== BUILD) throw new Error('Trình duyệt đang giữ bản xử lý cũ (' + (got || 'không rõ') + ', cần ' + BUILD + '). Cách khắc phục: bấm Ctrl + F5 để tải lại trang; nếu vẫn lỗi, mở trang ở cửa sổ ẩn danh.');
 }
 function rmrf(d) { try { for (const f of py.FS.readdir(d)) { if (f === '.' || f === '..') continue; const p = d + '/' + f; if (py.FS.isDir(py.FS.stat(p).mode)) rmrf(p); else py.FS.unlink(p); } py.FS.rmdir(d); } catch (e) {} }
 self.onmessage = async (ev) => {
   const m = ev.data;
   if (m.type === 'init') {
+    BUILD = m.build;
     try { await boot(m.base); post({type: 'ready'}); }
     catch (e) { post({type: 'fatal', msg: String(e && e.message || e)}); }
   }
@@ -428,7 +435,8 @@ worker.onmessage = (ev) => {
   else if (m.type === 'fail') { busy = false; updateRun(); engine('ok', 'Bộ xử lý sẵn sàng'); showErr('Không lập được hồ sơ: ' + m.msg); window.__lastError = m; }
 };
 worker.onerror = (e) => { engine('bad', 'Bộ xử lý gặp lỗi'); showErr('Bộ xử lý gặp lỗi: ' + (e.message || 'không rõ')); };
-worker.postMessage({type: 'init', base: BASE});
+worker.postMessage({type: 'init', base: BASE, build: BUILD});
+$('ver').textContent = 'Phiên bản ' + BUILD + ' — nếu số này khác số trên GitHub, bấm Ctrl + F5';
 
 $('run').addEventListener('click', async () => {
   if (busy) return; busy = true; updateRun(); showErr(''); result = null; $('out').hidden = true;

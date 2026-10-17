@@ -30,8 +30,12 @@
 ## Kiểm chứng (`tests/test_pdf.py <hồ sơ.xlsx> <mẫu.xlsm>`)
 26/26 đạt trên hồ sơ Q10 T09 đầy đủ (có BB12/13): định dạng số; 1.050 ô công thức khớp LibreOffice; chữ của 9.500+ ô nằm trọn trong khung ô trên trang (ô bị cắt đều có cảnh báo); chân trang theo từng biên bản; khổ giấy; tiếng Việt; không còn ô bị cắt chữ do chiều cao; ngắt dòng khớp Excel 99,4%; ca xấu (VLOOKUP → báo `10.PYCNT2_BD_G201!B34`, ô 6.000 ký tự, không vùng in, dòng ẩn).
 - Số trang so với LibreOffice: chênh ≤ 2/sheet (6: 18/17, 7: 69/67, 10: 4/3). Nguyên nhân phía LibreOffice: co 98,4% thay vì 100% như Excel; ở sheet 6 LibreOffice còn **in tràn** (23 hạng mục nằm ngoài khổ giấy).
-- Trình duyệt (Chromium): 152 trang, ~11–13 giây xử lý (lần đầu ~25 giây gồm tải font); tắt mạng tải lại → vẫn lập + xuất PDF được.
+- Trình duyệt (Chromium): 152 trang, ~13 giây cả lần đầu (đọc file bỏ qua liên kết ngoài của mẫu: 14,4 → 2,8 giây trên máy); tắt mạng tải lại → vẫn lập + xuất PDF được.
 
 ## Còn lưu ý
 - Sheet 9, 11 (mẫu): vài dòng chữ dài hơn vùng in A:F ("+ Bên A: TRUNG TÂM … TP. HỒ CHÍ MINH", "Chức vụ: … Chiếu sáng số 1") → bị cắt khi in, cả trên Excel. Sửa ở mẫu (nới cột/thu chữ) — PDF liệt kê trong "lưu ý khi in".
 - Font thay thế: Liberation Serif cùng số đo với Times New Roman nhưng nét chữ hơi khác.
+
+## Soát độc lập (subagent) — đã sửa
+IF/IFERROR tính lười (=IF(A1=0;0;B1/A1) không còn trống) · chuỗi tham chiếu sâu tính nhiều lượt (3.000 ô đúng) · TRUE/FALSE, SUM(A:A) · ngày giờ (d/m/yyyy, h:mm, mmmm, ngày + số) · tách từ rất dài bằng tìm nhị phân (3.000 ký tự: 122 giây → tức thì) · PNG 1/2/4-bit · font Carlito nghiêng + dùng serif khi không tải được · khoá "Lập hồ sơ" khi đang tạo PDF · chân trang trang đầu/chẵn · sheet trống không in · định dạng 0.00E+00, "chữ"General, #,##0, · /Length1 font.
+Chưa làm (hiếm): ô gộp vắt qua chỗ chia cột khi bảng quá rộng; vùng in nhiều khối (chỉ in khối đầu); dòng tiêu đề lặp nằm ngoài vùng in.

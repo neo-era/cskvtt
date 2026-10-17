@@ -290,8 +290,9 @@ class TinhCongThuc:
         return 0 if self.bo else self._sc(b if loi else a)
     def tinh_het(self):
         """Tinh truoc moi o cong thuc theo thu tu dong (chuoi tham chieu dai khong bi qua do sau de quy)."""
-        o = [(ws.title, c.row, c.column) for ws in self.wb.worksheets for row in ws.iter_rows() for c in row
-             if isinstance(c.value, str) and c.value.startswith('=')]
+        o = sorted((ws.title, r, c) for ws in self.wb.worksheets for (r, c), cell in list(ws._cells.items())   # chi o co du lieu
+                   if isinstance(cell.value, str) and cell.value.startswith('='))
+        thu = {n: i for i, n in enumerate(self.wb.sheetnames)}; o.sort(key=lambda k: (thu[k[0]], k[1], k[2]))
         self.luot = True
         for _ in range(200):                     # moi luot tinh duoc them 1 doan chuoi (do sau <= 120)
             con = []
@@ -1169,7 +1170,7 @@ def xuat(src, out, thu_muc_font, log=print):
     """Xuat toan bo sheet dang hien cua file src -> out (PDF). Tra ve {'trang': [(sheet, so trang)], 'canh_bao': [...]}"""
     t0 = time.time()
     os.environ['HC_FONTS'] = thu_muc_font
-    wb = openpyxl.load_workbook(src, rich_text=True)
+    wb = openpyxl.load_workbook(src, rich_text=True, keep_links=False)   # bo lien ket ngoai (doc rat cham, khong can de ve)
     ev = TinhCongThuc(wb); ev.tinh_het(); pdf = PDF(thu_muc_font); theme = _theme(wb); mdw = _mdw(wb, pdf)
     trang = []; canh = []
     for ws in wb.worksheets:

@@ -107,16 +107,33 @@ def bia_dep(ws,XP,EV,DO,TH,MDW):
     for r in logo: ws.row_dimensions[r].height=round(L/len(logo),2)
     dem=[r for r in khac]                              # dong trong: chia phan du lam khoang tho
     for r in hz: ws.row_dimensions[r].height=round(min(409,hz[r]),2)
-    if sau: ws.row_dimensions[sau[0]].height=round(hz[sau[0]]+du*0.45,2)
-    if info: ws.row_dimensions[info[0]].height=round(hz[info[0]]+du*0.15,2)
-    for r in dem: ws.row_dimensions[r].height=round(max(4.0,du*0.40/len(dem)),2)
-    if not dem and sau: ws.row_dimensions[sau[-1]].height=round(hz[sau[-1]]+du*0.40,2)
-    # --- khung vien doi quanh trang bia, bo vien trong
-    d=Side(style='double'); n=Side(style=None)
+    ws.row_dimensions[tr].height=round(min(409,hz[tr]+du*0.30),2)          # tieu de co khoang tho tren duoi
+    ws.cell(tr,1).alignment=Alignment(horizontal='center',vertical='center',wrap_text=True)
+    if sau: ws.row_dimensions[sau[0]].height=round(hz[sau[0]]+du*0.35,2)
+    for r in dem: ws.row_dimensions[r].height=round(max(4.0,du*0.35/len(dem)),2)
+    if not dem and sau: ws.row_dimensions[sau[-1]].height=round(hz[sau[-1]]+du*0.35,2)
+    # --- vien/khung theo phuong an (BIA_KIEU): A trang trong | B dai tieu de | C toi gian
+    import os
+    kieu=os.environ.get('BIA_KIEU','K').upper()       # K = khung doi ngoai, KHONG vach ngang ben trong (anh Lam chon)
+    S_=lambda st: Side(style=st) if st else Side(style=None)
+    def ke(r,c,top=None,bottom=None):
+        x=ws.cell(r,c); b=x.border
+        x.border=Border(left=b.left,right=b.right,top=S_(top) if top else b.top,bottom=S_(bottom) if bottom else b.bottom)
+    ngoai={'A':'double','B':'thick','C':None}.get(kieu,'double')
     for r in range(1,last+1):
         for c in (1,2,3):
-            x=ws.cell(r,c)
-            x.border=Border(left=d if c==1 else n, right=d if c==3 else n, top=d if r==1 else n, bottom=d if r==last else n)
+            o=S_(ngoai); n=Side(style=None)
+            ws.cell(r,c).border=Border(left=o if c==1 else n, right=o if c==3 else n, top=o if r==1 else n, bottom=o if r==last else n)
+    for c in (1,2,3):
+        if kieu=='A':                                   # vach manh duoi ten cong ty, tren/duoi khoi thong tin
+            ke(2,c,bottom='thin')
+            if info: ke(info[0],c,top='thin'); ke(info[-1],c,bottom='thin')
+        elif kieu=='K': pass
+        elif kieu=='B':                                 # dai tieu de giua 2 vach doi; vach dam tren dong ky thuc hien
+            ke(tr,c,top='double',bottom='double')
+            if sau: ke(sau[0],c,top='medium')
+        else:                                           # C: 2 vach dam dau/cuoi trang, vach manh duoi tieu de
+            ke(1,c,top='thick'); ke(last,c,bottom='thick'); ke(tr,c,bottom='thin')
     # --- logo: giua trang, cao ~85% vung logo, giu ti le
     for im in getattr(ws,'_images',[])[:1]:
         if not logo: break
@@ -129,10 +146,42 @@ def bia_dep(ws,XP,EV,DO,TH,MDW):
         im.width,im.height=int(ww/0.75),int(hh/0.75)
     return True
 
+def _do(c):
+    """Mau do / do sam (mau danh dau cho can sua trong mau)."""
+    try:
+        if c is None: return False
+        if c.type=='rgb' and isinstance(c.rgb,str):
+            v=c.rgb[-6:]; r,g,b=int(v[0:2],16),int(v[2:4],16),int(v[4:6],16)
+            return r>=0x99 and g<=0x66 and b<=0x66
+        if c.type=='indexed': return c.indexed in (2,10,16,53,60)
+    except Exception: pass
+    return False
+
+def chu_do_thanh_den(wb):
+    """Moi chu mau do trong ho so -> den (anh Lam 17/10/2026). Ca chu dinh dang tung phan (rich text)."""
+    from openpyxl.styles.colors import Color
+    from openpyxl.cell.rich_text import CellRichText, TextBlock
+    n=0
+    for ws in wb.worksheets:
+        for row in ws.iter_rows():
+            for x in row:
+                if isinstance(x,MergedCell): continue
+                if _do(x.font.color):
+                    f=copy.copy(x.font); f.color=Color(rgb='FF000000'); x.font=f; n+=1
+                v=x.value
+                if type(v).__name__=='CellRichText':
+                    ch=False; parts=[]
+                    for t in v:
+                        if not isinstance(t,str) and t.font is not None and _do(t.font.color):
+                            g=copy.copy(t.font); g.color=Color(rgb='FF000000'); parts.append(TextBlock(g,t.text)); ch=True
+                        else: parts.append(t)
+                    if ch: x.value=CellRichText(*parts); n+=1
+    return n
+
 def fmt(src,out):
     print('@@Định dạng in')
     wb=openpyxl.load_workbook(src); log=[]
-    nl=nhan_gach_duoi(wb); KY=[]; THU=[]; CHAM=[]          # dinh dang nhan TRUOC khi do chieu cao dong (chu dam rong hon)
+    nl=nhan_gach_duoi(wb); KY=[]; THU=[]; CHAM=[]; DO_DEN=chu_do_thanh_den(wb)          # dinh dang nhan TRUOC khi do chieu cao dong (chu dam rong hon)
     import xuat_pdf as XP, anh_mini; anh_mini.cai()      # giu anh (logo) khi chay tren trinh duyet
     EV=XP.TinhCongThuc(wb); EV.tinh_het(); DO=XP.PDF(None); TH=XP._theme(wb); MDW=XP._mdw(wb,DO)
     for s in wb.worksheets:
@@ -214,7 +263,7 @@ def fmt(src,out):
         S2=XP.Sheet(s,EV,DO,TH,MDW); kk=XP.giu_khoi_ky(s,S2)
         if kk: KY.append('%s: ngắt trang để khối ký nằm trọn 1 trang (dòng %d)'%(s.title,kk))
         log.append((s.title,s.print_area,ch))
-    log.append(('(nhãn gạch dưới)','',nl))
+    log.append(('(nhãn gạch dưới)','',nl)); log.append(('(chữ đỏ → đen)','',DO_DEN))
     for x in KY: log.append((x,'',0))
     if THU: log.append(('thu cỡ chữ cho khỏi cụt: '+', '.join(THU),'',len(THU)))
     if CHAM: log.append(('cắt bớt dòng chấm điền: '+', '.join(CHAM),'',len(CHAM)))

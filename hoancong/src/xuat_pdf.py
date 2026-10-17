@@ -1000,7 +1000,7 @@ def ve_sheet(ws, ev, pdf, theme, mdw, canh_bao):
     anh = []
     for im in getattr(ws, '_images', []):
         try: anh.append((im, pdf.anh(im._data())))
-        except Exception as e: canh_bao.append('%s: bỏ qua 1 ảnh (%s)' % (ws.title, e))
+        except Exception as e: canh_bao.append('%s: bỏ qua 1 ảnh (%s) — file Excel vẫn giữ ảnh; muốn có trong PDF hãy thay ảnh trong mẫu bằng PNG/JPEG' % (ws.title, e))
     for cols in nhom_cot:
         for rows in trang:
             so += 1

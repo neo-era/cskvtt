@@ -16,6 +16,26 @@ def wrapn(p,cpl):            # dem so dong theo ngat TU (khong cat giua tu)
     return n
 K=0.42          # he so do rong chu Times (hieu chinh tu cac dong mau da duyet)
 TITLES={'4_G201_TTH_PTH_TMY_THU':'$4:$5'}
+_NHAN=re.compile(r'(\s*)(Gói thầu|Dự toán mua sắm|Địa điểm)(\s*:\s*)(\S.*)$',re.S)
+def nhan_gach_duoi(wb):
+    """Nhan 'Gói thầu:', 'Dự toán mua sắm:', 'Địa điểm:' -> dam + gach duoi, phan noi dung chu thuong (theo mau, anh Lam 17/10/2026).
+    Chi doi DINH DANG, chu giu nguyen tung ky tu."""
+    from openpyxl.cell.rich_text import CellRichText, TextBlock
+    from openpyxl.cell.text import InlineFont
+    n=0
+    for s in wb.worksheets:
+        for row in s.iter_rows(max_row=min(s.max_row,60)):
+            for x in row:
+                v=x.value
+                if not isinstance(v,str) or isinstance(x,MergedCell): continue
+                m=_NHAN.match(v)
+                if not m: continue
+                f=x.font; col=f.color if (f.color is not None and f.color.type=='rgb') else None
+                def F(**k): return InlineFont(rFont=f.name,sz=f.sz,i=f.i,color=col,**k)
+                x.value=CellRichText(*( [TextBlock(F(),m.group(1))] if m.group(1) else [] ),
+                                     TextBlock(F(b=True,u='single'),m.group(2)),TextBlock(F(b=True),m.group(3)),TextBlock(F(b=False),m.group(4)))
+                n+=1
+    return n
 def fmt(src,out):
     print('@@Định dạng in')
     wb=openpyxl.load_workbook(src); log=[]
@@ -60,6 +80,7 @@ def fmt(src,out):
                 need=max(need,lines*sz*1.27+2)
             if need>(cur or 15.75)+1: s.row_dimensions[r].height=round(need*4)/4; ch+=1
         log.append((s.title,s.print_area,ch))
+    log.append(('(nhãn gạch dưới)','',nhan_gach_duoi(wb)))
     wb.save(out)
     return log
 if __name__=='__main__':

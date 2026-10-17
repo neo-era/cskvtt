@@ -58,6 +58,25 @@ for sn, k in (('4_', 'Tủ kết nối về trung tâm'), ('3.', 'Tủ kết n�
     if k in nhom_pdf: check(any(s.startswith(sn) and v.strip() == k for s, c, v in T), 'sheet %s có nhãn nhóm "%s" như biên bản' % (sn, k))
 mat = [(s, c, v[:50]) for s, c, v in T if re.search(r'(?<!\w)(vê|điêu|nhiêu|đêu)(?!\w)', v, re.I)]
 check(not mat, 'không còn chữ mất dấu huyền (vê, điêu…) do đọc PDF', mat[:3])
+# nhan Goi thau / Du toan mua sam / Dia diem: dam + gach duoi, phan noi dung chu thuong; chu giu nguyen
+wr = openpyxl.load_workbook(out, rich_text=True); nl = []; nn = 0
+for ws in wr.worksheets:
+    for row in ws.iter_rows(max_row=40):
+        for c in row:
+            v = c.value; t = str(v) if v is not None else ''
+            if re.match(r'\s*(Gói thầu|Dự toán mua sắm|Địa điểm)\s*:\s*\S', t):
+                nn += 1; b = list(v) if type(v).__name__ == 'CellRichText' else []
+                ok = len(b) >= 2 and getattr(b[0], 'font', None) is not None and b[0].font.u == 'single' and b[0].font.b and not b[-1].font.b
+                if not ok: nl.append((ws.title, c.coordinate))
+check(nn >= 20 and not nl, 'nhãn Gói thầu/Dự toán mua sắm/Địa điểm: đậm + gạch dưới, nội dung chữ thường (%d ô)' % nn, nl[:5])
+mt = openpyxl.load_workbook(MAU); diff = []
+for ws in wr.worksheets:
+    if ws.title not in mt.sheetnames: continue
+    for row in ws.iter_rows(max_row=14):
+        for c in row:
+            t = str(c.value) if c.value is not None else ''
+            if re.match(r'\s*(Gói thầu|Dự toán mua sắm)\s*:', t) and t != str(mt[ws.title][c.coordinate].value): diff.append((ws.title, c.coordinate))
+check(not diff, 'chữ Gói thầu / Dự toán mua sắm giữ nguyên như mẫu', diff[:3])
 print('\n'.join('ĐẠT  ' + x for x in OK)); print('\n'.join('LỖI  ' + x for x in FAIL)); print('Tổng: %d đạt, %d lỗi' % (len(OK), len(FAIL)))
 print('FILE', out)
 sys.exit(1 if FAIL else 0)

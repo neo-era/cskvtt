@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>Hoàn công CSKVTT v2.2.2</title>
+<title>Hoàn công CSKVTT v2.3.0</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#14213d">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -80,6 +80,10 @@ summary{cursor:pointer;font-weight:600;font-size:.9rem}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:600}
 .btn.small{padding:6px 10px;font-size:.82rem}
+.btn.busy{cursor:progress;opacity:.75}
+.pdfnote{flex-basis:100%;font-size:.85rem;color:var(--muted);line-height:1.45;white-space:pre-line}
+.pdfnote.warn{color:var(--warn,#b45309)}
+.pdfnote details{margin-top:4px}.pdfnote summary{cursor:pointer;font-weight:600}
 .go{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:6px}
 .engine{font-size:.82rem;color:var(--muted);display:flex;gap:8px;align-items:center}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--wait);flex:none}
@@ -135,7 +139,7 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
 
 
 <header class="top"><div class="in">
-  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.2.2</small></h1>
+  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.3.0</small></h1>
   <p class="tsub"><b>Chiếu sáng khu vực Trung Tâm</b><br>Hồ sơ hoàn công các gói Duy tu chiếu sáng</p>
   <button class="inst" id="instBtn" type="button" hidden aria-label="Cài ứng dụng Hoàn công lên máy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Cài ứng dụng</button>
 </div></header>
@@ -249,7 +253,9 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
     </div>
     <div class="out" id="out" hidden>
       <button class="btn" id="save" type="button">Tải file Excel</button>
+      <button class="btn ghost" id="savePdf" type="button" aria-describedby="pdfNote">Tải hồ sơ PDF</button>
       <span class="fn" id="fname"></span>
+      <div class="pdfnote" id="pdfNote" role="status" aria-live="polite" hidden></div>
     </div>
     <ol class="rules">
       <li>Căn cứ pháp lý, Gói thầu, Dự toán, Địa điểm gói thầu giữ nguyên như mẫu.</li>
@@ -286,12 +292,13 @@ function tuDienPhuong() {
 }
 document.getElementById('quan').addEventListener('input', tuDienPhuong);
 tuDienPhuong();
-const BUILD = '2.2.2-82875e';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
+const BUILD = '2.3.0-3373e9';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
 const CHECKS_NEW = ['Quy đổi phường theo tủ','Khối lượng QLVH','Kế hoạch quý (biên bản số 5)','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu','Định dạng in'];
 const CHECKS_ADD = ['Phát sinh ngoài KH: chi tiết (BB13) khớp tổng hợp (BB12)','Phát sinh ngoài KH: phường theo tủ','Định dạng in'];
 const ST_PS = 'Ghi phát sinh ngoài KH (12, 13)', ST_IN = 'Định dạng in';
 const STAGES_NEW = ['Đọc bảng tra tủ → phường','Đọc biên bản PDF (bước lâu nhất)','Mở file mẫu','Ghi QLVH (2, 3, 8)','Ghi bảo dưỡng (6)','Ghi chi tiết Mẫu 4','Ghi chi tiết Mẫu 7','Đổi địa bàn, kỳ, số hiệu','Lưu file',ST_PS,ST_IN];
 let STAGES = STAGES_NEW;
+let pdfDang = false;
 let pdfFiles = [], mauRec = null, masterRec = null, ready = false, busy = false, result = null, mode = 'new', hsFile = null;
 // ---- IndexedDB: nho file mau + bang tra tren may (khong gui di dau) ----
 const IDB = {
@@ -334,7 +341,7 @@ function renderFiles() {
   pdfFiles.forEach(f => { const li = document.createElement('li'); const a = document.createElement('span'); a.textContent = f.name; const b = document.createElement('span'); b.textContent = kb(f.size); li.append(a, b); ul.append(li); });
   updateRun();
 }
-function updateRun() { $('run').disabled = !(ready && (mode === 'add' ? !!hsFile : pdfFiles.length) && mauRec && masterRec && !busy); }
+function updateRun() { $('run').disabled = !(ready && (mode === 'add' ? !!hsFile : pdfFiles.length) && mauRec && masterRec && !busy && !pdfDang); }
 function setMode(m) {
   if (busy) return; mode = m;
   $('mNew').setAttribute('aria-pressed', m === 'new'); $('mAdd').setAttribute('aria-pressed', m === 'add');
@@ -379,7 +386,7 @@ function resetStages() { const ul = $('prog'); ul.textContent = ''; STAGES.forEa
 
 // ---------------- Worker (Python chạy trong trình duyệt) ----------------
 const WORKER_SRC = `
-let py = null; let BUILD = '';
+let py = null; let BUILD = ''; let BASE = '';
 const post = (m, t) => self.postMessage(m, t || []);
 async function fget(url) {   // mạng trước; mất mạng thì lấy bản đã lưu trong bộ nhớ ứng dụng (PWA)
   try { const r = await fetch(url); if (r.ok) return r; } catch (e) {}
@@ -409,7 +416,7 @@ function rmrf(d) { try { for (const f of py.FS.readdir(d)) { if (f === '.' || f 
 self.onmessage = async (ev) => {
   const m = ev.data;
   if (m.type === 'init') {
-    BUILD = m.build;
+    BUILD = m.build; BASE = m.base;
     try { await boot(m.base); post({type: 'ready'}); }
     catch (e) { post({type: 'fatal', msg: String(e && e.message || e)}); }
   }
@@ -444,6 +451,40 @@ out
       else post({type: 'fail', msg: res.error, trace: res.trace});
     } catch (e) { post({type: 'fail', msg: String(e && e.message || e)}); }
   }
+  if (m.type === 'pdf') {
+    try {
+      py.FS.mkdirTree('/app/fonts');
+      const can = ['LiberationSerif-Regular.ttf', 'LiberationSerif-Bold.ttf', 'LiberationSerif-Italic.ttf', 'LiberationSerif-BoldItalic.ttf'].filter(f => !py.FS.analyzePath('/app/fonts/' + f).exists);
+      if (can.length) { post({type: 'stage', label: 'Tải font chữ (lần đầu, ~1,5 MB)'}); const bufs = await Promise.all(can.map(f => getBuf(BASE + 'fonts/' + f))); can.forEach((f, i) => py.FS.writeFile('/app/fonts/' + f, bufs[i])); }
+      const bo = [];
+      for (let lan = 0; lan < 8; lan++) {
+        py.globals.set('BO', bo.join(','));
+        const js = py.runPython(\`
+import os, sys, json, traceback
+os.environ['HC_FONT_TAI'] = '1'; os.environ['HC_FONT_BO'] = BO; os.chdir('/app')
+try:
+    import xuat_pdf
+    R = xuat_pdf.xuat('/work/run/out.xlsx', '/work/run/out.pdf', '/app/fonts')
+    out = json.dumps({'ok': True, 'trang': R['trang'], 'canh_bao': R['canh_bao'], 'giay': R['giay']}, ensure_ascii=False)
+except xuat_pdf.ThieuFont as e:
+    out = json.dumps({'ok': False, 'font': str(e)})
+except Exception as e:
+    out = json.dumps({'ok': False, 'error': str(e) or e.__class__.__name__, 'trace': traceback.format_exc()[-1500:]}, ensure_ascii=False)
+out
+\`);
+        const res = JSON.parse(js);
+        if (res.font) {
+          post({type: 'stage', label: 'Tải font ' + res.font});
+          try { py.FS.writeFile('/app/fonts/' + res.font, await getBuf(BASE + 'fonts/' + res.font)); } catch (e) { bo.push(res.font); }   // khong tai duoc -> dung font serif thay
+          continue;
+        }
+        if (!res.ok) { post({type: 'pdffail', msg: res.error, trace: res.trace}); return; }
+        const x = py.FS.readFile('/work/run/out.pdf'); const buf = x.buffer.slice(x.byteOffset, x.byteOffset + x.byteLength);
+        post({type: 'pdfdone', pdf: buf, trang: res.trang, canh_bao: res.canh_bao, giay: res.giay}, [buf]); return;
+      }
+      post({type: 'pdffail', msg: 'thiếu font'});
+    } catch (e) { post({type: 'pdffail', msg: String(e && e.message || e)}); }
+  }
 };`;
 
 const worker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], {type: 'text/javascript'})));
@@ -451,8 +492,10 @@ worker.onmessage = (ev) => {
   const m = ev.data;
   if (m.type === 'ready') { ready = true; engine('ok', 'Bộ xử lý sẵn sàng'); updateRun(); }
   else if (m.type === 'fatal') { engine('bad', 'Không khởi động được bộ xử lý'); showErr('Không khởi động được bộ xử lý trong trình duyệt: ' + m.msg + '. Thử tải lại trang bằng Chrome hoặc Edge bản mới.'); }
-  else if (m.type === 'stage') stage(m.label);
+  else if (m.type === 'stage') { if ($('savePdf').disabled && $('savePdf').classList.contains('busy')) note(m.label.replace(/^PDF: /, 'Đang vẽ: '), false); else stage(m.label); }
   else if (m.type === 'done') onDone(m);
+  else if (m.type === 'pdfdone') onPdf(m);
+  else if (m.type === 'pdffail') { pdfBusy(false); note('Không tạo được PDF: ' + m.msg + '\nCách khắc phục: tải lại trang (Ctrl + F5) rồi lập lại; nếu vẫn lỗi, gửi file Excel này để kiểm tra.', true); window.__lastError = m; }
   else if (m.type === 'fail') { busy = false; updateRun(); engine('ok', 'Bộ xử lý sẵn sàng'); showErr('Không lập được hồ sơ: ' + m.msg); window.__lastError = m; }
 };
 worker.onerror = (e) => { engine('bad', 'Bộ xử lý gặp lỗi'); showErr('Bộ xử lý gặp lỗi: ' + (e.message || 'không rõ')); };
@@ -515,6 +558,29 @@ function onDone(m) {
   $('summary').hidden = false; $('out').hidden = false; $('fname').textContent = fname;
 }
 
+// ---------------- Tải hồ sơ PDF (vẽ ngay trên máy, không gửi file đi đâu) ----------------
+function note(t, warn) { const n = $('pdfNote'); n.hidden = !t; n.className = 'pdfnote' + (warn ? ' warn' : ''); n.textContent = t || ''; }
+function pdfBusy(on) { pdfDang = on; updateRun(); const b = $('savePdf'); b.disabled = on; b.classList.toggle('busy', on); b.textContent = on ? 'Đang tạo PDF…' : 'Tải hồ sơ PDF'; }
+function onPdf(m) {
+  pdfBusy(false);
+  if (!result) { note('Hồ sơ đã được lập lại trong lúc tạo PDF — bấm "Tải hồ sơ PDF" lần nữa.', true); return; }
+  const fn = result.fname.replace(/\.xlsx$/i, '.pdf');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([m.pdf], {type: 'application/pdf'})); a.download = fn;
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  const tong = m.trang.reduce((x, y) => x + y[1], 0);
+  note('Đã tải: ' + fn + ' — ' + tong + ' trang, ' + m.trang.length + ' biên bản (' + m.giay + ' giây).', false);
+  if (m.canh_bao.length) {
+    const d = document.createElement('details'); const sm = document.createElement('summary');
+    sm.textContent = m.canh_bao.length + ' lưu ý khi in (bấm để xem)'; d.append(sm);
+    const pre = document.createElement('div'); pre.textContent = m.canh_bao.join('\n'); d.append(pre); $('pdfNote').append(d);
+  }
+  window.__lastPdf = m;
+}
+$('savePdf').addEventListener('click', () => {
+  if (!result || busy || $('savePdf').disabled) return;
+  pdfBusy(true); note('Đang vẽ từng trang theo bản in Excel…', false);
+  worker.postMessage({type: 'pdf'});
+});
 $('save').addEventListener('click', () => {
   if (!result) return;
   const a = document.createElement('a'); a.href = URL.createObjectURL(result.blob); a.download = result.fname;

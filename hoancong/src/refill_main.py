@@ -17,6 +17,19 @@ qlvh=parse_qlvh(by,bn); boq=parse_boq(); bd=parse_bd(by,bn)
 # PDF mat dau 'ó' (bong->bóng): lay ten hang muc + DVT chuan tu chinh file mau (6.HTCT_BD) theo ten khong dau
 print('@@Mở file mẫu')
 wb=openpyxl.load_workbook(SRC, data_only=False, keep_vba=False)   # bo macro (load 1 lan)
+# Vung in dang CHI COT ('Sheet'!$C:$K) - openpyxl khong doc duoc -> doc thang tu file mau, doi thanh $C$1:$K$<dong cuoi>
+def _vung_in_mau(path, wb):
+    import zipfile, html
+    try:
+        z = zipfile.ZipFile(path); x = z.read('xl/workbook.xml').decode('utf8')
+    except Exception: return
+    names = [html.unescape(m.group(1)) for m in re.finditer(r'<sheet [^>]*?name="([^"]+)"', x)]
+    for m in re.finditer(r'<definedName [^>]*name="_xlnm.Print_Area"[^>]*localSheetId="(\d+)"[^>]*>([^<]+)</definedName>', x):
+        i = int(m.group(1)); v = html.unescape(m.group(2))
+        if i >= len(names) or names[i] not in wb.sheetnames: continue
+        ws = wb[names[i]]; mc = re.fullmatch(r".*!\$?([A-Z]{1,3}):\$?([A-Z]{1,3})", v.split(',')[0])
+        if mc and not ws.print_area: ws.print_area = '%s1:%s%d' % (mc.group(1), mc.group(2), ws.max_row)
+_vung_in_mau(SRC, wb)
 # Tu nhan dien ky/quan cua FILE MAU neu khong truyen (BIA 'THUC HIEN THANG x', so hieu '..-x-Qy')
 if not os.environ.get('THANG_MAU'):
     for _row in wb['BIA_G201'].iter_rows():

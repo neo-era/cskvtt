@@ -956,9 +956,14 @@
                     const prev = filtered[i-1], cur = filtered[i];
                     const dist = getDistanceMeters(prev.lat||parseCoord(prev[2]), prev.lon||parseCoord(prev[3]), cur.lat||parseCoord(cur[2]), cur.lon||parseCoord(cur[3]));
                     totalDistance += dist;
-                    segments.push(`<li>${(prev.name||prev[1]||'?')} → ${(cur.name||cur[1]||'?')}: ${Math.round(dist)} m</li>`);
+                    segments.push(`<option style="font-size:12px">${(prev.name||prev[1]||'?')} → ${(cur.name||cur[1]||'?')}: ${Math.round(dist)} m</option>`);
                 }
-                distancesHtml = `<div style="margin-top:8px;font-size:13px"><strong>Tổng khoảng cách:</strong> ${Math.round(totalDistance)} m<ul style="margin:4px 0 0 16px;padding:0">${segments.join('')}</ul></div>`;
+                distancesHtml = `<div style="margin-top:8px;font-size:13px">
+                    <strong>Tổng khoảng cách:</strong> ${Math.round(totalDistance)} m
+                    <select size="5" style="display:block;width:100%;margin-top:4px;font-size:12px;border:1px solid #ccc;border-radius:4px;padding:2px;background:#f9fafb;max-height:120px">
+                        ${segments.join('')}
+                    </select>
+                </div>`;
             }
             const imageHtml = imageValue ? `<div style="margin-top:8px;text-align:center"><img src="${imageValue}" alt="Ảnh trụ" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid #ccc" loading="lazy"></div>` : '';
             const timestampHtml = updatedAt ? `<div style="margin-top:8px;font-size:13px"><strong>Cập nhật:</strong> ${updatedAt}</div>` : '';
@@ -1143,6 +1148,19 @@
         function startAddMarker() {
             if (addMarkerMode) { disableAddMarkerMode(); return; }
             enableAddMarkerMode();
+            // Tự lấy GPS ngay — không cần tap vào bản đồ
+            if (navigator.geolocation) {
+                displayError('Đang lấy vị trí GPS...');
+                navigator.geolocation.getCurrentPosition(
+                    pos => {
+                        if (addMarkerMode) showMarkerPopupAt(pos.coords.latitude, pos.coords.longitude);
+                    },
+                    () => displayError('Không lấy được GPS — hãy nhấp vào bản đồ để chọn vị trí.'),
+                    { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
+                );
+            } else {
+                displayError('Nhấp vào bản đồ để chọn vị trí trụ mới.');
+            }
         }
 
         function showMarkerPopupAt(lat, lon) {
@@ -1326,11 +1344,13 @@
         function saveMarkerPopup() {
             try {
                 if (!markerPopupLocation || !Array.isArray(markerPopupLocation) || markerPopupLocation.length !== 2) {
-                    displayError('Không có vị trí marker để lưu.'); hideMarkerPopup(); return;
+                    displayError('Chưa có vị trí — nhấn "Vị trí hiện tại" hoặc "Chọn trên bản đồ".');
+                    return; // Giữ nguyên form, không đóng
                 }
                 const lat = Number(markerPopupLocation[0]), lon = Number(markerPopupLocation[1]);
                 if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-                    displayError('Tọa độ không hợp lệ.'); hideMarkerPopup(); return;
+                    displayError('Tọa độ không hợp lệ — nhấn "Vị trí hiện tại" để thử lại.');
+                    return; // Giữ nguyên form, không đóng
                 }
                 const nameInput = document.getElementById('markerNameInput');
                 const noteInput = document.getElementById('markerNoteInput');
@@ -1914,14 +1934,23 @@
 
         function setMarkerToCurrentLocation() {
             if (!navigator.geolocation) { displayError('Trình duyệt không hỗ trợ định vị.'); return; }
+            displayError('Đang lấy GPS...');
             navigator.geolocation.getCurrentPosition(
                 pos=>{
                     const lat=pos.coords.latitude, lon=pos.coords.longitude;
+                    const overlay = document.getElementById('markerPopupForm');
+                    const formOpen = overlay && overlay.style.display === 'flex';
+                    // Nếu form chưa mở (ví dụ bấm từ bottom bar) → mở form tại vị trí GPS
+                    if (!formOpen) {
+                        showMarkerPopupAt(lat, lon);
+                        return;
+                    }
                     markerPopupLocation=[lat,lon]; pendingMarkerLocation=[lat,lon];
                     if (tempMarker) tempMarker.setLatLng([lat,lon]);
                     else tempMarker = L.marker([lat,lon], { icon:customIcons.currentPos }).addTo(map);
                     document.getElementById('markerCoordsText').textContent = `Tọa độ: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-                    displayError('Đã lấy vị trí hiện tại.');
+                    map.setView([lat,lon], Math.max(map.getZoom(), 17));
+                    displayError('Đã cập nhật vị trí.');
                 },
                 err=>displayError('Không thể lấy vị trí: '+err.message),
                 { enableHighAccuracy:true, timeout:15000, maximumAge:0 }

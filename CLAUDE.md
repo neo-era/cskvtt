@@ -81,7 +81,7 @@ Lý do chọn Apps Script thay vì gọi thẳng Google Sheets API v4:
 | D   | 3     | `lon`              | number      | Kinh độ                                  |
 | E   | 4     | `ghi_chu`          | string      |                                          |
 | F   | 5     | `nguoi_khaosat`    | string      | Lấy tên đăng nhập                 |
-| G   | 6     | `loai_marker`      | number      | 1=trụ thường, 2=STK, 6=tủ điều khiển     |
+| G   | 6     | `loai_marker`      | number      | 0=STK+LED, 1=STK+HPS, 2=Trang trí, 3=BTLT+LED, 4=BTLT+HPS, 5=Tủ nổi, 6=Tủ ngầm, 7=BTLT điện lực, 8=BTLT CS, 9=BTLT đề xuất |
 | H   | 7     | `tu_dieu_khien`    | string      |                                          |
 | I   | 8     | `loai_tru`         | string      |                                          |
 | J   | 9     | `loai_can`         | string      |                                          |

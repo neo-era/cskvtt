@@ -47,3 +47,9 @@ Chưa làm (hiếm): ô gộp vắt qua chỗ chia cột khi bảng quá rộng;
 - **Trang Bìa** (`bia_dep`): phủ kín A4 ngang (lề 1,27 cm, căn giữa 2 chiều), khung viền đôi, logo lớn giữa trang, tiêu đề 40, khối Gói thầu/Địa điểm 14 canh đều, thêm cột C hẹp làm lề phải. Chỉ đổi bố cục/cỡ chữ, không đổi chữ.
 - **Logo trên web**: Pyodide không có Pillow → openpyxl bỏ ảnh / ghi ảnh rỗng. `anh_mini.py` thay thế tối thiểu (đọc kích thước PNG/JPEG/GIF) → giữ nguyên logo 58 KB. Test: `tests/test_anh_mini.py <mẫu>`.
 - Kiểm: Q10 26/26, Q8 17/17, PDF 27/27 (thêm "khối ký trọn 1 trang"), ảnh 2/2; trình duyệt 152 trang ~12 giây.
+
+## v2.4.1 — lề 1,5 cm, cột phụ, logo hồ sơ cũ
+- Lề trên/dưới/trái/phải **1,5 cm** mọi sheet (cả Bìa); chân trang cách mép dưới 0,8 cm. Ngắt trang/khối ký tính lại theo lề mới.
+- Bỏ **cột phụ** ở mép phải vùng in (không kẻ khung, không ô gộp, chỉ số / mã máy như `CCTI_BASELINE_V1`) — sửa sheet 4 in cột AC khi "Bổ sung và định dạng" trên hồ sơ cũ.
+- Bìa thiếu logo (hồ sơ lập bằng bản cũ) → **lấy lại logo từ file mẫu** (`logo_tu_mau`).
+- Test: `tests/test_file_cu.py <hồ sơ> <mẫu>` 6/6; Q10 26/26, Q8 17/17, PDF 27/27, ảnh 2/2.

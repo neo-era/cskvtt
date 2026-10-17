@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>Hoàn công CSKVTT v2.4.1</title>
+<title>Hoàn công CSKVTT v2.4.2</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#14213d">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -139,7 +139,7 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
 
 
 <header class="top"><div class="in">
-  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.4.1</small></h1>
+  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.4.2</small></h1>
   <p class="tsub"><b>Chiếu sáng khu vực Trung Tâm</b><br>Hồ sơ hoàn công các gói Duy tu chiếu sáng</p>
   <button class="inst" id="instBtn" type="button" hidden aria-label="Cài ứng dụng Hoàn công lên máy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Cài ứng dụng</button>
 </div></header>
@@ -292,7 +292,7 @@ function tuDienPhuong() {
 }
 document.getElementById('quan').addEventListener('input', tuDienPhuong);
 tuDienPhuong();
-const BUILD = '2.4.1-fda656';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
+const BUILD = '2.4.2-40c6e0';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
 const CHECKS_NEW = ['Quy đổi phường theo tủ','Khối lượng QLVH','Kế hoạch quý (biên bản số 5)','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu','Định dạng in'];
 const CHECKS_ADD = ['Phát sinh ngoài KH: chi tiết (BB13) khớp tổng hợp (BB12)','Phát sinh ngoài KH: phường theo tủ','Định dạng in'];
 const ST_PS = 'Ghi phát sinh ngoài KH (12, 13)', ST_IN = 'Định dạng in';

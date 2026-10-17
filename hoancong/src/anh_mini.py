@@ -13,6 +13,9 @@ class Image:
     def close(self):
         pass
 
+    def save(self, fp, format=None):              # openpyxl goi khi anh khong phai png/jpeg/gif (vd EMF): ghi nguyen ban
+        self.fp.seek(0); fp.write(self.fp.read())
+
 
 def _kich_thuoc(d):
     if d[:8] == b'\x89PNG\r\n\x1a\n':
@@ -27,6 +30,10 @@ def _kich_thuoc(d):
             if m in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF):
                 h, w = struct.unpack('>HH', d[i + 5:i + 9]); return 'JPEG', (w, h)
             i += 2 + ln
+    if d[:4] == b'\x01\x00\x00\x00' and d[40:44] == b' EMF':        # EMF (anh dan tu Word/Visio)
+        l, t, r, b = struct.unpack('<iiii', d[8:24]); return 'EMF', (max(1, r - l), max(1, b - t))
+    if d[:4] == b'\xd7\xcd\xc6\x9a':                                 # WMF co header
+        l, t, r, b, u = struct.unpack('<hhhhH', d[6:16]); return 'WMF', (max(1, (r - l) * 96 // (u or 1440)), max(1, (b - t) * 96 // (u or 1440)))
     if d[:2] == b'BM':
         w, h = struct.unpack('<ii', d[18:26]); return 'BMP', (w, abs(h))
     return 'PNG', (100, 100)

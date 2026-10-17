@@ -82,6 +82,16 @@ check(pa4 and re.search(r'\$C\$1:\$K\$\d+', pa4[0]), 'sheet 4: vùng in C:K như
 bia = [w for w in wb.worksheets if w.title.startswith('BIA')][0]
 check(bia['A1'].border.top.style == 'double' and bia['A1'].border.left.style == 'double' and 'A$1:$C$' in (bia.print_area or '') and bia.print_options.verticalCentered,
       'trang Bìa: khung viền đôi, vùng in A:C, căn giữa trang', (bia.print_area, bia['A1'].border.top.style))
+wr2 = openpyxl.load_workbook(out); do = []
+import sys as _s; _s.path.insert(0, SRC); import dinhdang_in as _D
+for w in wr2.worksheets:
+    if w.sheet_state != 'visible': continue
+    for row in w.iter_rows():
+        for c in row:
+            if c.value is not None and _D._do(c.font.color): do.append((w.title, c.coordinate))
+check(not do, 'không còn chữ màu đỏ (đỏ → đen)', do[:5])
+inner = [(r, c) for r in range(2, 16) for c in (1, 2, 3) if bia.cell(r, c).border.top.style or (r < 15 and bia.cell(r, c).border.bottom.style and r != 16)]
+check(not inner, 'trang Bìa: không còn vạch ngang bên trong (chỉ khung ngoài)', inner[:5])
 print('\n'.join('ĐẠT  ' + x for x in OK)); print('\n'.join('LỖI  ' + x for x in FAIL)); print('Tổng: %d đạt, %d lỗi' % (len(OK), len(FAIL)))
 print('FILE', out)
 sys.exit(1 if FAIL else 0)

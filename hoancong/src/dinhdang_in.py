@@ -26,6 +26,32 @@ def nhan_gach_duoi(wb):
                                      TextBlock(F(b=True,u='single'),m.group(2)),TextBlock(F(b=True),m.group(3)),TextBlock(F(b=False),m.group(4)))
                 n+=1
     return n
+LE=1.5/2.54        # le 1,5 cm (inch)
+
+def logo_tu_mau(ws):
+    """Lay anh logo trang Bia tu FILE MAU (bien SRC_XLSM) khi ho so khong con anh (lap bang ban cu / Bo sung tren file cu)."""
+    import zipfile, html, io, posixpath, os
+    p=os.environ.get('SRC_XLSM')
+    if not p or not os.path.exists(p): return False
+    try:
+        z=zipfile.ZipFile(p); x=z.read('xl/workbook.xml').decode('utf8'); rel=z.read('xl/_rels/workbook.xml.rels').decode('utf8')
+        rid=None
+        for m in re.finditer(r'<sheet [^>]*?name="([^"]+)"[^>]*?r:id="(rId\d+)"',x):
+            if html.unescape(m.group(1)).upper().startswith('BIA'): rid=m.group(2); break
+        if not rid: return False
+        sh=re.search(r'<Relationship [^>]*?Id="%s"[^>]*?Target="([^"]+)"'%rid,rel) or re.search(r'<Relationship [^>]*?Target="([^"]+)"[^>]*?Id="%s"'%rid,rel)
+        shp=posixpath.normpath(posixpath.join('xl',sh.group(1).lstrip('/').replace('xl/','',1)))
+        srel=z.read(posixpath.join(posixpath.dirname(shp),'_rels',posixpath.basename(shp)+'.rels')).decode('utf8')
+        dr=re.search(r'Target="([^"]*drawings/[^"]+)"',srel).group(1)
+        drp=posixpath.normpath(posixpath.join(posixpath.dirname(shp),dr))
+        drel=z.read(posixpath.join(posixpath.dirname(drp),'_rels',posixpath.basename(drp)+'.rels')).decode('utf8')
+        md=re.search(r'Target="([^"]*media/[^"]+)"',drel).group(1)
+        data=z.read(posixpath.normpath(posixpath.join(posixpath.dirname(drp),md)))
+        from openpyxl.drawing.image import Image
+        im=Image(io.BytesIO(data)); ws.add_image(im,'B3'); return True
+    except Exception:
+        return False
+
 def bia_dep(ws,XP,EV,DO,TH,MDW):
     """TRANG BIA phu kin kho A4 ngang (anh Lam 17/10/2026): le 1,27 cm, can giua, khung vien doi, logo lon giua trang,
     cac khoi chu can doi. Chi doi DINH DANG/BO CUC, khong doi chu. Mau Bia khac cau truc (khong co 'HỒ SƠ HOÀN CÔNG' o cot A) -> bo qua."""
@@ -38,10 +64,11 @@ def bia_dep(ws,XP,EV,DO,TH,MDW):
     m=re.search(r'(\d+)$',str(ws.print_area or '')); last=int(m.group(1)) if m else ws.max_row
     # --- trang: A4 ngang, le 0,5", can giua 2 chieu, vua 1 trang
     ps=ws.page_setup; ps.orientation='landscape'; ps.paperSize=9
-    pm=ws.page_margins; pm.left=pm.right=pm.top=pm.bottom=0.5; pm.header=pm.footer=0.2
+    pm=ws.page_margins; pm.left=pm.right=pm.top=pm.bottom=LE; pm.header=pm.footer=0.8/2.54
     ws.print_options.horizontalCentered=True; ws.print_options.verticalCentered=True
     ws.sheet_properties.pageSetUpPr=PageSetupProperties(fitToPage=True); ps.fitToWidth=1; ps.fitToHeight=1
-    W=(841.89-72)*0.985; H=(595.28-72)*0.985
+    W=(841.89-2*LE*72)*0.985; H=(595.28-2*LE*72)*0.985
+    if not getattr(ws,'_images',None): logo_tu_mau(ws)              # ho so cu da mat logo -> lay lai tu file mau
     def chars(pt):                                   # pt -> do rong cot Excel (nguoc cong thuc px)
         px=pt/0.75; return round((px/MDW*256-int(128/MDW))/256,2)
     # cot C hep lam le phai trong khung; o gop A:B -> A:C de chu can giua ca trang
@@ -114,9 +141,22 @@ def fmt(src,out):
         if pa:
             m=re.search(r"\$?([A-Z]+)\$?\d*:\$?([A-Z]+)\$?\d*",(pa if isinstance(pa,str) else pa[0]).split(',')[0].split('!')[-1])
             if m: c1,c2=CI(m.group(1)),CI(m.group(2))
+        # BO COT PHU o mep phai vung in (vd cot AC ghi chieu cao dong): khong ke khung, khong o gop, chi so/cong thuc/rong
+        mg_cols=set(c for m_ in s.merged_cells.ranges for c in range(m_.min_col,m_.max_col+1))
+        def cot_phu(c):
+            if c in mg_cols: return False
+            for r in range(1,s.max_row+1):
+                x=s.cell(r,c); b=x.border
+                if b is not None and any(getattr(b,sd) is not None and getattr(b,sd).style for sd in ('left','right','top','bottom')): return False
+                v=x.value
+                if isinstance(v,str) and not v.startswith('=') and v.strip() and not re.fullmatch(r'[A-Za-z0-9_.\-]*[A-Za-z0-9][A-Za-z0-9_.\-]*',v.strip()): return False   # chu that (khac ma may) -> giu
+            return True
+        while c2>c1 and cot_phu(c2): c2-=1
         last=max([r for r in range(1,s.max_row+1) if any(s.cell(r,c).value not in (None,'') for c in range(c1,c2+1))]+[1])
         s.print_area='%s1:%s%d'%(L(c1),L(c2),last+1)
         ps=s.page_setup; ps.paperSize=9; ps.scale=None
+        # LE 1,5 cm moi phia (anh Lam 17/10/2026); chan trang 'Trang x / y' cach mep duoi 0,8 cm
+        pm=s.page_margins; pm.left=pm.right=pm.top=pm.bottom=LE; pm.header=pm.footer=0.8/2.54
         s.sheet_properties.pageSetUpPr=PageSetupProperties(fitToPage=True)
         ps.fitToWidth=1; ps.fitToHeight=1 if s.title.startswith('BIA') else 0
         if s.title in TITLES and not s.print_title_rows: s.print_title_rows=TITLES[s.title]

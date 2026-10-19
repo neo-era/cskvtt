@@ -59,8 +59,8 @@ Tiêu chí đã chốt: đổi theo **tên tủ**; đầu ra **chỉ PDF**; theo
 - `src/bcsc.py` — đọc dòng chữ có toạ độ (pdfplumber + giải mã). `src/bcsc_sua.py` — tìm mục 3, tra tủ, ghi PDF:
   - Tra tủ: khớp không dấu → ưu tiên trùng đúng dấu (Cừ ≠ Cự) → ưu tiên phường thuộc quận cũ (`quan_phuong`) → còn nhiều phường thì không đổi, báo lại.
   - `kieu='sach'` (mặc định, giao diện dùng): pypdf ghi lại toàn bộ file; xoá đúng lệnh Tj/TJ của 2 dòng cũ (theo toạ độ chân chữ),
-    viết dòng mới bằng Liberation Serif nhúng (cùng độ rộng Times New Roman, cùng cỡ chữ, cùng chân chữ); bỏ trường chữ ký đã ký + hình chữ ký,
-    giữ ô ký trống sign1/sign2 đúng vị trí; bỏ ToUnicode hỏng.
+    viết dòng mới bằng Liberation Serif nhúng (cùng độ rộng Times New Roman, cùng cỡ chữ, cùng chân chữ); bỏ toàn bộ trường/ô chữ ký số (đã ký và ô trống — anh Lâm yêu cầu bỏ ô trống 19/10)
+    + hình chữ ký, xoá luôn đối tượng chữ ký khỏi file; bỏ ToUnicode hỏng. Font mới dựng trực tiếp đối tượng (lỗi cũ: mất /W → chữ giãn 1 em).
   - `kieu='noi_tiep'`: ghi nối tiếp (xref stream, /Prev), phủ trắng dòng cũ — giữ chữ ký bản gốc hợp lệ (không dùng trên giao diện).
 - **Ký số không làm thay được** (cần token/khoá riêng của người ký) → người ký ký lại trên file sạch.
-- Test: `python3 tests/test_bcsc.py <BCSC.pdf> <bảng tra> [pdf khác]` → 36/36 (đọc chữ, tra tủ, bản sạch, nối tiếp, ca xấu).
+- Test: `python3 tests/test_bcsc.py <BCSC.pdf> <bảng tra> [pdf khác]` → 40/40 (đọc chữ, tra tủ, bản sạch, nối tiếp, ca xấu).

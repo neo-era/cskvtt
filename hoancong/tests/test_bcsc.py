@@ -53,6 +53,8 @@ def kiem_trang(fo, ten):
     T(ten + ': trang 1 có chữ mới đúng', chu_moi(0) == '- Phường Bến Thành- Thành phố Hồ Chí Minh', chu_moi(0))
     T(ten + ': mỗi trang báo cáo có đúng dòng phường mới', all(('- ' + moi_ph[b['trang'] + 1]) in chu_moi(b['trang']) for b in bcs))
     cm = [c for c in pm.pages[0].chars if 'HCBCSC' in c['fontname']]
+    xm = [round(c['x0'], 1) for c in cm[:9]]; xg = [round(c['x0'], 1) for _, c in b0['phuong']['chars'][:9]]
+    T(ten + ': độ rộng chữ đúng Times ("- Phường " trùng vị trí từng chữ với bản gốc)', all(abs(a - b) < 0.6 for a, b in zip(xm, xg)), (xm, xg))
     T(ten + ': cỡ chữ & đường chân chữ trùng bản gốc', all(abs(c['size'] - b0['phuong']['chars'][0][1]['size']) < 0.01 for c in cm) and
       abs(cm[0]['matrix'][5] - b0['phuong']['chars'][0][1]['matrix'][5]) < 0.01)
     if shutil.which('pdftoppm'):
@@ -84,7 +86,7 @@ if t1:
     T('sạch: không còn dòng "- Quận" nào', '- Quận' not in tt and tt.count('- Thành phố Hồ Chí Minh') == 78)
 if shutil.which('pdfsig'):
     s_ = subprocess.run(['pdfsig', fo], capture_output=True, text=True).stdout
-    T('sạch: còn 2 ô ký trống (sign1, sign2) để ký lại, không còn chữ ký cũ', s_.count('not signed') == 2 and 'Signature is Valid' not in s_, s_[-300:])
+    T('sạch: không còn ô ký / chữ ký số nào', 'Signature #' not in s_ and 'Signature is Valid' not in s_, s_[-300:])
 from pypdf import PdfReader
 T('sạch: đọc lại được bằng thư viện khác (pypdf)', len(PdfReader(fo).pages) == len(tl.pdf.pages))
 

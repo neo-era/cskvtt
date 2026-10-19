@@ -336,7 +336,7 @@ td .arr{color:var(--muted)}
       <li>Chỉ thay 2 dòng: "- Phường …" → phường mới theo tủ; "- Quận …" → "- Thành phố Hồ Chí Minh". Nội dung khác giữ nguyên.</li>
       <li>Tủ trùng tên ở nhiều nơi: ưu tiên trùng đúng dấu, rồi phường thuộc quận cũ ghi trong báo cáo.</li>
       <li>Báo cáo không tra được tủ: giữ nguyên, ghi "Cần xem" để anh xử lý tay.</li>
-      <li>Xuất bản sạch: chữ cũ bị xoá hẳn (không chỉ che), không giữ lịch sử sửa. Chữ ký số cũ bị bỏ vì nội dung đã đổi; 2 ô ký trống giữ đúng vị trí cũ để hai bên ký lại bằng chữ ký số của mình.</li>
+      <li>Xuất bản sạch: chữ cũ bị xoá hẳn (không chỉ che), không giữ lịch sử sửa. Chữ ký số cũ và ô ký bị bỏ hết vì nội dung đã đổi; hai bên ký lại bằng phần mềm ký số của mình.</li>
     </ol>
   </section>
 </main>
@@ -366,7 +366,7 @@ function tuDienPhuong() {
 }
 document.getElementById('quan').addEventListener('input', tuDienPhuong);
 tuDienPhuong();
-const BUILD = '2.5.0-bdf793';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
+const BUILD = '2.5.0-b95992';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
 const CHECKS_NEW = ['Quy đổi phường theo tủ','Khối lượng QLVH','Kế hoạch quý (biên bản số 5)','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu','Định dạng in'];
 const CHECKS_ADD = ['Phát sinh ngoài KH: chi tiết (BB13) khớp tổng hợp (BB12)','Phát sinh ngoài KH: phường theo tủ','Định dạng in'];
 const ST_PS = 'Ghi phát sinh ngoài KH (12, 13)', ST_IN = 'Định dạng in';
@@ -778,7 +778,7 @@ function renderScRes() {
     else if (!r.tk.bao_cao) { p.textContent = 'Không thấy báo cáo sự cố nào (mục 3 – "Tủ điều khiển") trong file này.'; w.append(p); }
     else {
       p.textContent = r.tk.bao_cao + ' báo cáo · đổi ' + r.tk.da_doi + (r.tk.khong_doi ? ' · cần xem ' + r.tk.khong_doi : '') + ' · tải về: ' + scTen(r.name); w.append(p);
-      if (r.ky && r.tk.da_doi) { const k = document.createElement('div'); k.className = 'db'; k.textContent = 'Đã bỏ ' + r.ky + ' chữ ký số cũ — file cần ký lại (2 ô ký trống giữ đúng vị trí).'; w.append(k); }
+      if (r.ky && r.tk.da_doi) { const k = document.createElement('div'); k.className = 'db'; k.textContent = 'Đã bỏ ' + r.ky + ' chữ ký số cũ và các ô ký — file cần ký lại.'; w.append(k); }
       const tw = document.createElement('div'); tw.className = 'tbl';
       const t = document.createElement('table'); t.innerHTML = '<thead><tr><th>Mã SC</th><th>Tủ</th><th>Phường</th><th></th></tr></thead>';
       const tb = document.createElement('tbody');

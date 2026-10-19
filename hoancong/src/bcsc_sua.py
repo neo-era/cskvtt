@@ -273,7 +273,7 @@ def _loc_chu(ops, xoa):
 
 
 def _ghi_sach(du_lieu, sua_trang, font):
-    """Ghi lai TOAN BO file (pypdf): xoa chu cu, them chu moi, bo chu ky cu (giu o ky trong), khong con lich su sua."""
+    """Ghi lai TOAN BO file (pypdf): xoa chu cu, them chu moi, bo toan bo o/chu ky so, khong con lich su sua."""
     import io
     from pypdf import PdfReader, PdfWriter
     from pypdf.generic import (ContentStream, DecodedStreamObject, DictionaryObject, NameObject, ArrayObject,
@@ -299,7 +299,7 @@ def _ghi_sach(du_lieu, sua_trang, font):
         return w._add_object(s)
     def tu_chuoi(b, **ref):                                    # dict PDF dang chuoi -> doi tuong pypdf
         from pypdf.generic import read_object
-        txt = b % {k: 0 for k in ref}
+        txt = re.sub(r'%\((\w+)\)d 0 R', 'null', b)            # tham chieu dien sau ('0 0 R' lam pypdf doc lech, mat /W)
         o = read_object(io.BytesIO(txt.encode()), None)
         return o
     ff = st({'/Length1': NumberObject(len(sub))}, sub)
@@ -325,16 +325,16 @@ def _ghi_sach(du_lieu, sua_trang, font):
         res = DictionaryObject(res); res[NameObject('/Font')] = fr
         pg[NameObject('/Resources')] = res
 
-    # bo chu ky da ky (giu o ky trong de ky lai)
+    # bo TOAN BO o chu ky so (da ky va o trong); bo dem so chu ky da ky
     bo = 0; ref_bo = set(); xoa_obj = set()
     af = w._root_object.get('/AcroForm')
     if af is not None:
         af = af.get_object(); giu = ArrayObject()
         for fr_ in af.get('/Fields', []):
             f = fr_.get_object()
-            if f.get('/FT') == '/Sig' and f.get('/V') is not None:
-                bo += 1
-                v = f.raw_get('/V')
+            if f.get('/FT') == '/Sig':
+                if f.get('/V') is not None: bo += 1
+                v = f.raw_get('/V') if '/V' in f else None
                 if isinstance(v, IndirectObject): xoa_obj.add(v.idnum)
                 if isinstance(fr_, IndirectObject): ref_bo.add(fr_.idnum); xoa_obj.add(fr_.idnum)
                 for k in f.get('/Kids', []): ref_bo.add(k.idnum); xoa_obj.add(k.idnum)
@@ -343,15 +343,22 @@ def _ghi_sach(du_lieu, sua_trang, font):
                     for vv in ap.get_object().values():
                         if isinstance(vv, IndirectObject): xoa_obj.add(vv.idnum)
             else: giu.append(fr_)
-        af[NameObject('/Fields')] = giu
-        if bo: af[NameObject('/SigFlags')] = NumberObject(1)
+        if len(giu): af[NameObject('/Fields')] = giu
+        else: del w._root_object['/AcroForm']
+        if '/SigFlags' in af: del af['/SigFlags']
+        def la_ky(a):
+            if isinstance(a, IndirectObject) and a.idnum in ref_bo: return True
+            o = a.get_object(); par = o.get('/Parent')
+            return o.get('/FT') == '/Sig' or (par is not None and par.get_object().get('/FT') == '/Sig')
         for pg in w.pages:
             an = pg.get('/Annots')
             if an is None: continue
             an = an.get_object()
-            moi = ArrayObject([a for a in an if not (isinstance(a, IndirectObject) and a.idnum in ref_bo)])
-            if len(moi) != len(an): pg[NameObject('/Annots')] = moi
-    if bo and '/Perms' in w._root_object: del w._root_object['/Perms']        # DocMDP tro toi chu ky da bo
+            moi = ArrayObject([a for a in an if not la_ky(a)])
+            if len(moi) != len(an):
+                if len(moi): pg[NameObject('/Annots')] = moi
+                else: del pg['/Annots']
+    if '/Perms' in w._root_object: del w._root_object['/Perms']        # DocMDP tro toi chu ky da bo
     from pypdf.generic import NullObject
     for n in xoa_obj:                                                          # khong de sot chu ky cu trong file
         if 0 < n <= len(w._objects): w._objects[n - 1] = NullObject()

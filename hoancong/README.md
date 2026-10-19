@@ -13,7 +13,7 @@ Mở: https://neo-era.github.io/cskvtt/hoancong/
 
 **Tab Báo cáo sự cố**: chọn file BCSC .pdf (xuất từ hệ thống, có thể đã ký số), bấm **Chuyển đổi**. Trang đọc mục 3 từng báo cáo,
 tra tên tủ trong bảng tra → đổi "- Phường cũ" thành phường mới và "- Quận …" thành "- Thành phố Hồ Chí Minh", rồi xuất **bản sạch**
-(xoá hẳn chữ cũ, bỏ chữ ký số cũ, giữ 2 ô ký trống) để hai bên ký lại. Báo cáo không tra được tủ giữ nguyên và ghi "Cần xem".
+(xoá hẳn chữ cũ, bỏ chữ ký số cũ và các ô ký) để hai bên ký lại. Báo cáo không tra được tủ giữ nguyên và ghi "Cần xem".
 
 Trang tự nhận từng biên bản theo nội dung (không theo tên file). Biên bản 12/13 đổ vào 2 sheet phát sinh ngoài kế hoạch
 (nhận theo tiêu đề sheet), chi tiết phải khớp tổng hợp từng hạng mục. Bước cuối luôn chỉnh định dạng in: A4, vừa 1 trang ngang,

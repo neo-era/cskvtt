@@ -11,6 +11,10 @@ Mở: https://neo-era.github.io/cskvtt/hoancong/
    - **Bổ sung vào hồ sơ có sẵn**: chọn file hồ sơ .xlsx đã lập, chọn biên bản 12 và 13, bấm **Bổ sung và định dạng**. Không chọn PDF thì trang chỉ chỉnh định dạng in.
 3. Xem bảng kiểm tra, bấm **Tải file Excel**.
 
+**Tab Báo cáo sự cố**: chọn file BCSC .pdf (xuất từ hệ thống, có thể đã ký số), bấm **Chuyển đổi**. Trang đọc mục 3 từng báo cáo,
+tra tên tủ trong bảng tra → đổi "- Phường cũ" thành phường mới và "- Quận …" thành "- Thành phố Hồ Chí Minh", rồi xuất **bản sạch**
+(xoá hẳn chữ cũ, bỏ chữ ký số cũ, giữ 2 ô ký trống) để hai bên ký lại. Báo cáo không tra được tủ giữ nguyên và ghi "Cần xem".
+
 Trang tự nhận từng biên bản theo nội dung (không theo tên file). Biên bản 12/13 đổ vào 2 sheet phát sinh ngoài kế hoạch
 (nhận theo tiêu đề sheet), chi tiết phải khớp tổng hợp từng hạng mục. Bước cuối luôn chỉnh định dạng in: A4, vừa 1 trang ngang,
 vùng in tới hết chữ ký, nới dòng chữ dài.
@@ -25,7 +29,7 @@ và **không lưu trong repo này** (repo công khai).
 
 ## Cấu trúc
 - `index.html` – giao diện + Web Worker chạy Python.
-- `py/pylibs.zip` – openpyxl, pdfplumber, pdfminer.six (thuần Python) + mã `src/`.
+- `py/pylibs.zip` – openpyxl, pdfplumber, pdfminer.six, pypdf (thuần Python) + mã `src/`.
 - `pyodide/` – Pyodide 0.26.4.
 - `fonts/` – font vẽ PDF (Liberation Serif thay Times New Roman, Carlito thay Calibri; SIL OFL).
-- `src/` – mã nguồn Python: refill_lib.py, refill_main.py, report.py (lập hồ sơ), phatsinh.py (biên bản 12/13), dinhdang_in.py (định dạng in), xuat_pdf.py (nút Tải hồ sơ PDF — xem PDF.md), do_rong_chu.py (bề rộng chữ, sinh bởi tools/tao_do_rong_chu.py), quan_phuong.py (quận → phường), web_run.py (điều phối 1 lần chạy trên trang). Sửa xong chạy `./build.sh` (đóng gói `py/pylibs.zip` + ghi số phiên bản vào trang). Đổi phiên bản: sửa file `VERSION` rồi chạy `./build.sh`.
+- `src/` – mã nguồn Python: refill_lib.py, refill_main.py, report.py (lập hồ sơ), phatsinh.py (biên bản 12/13), dinhdang_in.py (định dạng in), xuat_pdf.py (nút Tải hồ sơ PDF — xem PDF.md), do_rong_chu.py (bề rộng chữ, sinh bởi tools/tao_do_rong_chu.py), quan_phuong.py (quận → phường), bcsc*.py (báo cáo sự cố — xem DESIGN.md), web_run.py (điều phối 1 lần chạy trên trang). Sửa xong chạy `./build.sh` (đóng gói `py/pylibs.zip` + ghi số phiên bản vào trang). Đổi phiên bản: sửa file `VERSION` rồi chạy `./build.sh`.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>Hoàn công CSKVTT v2.4.3</title>
+<title>Hoàn công CSKVTT v2.5.0</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#14213d">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -132,6 +132,19 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
 .ios{position:fixed;inset:auto 16px calc(16px + env(safe-area-inset-bottom)) 16px;max-width:420px;margin:0 auto;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.22);padding:14px 16px;font-size:.92rem;z-index:20}
 .ios b{display:block;margin-bottom:4px}.ios button{margin-top:10px;min-height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;cursor:pointer}
 @media (prefers-reduced-motion: reduce){.inst{transition:none}}
+/* Tab chuyển giữa 2 việc: Hồ sơ hoàn công | Báo cáo sự cố */
+.top{padding-bottom:0}
+.top .in{padding-bottom:12px}
+.tabs{max-width:1120px;margin:0 auto;display:flex;gap:2px;overflow-x:auto}
+.tabs button{font:inherit;font-size:.92rem;font-weight:600;color:var(--night-ink);opacity:.72;background:transparent;border:0;border-bottom:3px solid transparent;padding:10px 14px;min-height:44px;cursor:pointer;white-space:nowrap;transition:opacity .15s,border-color .15s}
+.tabs button:hover{opacity:.95}
+.tabs button[aria-selected="true"]{opacity:1;border-bottom-color:var(--accent)}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+@media (prefers-reduced-motion:reduce){.tabs button{transition:none}}
+.sc-file{border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:12px}
+.sc-file .hd{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+.sc-file .hd b{overflow-wrap:anywhere;min-width:0}
+td .arr{color:var(--muted)}
 .rules{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:.83rem;display:grid;gap:3px}
 </style>
 </head>
@@ -139,12 +152,16 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
 
 
 <header class="top"><div class="in">
-  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.4.3</small></h1>
+  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.5.0</small></h1>
   <p class="tsub"><b>Chiếu sáng khu vực Trung Tâm</b><br>Hồ sơ hoàn công các gói Duy tu chiếu sáng</p>
   <button class="inst" id="instBtn" type="button" hidden aria-label="Cài ứng dụng Hoàn công lên máy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Cài ứng dụng</button>
-</div></header>
+</div>
+<nav class="tabs" role="tablist" aria-label="Chức năng">
+  <button type="button" role="tab" id="tabHC" aria-controls="vHC" aria-selected="true">Hồ sơ hoàn công</button>
+  <button type="button" role="tab" id="tabSC" aria-controls="vSC" aria-selected="false" tabindex="-1">Báo cáo sự cố</button>
+</nav></header>
 
-<main>
+<main id="vHC" role="tabpanel" aria-labelledby="tabHC">
   <section class="card" aria-labelledby="h-in">
     <h2 id="h-in">Lập hồ sơ</h2>
     <p class="sub">Mọi xử lý chạy ngay trên máy anh trong trình duyệt; biên bản, file mẫu và bảng tra tủ không gửi đi đâu.</p>
@@ -266,6 +283,63 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
     </ol>
   </section>
 </main>
+
+<main id="vSC" role="tabpanel" aria-labelledby="tabSC" hidden>
+  <section class="card" aria-labelledby="h-sc">
+    <h2 id="h-sc">Chuyển báo cáo sự cố</h2>
+    <p class="sub">Đổi dòng "Phường/Quận cũ" trong mục 3 thành phường mới, căn cứ tên tủ điều khiển, rồi xuất bản sạch để ký lại. File xử lý ngay trên máy, không gửi đi đâu.</p>
+    <div class="step">
+      <div class="num">1</div>
+      <div>
+        <label class="lb" for="scPdf">File báo cáo sự cố (PDF)</label>
+        <div class="drop" id="scDrop" tabindex="0" role="button" aria-controls="scPdf">
+          Kéo thả hoặc <b>chọn file PDF</b>
+          <small>Bản xuất từ hệ thống (có thể đã ký số). Chọn được nhiều file một lần.</small>
+        </div>
+        <input type="file" id="scPdf" accept=".pdf,application/pdf" multiple>
+        <ul class="files" id="scList"></ul>
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">2</div>
+      <div>
+        <div class="base" id="scMasterBox">
+          <div><b>Bảng tra tủ → phường</b> <span class="hint">(dùng chung với Hồ sơ hoàn công)</span><br><span class="hint" id="scMasterName">Chưa chọn</span></div>
+          <button class="btn ghost small" type="button" id="scMasterBtn">Chọn bảng tra</button>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">3</div>
+      <div>
+        <div class="go">
+          <button class="btn" id="scRun" type="button" disabled>Chuyển đổi</button>
+          <div class="engine"><span class="dot" id="scDot"></span><span id="scText">Chờ bộ xử lý…</span></div>
+        </div>
+        <div class="err" id="scErr" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-sc2">
+    <h2 id="h-sc2">Kết quả</h2>
+    <p class="sub" id="scSub">Danh sách báo cáo và phường mới hiện ở đây sau khi chuyển.</p>
+    <div id="scSum" hidden>
+      <div class="kpis">
+        <div class="kpi"><small>Báo cáo</small><strong id="sk1">–</strong></div>
+        <div class="kpi"><small>Đã đổi</small><strong id="sk2" style="color:var(--ok)">–</strong></div>
+        <div class="kpi"><small>Cần xem</small><strong id="sk3">–</strong></div>
+      </div>
+      <div id="scFiles"></div>
+    </div>
+    <ol class="rules">
+      <li>Chỉ thay 2 dòng: "- Phường …" → phường mới theo tủ; "- Quận …" → "- Thành phố Hồ Chí Minh". Nội dung khác giữ nguyên.</li>
+      <li>Tủ trùng tên ở nhiều nơi: ưu tiên trùng đúng dấu, rồi phường thuộc quận cũ ghi trong báo cáo.</li>
+      <li>Báo cáo không tra được tủ: giữ nguyên, ghi "Cần xem" để anh xử lý tay.</li>
+      <li>Xuất bản sạch: chữ cũ bị xoá hẳn (không chỉ che), không giữ lịch sử sửa. Chữ ký số cũ và ô ký bị bỏ hết vì nội dung đã đổi; hai bên ký lại bằng phần mềm ký số của mình.</li>
+    </ol>
+  </section>
+</main>
 <div class="ios" id="iosHint" role="dialog" aria-labelledby="iosT" hidden><b id="iosT">Cài lên iPhone / iPad</b>Trong Safari, bấm nút <b style="display:inline">Chia sẻ</b> (ô vuông có mũi tên lên) → chọn <b style="display:inline">Thêm vào MH chính</b>.<br><button type="button" id="iosClose">Đã hiểu</button></div>
 
 <script>
@@ -292,13 +366,13 @@ function tuDienPhuong() {
 }
 document.getElementById('quan').addEventListener('input', tuDienPhuong);
 tuDienPhuong();
-const BUILD = '2.4.3-258a9a';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
+const BUILD = '2.5.0-b95992';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
 const CHECKS_NEW = ['Quy đổi phường theo tủ','Khối lượng QLVH','Kế hoạch quý (biên bản số 5)','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu','Định dạng in'];
 const CHECKS_ADD = ['Phát sinh ngoài KH: chi tiết (BB13) khớp tổng hợp (BB12)','Phát sinh ngoài KH: phường theo tủ','Định dạng in'];
 const ST_PS = 'Ghi phát sinh ngoài KH (12, 13)', ST_IN = 'Định dạng in';
 const STAGES_NEW = ['Đọc bảng tra tủ → phường','Đọc biên bản PDF (bước lâu nhất)','Mở file mẫu','Ghi QLVH (2, 3, 8)','Ghi bảo dưỡng (6)','Ghi chi tiết Mẫu 4','Ghi chi tiết Mẫu 7','Đổi địa bàn, kỳ, số hiệu','Lưu file',ST_PS,ST_IN];
 let STAGES = STAGES_NEW;
-let pdfDang = false;
+let pdfDang = false, scBusy = false, scFiles = [], scRes = [];
 let pdfFiles = [], mauRec = null, masterRec = null, ready = false, busy = false, result = null, mode = 'new', hsFile = null;
 // ---- IndexedDB: nho file mau + bang tra tren may (khong gui di dau) ----
 const IDB = {
@@ -313,6 +387,7 @@ function renderBase() {
   $('masterName').textContent = masterRec ? masterRec.name + (masterRec.n ? ' · ' + masterRec.n.toLocaleString('vi-VN') + ' tủ' : '') + ' · lưu ' + vnDate(masterRec.t) : 'Chưa chọn';
   $('mauBox').classList.toggle('ok', !!mauRec); $('masterBox').classList.toggle('ok', !!masterRec);
   $('mauBtn').textContent = mauRec ? 'Thay' : 'Chọn file mẫu'; $('masterBtn').textContent = masterRec ? 'Thay' : 'Chọn bảng tra';
+  $('scMasterName').textContent = $('masterName').textContent; $('scMasterBox').classList.toggle('ok', !!masterRec); $('scMasterBtn').textContent = masterRec ? 'Thay' : 'Chọn bảng tra';
   updateRun();
 }
 Promise.all([IDB.get('mau'), IDB.get('master')]).then(([a, b]) => { mauRec = a; masterRec = b; renderBase(); });
@@ -341,7 +416,12 @@ function renderFiles() {
   pdfFiles.forEach(f => { const li = document.createElement('li'); const a = document.createElement('span'); a.textContent = f.name; const b = document.createElement('span'); b.textContent = kb(f.size); li.append(a, b); ul.append(li); });
   updateRun();
 }
-function updateRun() { $('run').disabled = !(ready && (mode === 'add' ? !!hsFile : pdfFiles.length) && mauRec && masterRec && !busy && !pdfDang); }
+function updateRun() {
+  $('run').disabled = !(ready && (mode === 'add' ? !!hsFile : pdfFiles.length) && mauRec && masterRec && !busy && !pdfDang && !scBusy);
+  $('scRun').disabled = !(ready && scFiles.length && masterRec && !busy && !pdfDang && !scBusy);
+  if (!pdfDang) $('savePdf').disabled = scBusy;
+  if (!scBusy && !scRes.length) { if (ready) scState(masterRec ? 'ok' : '', masterRec ? (scFiles.length ? 'Sẵn sàng' : 'Chọn file báo cáo sự cố') : 'Chọn bảng tra tủ → phường'); }
+}
 function setMode(m) {
   if (busy) return; mode = m;
   $('mNew').setAttribute('aria-pressed', m === 'new'); $('mAdd').setAttribute('aria-pressed', m === 'add');
@@ -485,6 +565,33 @@ out
       post({type: 'pdffail', msg: 'thiếu font'});
     } catch (e) { post({type: 'pdffail', msg: String(e && e.message || e)}); }
   }
+  if (m.type === 'bcsc') {
+    try {
+      py.FS.mkdirTree('/app/fonts');
+      if (!py.FS.analyzePath('/app/fonts/LiberationSerif-Regular.ttf').exists) { post({type: 'scstage', label: 'Tải font chữ (lần đầu)'}); py.FS.writeFile('/app/fonts/LiberationSerif-Regular.ttf', await getBuf(BASE + 'fonts/LiberationSerif-Regular.ttf')); }
+      rmrf('/work/sc'); py.FS.mkdirTree('/work/sc');
+      py.FS.writeFile('/work/sc/in.pdf', new Uint8Array(m.pdf));
+      const master = '/work/sc/master.' + (m.master.json ? 'json' : 'xlsx'); py.FS.writeFile(master, new Uint8Array(m.master.buf));
+      py.globals.set('SC_MASTER', master);
+      post({type: 'scstage', label: 'Đang đọc và chuyển: ' + m.name});
+      const js = py.runPython(\`
+import os, sys, json, traceback
+os.chdir('/app')
+try:
+    import bcsc_sua
+    R = bcsc_sua.chuyen(open('/work/sc/in.pdf', 'rb').read(), SC_MASTER, '/app/fonts', log=lambda *a: None)
+    open('/work/sc/out.pdf', 'wb').write(R['pdf'])
+    out = json.dumps({'ok': True, 'bao_cao': R['bao_cao'], 'thong_ke': R['thong_ke'], 'chu_ky_bo': R.get('chu_ky_bo', 0)}, ensure_ascii=False)
+except Exception as e:
+    out = json.dumps({'ok': False, 'error': str(e) or e.__class__.__name__, 'trace': traceback.format_exc()[-1500:]}, ensure_ascii=False)
+out
+\`);
+      const res = JSON.parse(js);
+      if (!res.ok) { post({type: 'scfail', idx: m.idx, msg: res.error, trace: res.trace}); return; }
+      const x = py.FS.readFile('/work/sc/out.pdf'); const buf = x.buffer.slice(x.byteOffset, x.byteOffset + x.byteLength);
+      post({type: 'scdone', idx: m.idx, pdf: buf, bao_cao: res.bao_cao, thong_ke: res.thong_ke, chu_ky_bo: res.chu_ky_bo}, [buf]);
+    } catch (e) { post({type: 'scfail', idx: m.idx, msg: String(e && e.message || e)}); }
+  }
 };`;
 
 const worker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], {type: 'text/javascript'})));
@@ -496,6 +603,9 @@ worker.onmessage = (ev) => {
   else if (m.type === 'done') onDone(m);
   else if (m.type === 'pdfdone') onPdf(m);
   else if (m.type === 'pdffail') { pdfBusy(false); note('Không tạo được PDF: ' + m.msg + '\nCách khắc phục: tải lại trang (Ctrl + F5) rồi lập lại; nếu vẫn lỗi, gửi file Excel này để kiểm tra.', true); window.__lastError = m; }
+  else if (m.type === 'scstage') scState('busy', m.label);
+  else if (m.type === 'scdone') scDone(m);
+  else if (m.type === 'scfail') scFail(m);
   else if (m.type === 'fail') { busy = false; updateRun(); engine('ok', 'Bộ xử lý sẵn sàng'); showErr('Không lập được hồ sơ: ' + m.msg); window.__lastError = m; }
 };
 worker.onerror = (e) => { engine('bad', 'Bộ xử lý gặp lỗi'); showErr('Bộ xử lý gặp lỗi: ' + (e.message || 'không rõ')); };
@@ -577,7 +687,7 @@ function onPdf(m) {
   window.__lastPdf = m;
 }
 $('savePdf').addEventListener('click', () => {
-  if (!result || busy || $('savePdf').disabled) return;
+  if (!result || busy || scBusy || $('savePdf').disabled) return;
   pdfBusy(true); note('Đang vẽ từng trang theo bản in Excel…', false);
   worker.postMessage({type: 'pdf'});
 });
@@ -587,6 +697,114 @@ $('save').addEventListener('click', () => {
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
   $('fname').textContent = 'Đã tải: ' + result.fname;
 });
+// ---------------- Tab: Hồ sơ hoàn công | Báo cáo sự cố ----------------
+function chonTab(k, focus) {
+  const sc = k === 'sc';
+  $('tabHC').setAttribute('aria-selected', !sc); $('tabSC').setAttribute('aria-selected', sc);
+  $('tabHC').tabIndex = sc ? -1 : 0; $('tabSC').tabIndex = sc ? 0 : -1;
+  $('vHC').hidden = sc; $('vSC').hidden = !sc;
+  if (focus) (sc ? $('tabSC') : $('tabHC')).focus();
+  try { localStorage.setItem('hc-tab', k); } catch (e) {}
+}
+$('tabHC').addEventListener('click', () => chonTab('hc'));
+$('tabSC').addEventListener('click', () => chonTab('sc'));
+document.querySelector('.tabs').addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); chonTab($('tabSC').getAttribute('aria-selected') === 'true' ? 'hc' : 'sc', true); } });
+try { if (localStorage.getItem('hc-tab') === 'sc' || location.hash === '#su-co') chonTab('sc'); } catch (e) {}
+
+// ---------------- Chuyển báo cáo sự cố (BCSC) ----------------
+function scState(st, t) { $('scDot').className = 'dot ' + st; $('scText').textContent = t; }
+function scErr(t) { $('scErr').hidden = !t; $('scErr').textContent = t || ''; }
+function renderScFiles() {
+  const ul = $('scList'); ul.textContent = '';
+  scFiles.forEach(f => { const li = document.createElement('li'); const a = document.createElement('span'); a.textContent = f.name; const b = document.createElement('span'); b.textContent = kb(f.size); li.append(a, b); ul.append(li); });
+  updateRun();
+}
+function addSc(fs) {
+  const names = new Set(scFiles.map(f => f.name));
+  [...fs].filter(f => /\.pdf$/i.test(f.name) && !names.has(f.name)).forEach(f => scFiles.push(f));
+  renderScFiles();
+}
+const scDrop = $('scDrop');
+scDrop.addEventListener('click', () => $('scPdf').click());
+scDrop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('scPdf').click(); } });
+$('scPdf').addEventListener('change', (e) => { addSc(e.target.files); e.target.value = ''; });
+['dragenter', 'dragover'].forEach(t => scDrop.addEventListener(t, (e) => { e.preventDefault(); scDrop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(t => scDrop.addEventListener(t, (e) => { e.preventDefault(); scDrop.classList.remove('over'); }));
+scDrop.addEventListener('drop', (e) => addSc(e.dataTransfer.files));
+$('scMasterBtn').addEventListener('click', () => $('master').click());
+let scQ = [];
+function scNext() {
+  const i = scQ.shift();
+  if (i === undefined) {
+    scBusy = false;
+    const loi = scRes.filter(r => r.err).length;
+    updateRun(); scState(loi ? 'bad' : 'ok', loi ? 'Xong, ' + loi + ' file không xử lý được' : 'Đã chuyển xong — bấm "Tải PDF đã chuyển"');
+    return;
+  }
+  const f = scFiles[i];
+  f.arrayBuffer().then(buf => {
+    const mb = masterRec.buf.slice(0);
+    worker.postMessage({type: 'bcsc', idx: i, name: f.name, pdf: buf, master: {buf: mb, json: !!masterRec.json}}, [buf, mb]);
+  }).catch(e => scFail({idx: i, msg: 'không đọc được file (' + String(e && e.message || e) + ')'}));
+}
+$('scRun').addEventListener('click', () => {
+  if (scBusy || !scFiles.length) return;
+  scBusy = true; scErr(''); scRes = scFiles.map(f => ({name: f.name})); renderScRes(); updateRun();
+  scState('busy', 'Đang xử lý… (vài chục giây mỗi file)');
+  scQ = scFiles.map((_, i) => i); scNext();
+});
+function scDone(m) { scRes[m.idx] = Object.assign(scRes[m.idx], {pdf: m.pdf, bao_cao: m.bao_cao, tk: m.thong_ke, ky: m.chu_ky_bo}); renderScRes(); scNext(); }
+function scFail(m) { scRes[m.idx].err = m.msg; window.__lastError = m; renderScRes(); scNext(); }
+const scTen = (n) => n.replace(/\.pdf$/i, '') + '_PHUONG_MOI.pdf';
+function taiSc(r) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([r.pdf], {type: 'application/pdf'})); a.download = scTen(r.name);
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+}
+function renderScRes() {
+  const box = $('scFiles'); box.textContent = '';
+  let n = 0, d = 0, x = 0;
+  scRes.forEach(r => {
+    const w = document.createElement('div'); w.className = 'sc-file';
+    const hd = document.createElement('div'); hd.className = 'hd';
+    const b = document.createElement('b'); b.textContent = r.name; hd.append(b);
+    if (r.pdf) {
+      n += r.tk.bao_cao; d += r.tk.da_doi; x += r.tk.khong_doi;
+      if (r.tk.da_doi) { const bt = document.createElement('button'); bt.className = 'btn small'; bt.type = 'button'; bt.textContent = 'Tải PDF đã chuyển'; bt.addEventListener('click', () => taiSc(r)); hd.append(bt); }
+    }
+    w.append(hd);
+    const p = document.createElement('div'); p.className = 'hint';
+    if (r.err) { p.className = 'err'; p.textContent = 'Không xử lý được: ' + r.err; w.append(p); }
+    else if (!r.pdf) { p.textContent = 'Đang chờ…'; w.append(p); }
+    else if (!r.tk.bao_cao) { p.textContent = 'Không thấy báo cáo sự cố nào (mục 3 – "Tủ điều khiển") trong file này.'; w.append(p); }
+    else {
+      p.textContent = r.tk.bao_cao + ' báo cáo · đổi ' + r.tk.da_doi + (r.tk.khong_doi ? ' · cần xem ' + r.tk.khong_doi : '') + ' · tải về: ' + scTen(r.name); w.append(p);
+      if (r.ky && r.tk.da_doi) { const k = document.createElement('div'); k.className = 'db'; k.textContent = 'Đã bỏ ' + r.ky + ' chữ ký số cũ và các ô ký — file cần ký lại.'; w.append(k); }
+      const tw = document.createElement('div'); tw.className = 'tbl';
+      const t = document.createElement('table'); t.innerHTML = '<thead><tr><th>Mã SC</th><th>Tủ</th><th>Phường</th><th></th></tr></thead>';
+      const tb = document.createElement('tbody');
+      const ds = r.bao_cao.slice().sort((a, b) => (!!b.ghi_chu - !!a.ghi_chu));   // dong can xem len dau
+      ds.forEach(o => {
+        const tr = document.createElement('tr');
+        const c1 = document.createElement('td'); c1.textContent = o.ma || '–'; c1.style.whiteSpace = 'nowrap';
+        const c2 = document.createElement('td'); c2.textContent = o.tu;
+        const c3 = document.createElement('td');
+        c3.append(document.createTextNode(o.phuong_cu || '–'));
+        if (o.phuong_moi && !o.ghi_chu) { const s1 = document.createElement('span'); s1.className = 'arr'; s1.textContent = ' → '; const s2 = document.createElement('b'); s2.textContent = o.phuong_moi.replace(/^Phường /, ''); c3.append(s1, s2); }
+        const c4 = document.createElement('td'); const pl = document.createElement('span');
+        pl.className = 'pill ' + (o.ghi_chu ? 'bad' : 'ok'); pl.textContent = o.ghi_chu ? 'Cần xem' : 'Đã đổi'; c4.append(pl);
+        if (o.ghi_chu) { const g = document.createElement('div'); g.className = 'hint'; g.textContent = o.ghi_chu; c4.append(g); }
+        tr.append(c1, c2, c3, c4); tb.append(tr);
+      });
+      t.append(tb); tw.append(t); w.append(tw);
+    }
+    box.append(w);
+  });
+  $('sk1').textContent = n; $('sk2').textContent = d; $('sk3').textContent = x; $('sk3').style.color = x ? 'var(--bad)' : '';
+  $('scSum').hidden = !scRes.length;
+  $('scSub').textContent = scRes.length ? 'Bản sạch: chỉ 2 dòng ở mục 3 thay đổi; ký lại xong là nộp được.' : 'Danh sách báo cáo và phường mới hiện ở đây sau khi chuyển.';
+  window.__scRes = scRes;
+}
+
 // ---------------- PWA: service worker + nút cài ----------------
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;

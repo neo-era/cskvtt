@@ -46,3 +46,21 @@ python3 tests/test_v2.py <thư mục PDF> <mẫu .xlsm> <bảng tra .xlsx>
 - Font một số biên bản (3, 6, 8, 10…) đọc ra mất dấu huyền của "ề" (PDF vẫn hiện đúng): `sua_dau` trả lại cho vê/điêu/nhiêu/đêu (không đụng "đê", "chiêu").
 - Bỏ dòng "Phiên bản … Ctrl + F5" cuối trang; số phiên bản giữ ở tiêu đề cửa sổ + nhãn (rê chuột xem bản dựng).
 - Test bộ thật: 22/22; T08: 17/17.
+
+## Chuyển báo cáo sự cố (BCSC) sang phường mới — v2.5.0 (19/10/2026)
+Tiêu chí đã chốt: đổi theo **tên tủ**; đầu ra **chỉ PDF**; theo góp ý mới nhất **xuất bản sạch để ký lại** (thay cho ghi nối tiếp giữ chữ ký).
+- `src/bcsc_font.py` — đọc font TrueType nhúng: BCSC (Crystal Reports) dùng font subset mã riêng, ToUnicode trỏ tới đối tượng hỏng
+  → không trích chữ được. Giải mã: mã byte → glyph (cmap 3,0, 0xF000+mã) → **chữ ký glyph** (md5 byte glyf; glyph ghép = chữ gốc + từng dấu)
+  → ký tự; chữ có dấu ghép NFC từ chữ gốc + dấu, nên chữ mới gặp lần đầu vẫn đọc được nếu đã biết chữ gốc và dấu.
+- `src/bcsc_bang.py` — bảng chữ ký → ký tự, **sinh bởi** `tools/tao_bang_bcsc.py` (chạy offline: so ảnh glyph với Liberation cùng độ rộng;
+  cặp "thêm 1 nét" D/Đ, O/Q, c/e, ./, xét riêng nét thêm; dấu so với dấu tổ hợp Liberation sau khi kéo giãn khung; 5 glyph sửa tay `SUA_TAY`).
+  Kiểm bằng mắt: `tools/xem_bang_bcsc.py BCSC.pdf <thư mục>` vẽ lưới glyph + chữ đọc được. Gặp BCSC có ký tự lạ (hiện "Cần xem: không đọc được tên tủ")
+  → chạy lại `tao_bang_bcsc.py <file mới>` (gộp vào bảng cũ), xem lưới, `./build.sh`.
+- `src/bcsc.py` — đọc dòng chữ có toạ độ (pdfplumber + giải mã). `src/bcsc_sua.py` — tìm mục 3, tra tủ, ghi PDF:
+  - Tra tủ: khớp không dấu → ưu tiên trùng đúng dấu (Cừ ≠ Cự) → ưu tiên phường thuộc quận cũ (`quan_phuong`) → còn nhiều phường thì không đổi, báo lại.
+  - `kieu='sach'` (mặc định, giao diện dùng): pypdf ghi lại toàn bộ file; xoá đúng lệnh Tj/TJ của 2 dòng cũ (theo toạ độ chân chữ),
+    viết dòng mới bằng Liberation Serif nhúng (cùng độ rộng Times New Roman, cùng cỡ chữ, cùng chân chữ); bỏ toàn bộ trường/ô chữ ký số (đã ký và ô trống — anh Lâm yêu cầu bỏ ô trống 19/10)
+    + hình chữ ký, xoá luôn đối tượng chữ ký khỏi file; bỏ ToUnicode hỏng. Font mới dựng trực tiếp đối tượng (lỗi cũ: mất /W → chữ giãn 1 em).
+  - `kieu='noi_tiep'`: ghi nối tiếp (xref stream, /Prev), phủ trắng dòng cũ — giữ chữ ký bản gốc hợp lệ (không dùng trên giao diện).
+- **Ký số không làm thay được** (cần token/khoá riêng của người ký) → người ký ký lại trên file sạch.
+- Test: `python3 tests/test_bcsc.py <BCSC.pdf> <bảng tra> [pdf khác]` → 40/40 (đọc chữ, tra tủ, bản sạch, nối tiếp, ca xấu).

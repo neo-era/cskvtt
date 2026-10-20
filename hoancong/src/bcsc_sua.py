@@ -61,9 +61,17 @@ _MA = re.compile(r'Mã sự cố\s*:\s*(\S+)')
 
 def tim_bao_cao(tl):
     """[{trang, ma, tu, phuong(dong), quan(dong)}] - moi bao cao 1 muc. tl.ky_tu_la = so ky tu chua giai ma duoc."""
-    kq = []; tl.ky_tu_la = 0
+    kq = []; tl.ky_tu_la = 0; tl.anh_ky = {}
     for i, page, ds in tl.cac_trang():
         tl.ky_tu_la += sum(d['text'].count('\ufffd') for d in ds)
+        # khoi ky: dong chuc danh "... PHU TRACH ..." -> anh chu ky tay nam giua dong chuc danh va dong ho ten
+        cd = [d for d in ds if 'PHỤ TRÁCH' in d['text']]
+        if cd and page.images:
+            y0 = max(d['bottom'] for d in cd)
+            sau = [d for d in ds if d['top'] > y0 + 15]
+            y1 = min(d['top'] for d in sau) if sau else y0 + 160
+            ten = {im['name'] for im in page.images if im['top'] >= y0 - 2 and im['bottom'] <= y1 + 5}
+            if ten: tl.anh_ky[i] = ten
         ma = None
         for j, d in enumerate(ds):
             m = _MA.search(d['text'])
@@ -208,9 +216,9 @@ def chuyen(du_lieu, bang_tra, thu_muc_font, log=print, kieu='sach'):
         return dict(pdf=du_lieu, bao_cao=bao, thong_ke=tk, chu_ky_bo=0)
     sub, fd_s, cid_s, tu_s, t0_s = _font_obj(ttf, dung)
     if kieu == 'sach':
-        out, bo = _ghi_sach(du_lieu, sua_trang, (sub, fd_s, cid_s, tu_s, t0_s))
-        log('BCSC: %d báo cáo, đổi %d, không đổi %d; bỏ %d chữ ký cũ' % (tk['bao_cao'], tk['da_doi'], tk['khong_doi'], bo))
-        return dict(pdf=out, bao_cao=bao, thong_ke=tk, chu_ky_bo=bo)
+        out, bo, anh = _ghi_sach(du_lieu, sua_trang, (sub, fd_s, cid_s, tu_s, t0_s), getattr(tl, 'anh_ky', {}))
+        log('BCSC: %d báo cáo, đổi %d, không đổi %d; bỏ %d chữ ký số cũ, %d hình chữ ký' % (tk['bao_cao'], tk['da_doi'], tk['khong_doi'], bo, anh))
+        return dict(pdf=out, bao_cao=bao, thong_ke=tk, chu_ky_bo=bo, anh_ky_bo=anh)
 
     g = GhiNoiTiep(du_lieu, tl.pdf.doc)
     ff = g.moi(g.stream(b'/Length1 %d' % len(sub), sub))
@@ -273,7 +281,7 @@ def _loc_chu(ops, xoa):
     return kq, bo
 
 
-def _ghi_sach(du_lieu, sua_trang, font):
+def _ghi_sach(du_lieu, sua_trang, font, anh_ky=None):
     """Ghi lai TOAN BO file (pypdf): xoa chu cu, them chu moi, bo toan bo o/chu ky so, khong con lich su sua."""
     import io
     from pypdf import PdfReader, PdfWriter
@@ -327,7 +335,23 @@ def _ghi_sach(du_lieu, sua_trang, font):
         pg[NameObject('/Resources')] = res
 
     # bo TOAN BO o chu ky so (da ky va o trong); bo dem so chu ky da ky
-    bo = 0; ref_bo = set(); xoa_obj = set()
+    bo = 0; ref_bo = set(); xoa_obj = set(); anh = 0
+    # bo hinh chu ky tay o khoi ky (anh nam giua dong chuc danh va dong ho ten)
+    for so, ten in sorted((anh_ky or {}).items()):
+        pg = w.pages[so]; ten = {'/' + t for t in ten}
+        cs = ContentStream(pg.get_contents(), w)
+        ops = [(o, op) for o, op in cs.operations if not (op == b'Do' and o and str(o[0]) in ten)]
+        if len(ops) == len(cs.operations): continue
+        anh += len(cs.operations) - len(ops); cs.operations = ops
+        pg[NameObject('/Contents')] = st({}, cs.get_data())
+        res = DictionaryObject(pg['/Resources'].get_object())
+        xo = DictionaryObject(res['/XObject'].get_object())
+        for t in ten:
+            if t in xo:
+                r_ = xo.raw_get(t)
+                if isinstance(r_, IndirectObject): xoa_obj.add(r_.idnum)
+                del xo[t]
+        res[NameObject('/XObject')] = xo; pg[NameObject('/Resources')] = res
     af = w._root_object.get('/AcroForm')
     if af is not None:
         af = af.get_object(); giu = ArrayObject()
@@ -367,4 +391,4 @@ def _ghi_sach(du_lieu, sua_trang, font):
         try: pg.compress_content_streams()
         except Exception: pass
     b = io.BytesIO(); w.write(b)
-    return b.getvalue(), bo
+    return b.getvalue(), bo, anh

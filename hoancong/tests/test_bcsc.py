@@ -74,6 +74,10 @@ r = chuyen(goc, rows, FONTS, log=lambda *a: None)
 out = r['pdf']; moi_ph = {b['trang']: b['phuong_moi'] for b in r['bao_cao']}
 T('đổi đủ 78/78', {k: r['thong_ke'][k] for k in ('bao_cao', 'da_doi', 'khong_doi', 'ky_tu_la')} == {'bao_cao': 78, 'da_doi': 78, 'khong_doi': 0, 'ky_tu_la': 0}, r['thong_ke'])
 T('bỏ 2 chữ ký cũ', r['chu_ky_bo'] == 2)
+pm_ = pdfplumber.open(__import__('io').BytesIO(out))
+con = sum(1 for pg in pm_.pages for im in pg.images if any('PHỤ TRÁCH' in d['text'] for d in []) or (170 < im['top'] < 250 and round(im['x0']) in (126, 396)))
+T('sạch: bỏ hết hình chữ ký tay ở khối ký (%d hình), ảnh hiện trường giữ nguyên' % r['anh_ky_bo'],
+  r['anh_ky_bo'] == 40 and con == 0 and len([1 for pg in pm_.pages for im in pg.images]) == len([1 for pg in tl.pdf.pages for im in pg.images]) - 40, con)
 T('không còn lịch sử sửa (1 lần %%EOF, không chứa bản gốc)', out.count(b'%%EOF') == 1 and out[:len(goc)] != goc)
 T('sạch: không sót dữ liệu chữ ký cũ (/ByteRange, chứng thư)', b'/ByteRange' not in out and b'adbe.pkcs7' not in out)
 fo = os.path.join(d, 'sach.pdf'); open(fo, 'wb').write(out)

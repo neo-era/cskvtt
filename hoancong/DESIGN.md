@@ -69,3 +69,5 @@ Tiêu chí đã chốt: đổi theo **tên tủ**; đầu ra **chỉ PDF**; theo
 - 20/10/2026 (v2.5.2): BCSC Q5 T08 báo 2408 ký tự lạ — cùng Times New Roman nhưng **khác hinting** (bản font khác) nên md5 byte glyph không khớp.
   Thêm chữ ký theo HÌNH nét (`TTFNho.hinh`: điểm cuối contour + cờ on-curve + toạ độ, bỏ instructions) và bảng phụ `BANG_HINH`/`DAU_HINH`;
   tra byte trước, không có thì tra hình. Không cần bổ sung bảng: đọc đủ, chuyển 51/51.
+- 20/10/2026 (v2.5.3): bản sạch bỏ luôn **hình chữ ký tay** ở các trang khối ký (ảnh nằm giữa dòng chức danh "… PHỤ TRÁCH …" và dòng họ tên);
+  ảnh hiện trường giữ nguyên. BCSC Q1: 40 hình, Q5 T08/T09: 20 hình mỗi file.

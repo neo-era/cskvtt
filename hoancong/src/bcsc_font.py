@@ -104,15 +104,52 @@ class TTFNho:
             return hashlib.md5(b).hexdigest()[:12] if b else 'rong'
         return '+'.join(self.chu_ky(gi) for gi, _, _ in tp)
 
+    def hinh(self, g):
+        """Chu ky theo HINH net (bo lenh hinting): ban font Times New Roman khac nhau thuong chi khac hinting,
+        net chu giu nguyen -> van nhan ra. Glyph don: md5(diem cuoi contour + co on-curve + toa do tuyet doi)."""
+        b = self.tho(g)
+        if not b: return 'rong'
+        nc = struct.unpack('>h', b[:2])[0]
+        if nc < 0:
+            return '+'.join(self.hinh(gi) for gi, _, _ in self.thanh_phan(g))
+        try:
+            p = 10; ends = struct.unpack('>%dH' % nc, b[p:p + 2 * nc]); p += 2 * nc
+            il = struct.unpack('>H', b[p:p + 2])[0]; p += 2 + il                     # bo instructions
+            n = (ends[-1] + 1) if nc else 0; fl = []
+            while len(fl) < n:
+                f = b[p]; p += 1; fl.append(f)
+                if f & 8:
+                    r = b[p]; p += 1; fl += [f] * r
+            fl = fl[:n]; xs = []; v = 0
+            for f in fl:
+                if f & 2: d = b[p]; p += 1; v += d if f & 16 else -d
+                elif not f & 16: v += struct.unpack('>h', b[p:p + 2])[0]; p += 2
+                xs.append(v)
+            ys = []; v = 0
+            for f in fl:
+                if f & 4: d = b[p]; p += 1; v += d if f & 32 else -d
+                elif not f & 32: v += struct.unpack('>h', b[p:p + 2])[0]; p += 2
+                ys.append(v)
+            raw = repr((ends, [f & 1 for f in fl], xs, ys)).encode()
+            return 'h' + hashlib.md5(raw).hexdigest()[:12]
+        except Exception:
+            return 'loi'
+
 
 class GiaiMa:
     """Giai ma 1 font PDF: ma byte -> chuoi unicode ('\\ufffd' neu chua co trong bang)."""
     def __init__(self, du_lieu, ten_font):
         import unicodedata
-        from bcsc_bang import BANG, DAU
+        import bcsc_bang as BB
+        BANG, DAU = BB.BANG, BB.DAU; self._BH = getattr(BB, 'BANG_HINH', {}); self._DH = getattr(BB, 'DAU_HINH', {})
         self.t = TTFNho(du_lieu); self.nhom = 'sans' if 'Arial' in ten_font else 'serif'
         self._B, self._D, self._nfc = BANG, DAU, lambda s: unicodedata.normalize('NFC', s)
         self._cache = {}
+
+    def _tra(self, theo_byte, theo_hinh, g):
+        v = theo_byte.get((self.nhom, self.t.chu_ky(g)))
+        if v is None: v = theo_hinh.get((self.nhom, self.t.hinh(g)))
+        return '\ufffd' if v is None else v
 
     def ky_tu(self, ma):
         if ma in self._cache: return self._cache[ma]
@@ -120,11 +157,11 @@ class GiaiMa:
         if g is not None:
             tp = t.thanh_phan(g)
             if tp is None:
-                kq = self._B.get((self.nhom, t.chu_ky(g)), '�')
+                kq = self._tra(self._B, self._BH, g)
             else:
-                goc = self._B.get((self.nhom, t.chu_ky(tp[0][0])), '�')
+                goc = self._tra(self._B, self._BH, tp[0][0])
                 if goc == 'ı': goc = 'i'
-                dau = [self._D.get((self.nhom, t.chu_ky(gi)), '�') for gi, _, _ in tp[1:]]
+                dau = [self._tra(self._D, self._DH, gi) for gi, _, _ in tp[1:]]
                 kq = self._nfc(goc + ''.join(dau))
         self._cache[ma] = kq
         return kq

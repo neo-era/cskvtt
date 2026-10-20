@@ -156,7 +156,7 @@ def main(pdfs):
     bang = {}
     if os.path.exists(out):
         ns = {}; exec(open(out, encoding='utf-8').read(), ns); bang = dict(ns['BANG']); dau = dict(ns['DAU'])
-    else: dau = {}
+    else: dau = {}; ns = {}
     bao = []
     for p in pdfs:
         pdf = pikepdf.open(p); da = set()
@@ -166,10 +166,35 @@ def main(pdfs):
                 da.add(f.objgen)
                 nhan_font(f.FontDescriptor.FontFile2.read_bytes(), str(f.BaseFont), bang, dau, bao)
     bang.update(SUA_TAY)
+    # bang phu theo HINH net (cho ban font TNR khac hinting): lap lai tu moi glyph da gap
+    bh, dh = {}, {}
+    for p in pdfs:
+        pdf = pikepdf.open(p); da = set()
+        for pg in pdf.pages:
+            for k, f in pg.Resources.get('/Font', {}).items():
+                if f.objgen in da or str(f.Subtype) != '/TrueType' or '/FontFile2' not in f.FontDescriptor: continue
+                da.add(f.objgen); t = TTFNho(f.FontDescriptor.FontFile2.read_bytes())
+                nh = 'sans' if 'Arial' in str(f.BaseFont) else 'serif'
+                for ma in range(256):
+                    g = t.glyph_cua_ma(ma)
+                    if g is None: continue
+                    tp = t.thanh_phan(g)
+                    for gi, vai in ([(g, 'g')] if tp is None else [(tp[0][0], 'g')] + [(x[0], 'd') for x in tp[1:]]):
+                        src, dst = (bang, bh) if vai == 'g' else (dau, dh)
+                        v = src.get((nh, t.chu_ky(gi)))
+                        if v is None: continue
+                        kh = (nh, t.hinh(gi))
+                        if kh in dst and dst[kh] != v: print('XUNG DOT hinh', kh, dst[kh], v)
+                        dst[kh] = v
+    if os.path.exists(out):
+        bh = {**ns.get('BANG_HINH', {}), **bh}; dh = {**ns.get('DAU_HINH', {}), **dh}
     with open(out, 'w', encoding='utf-8') as fh:
         fh.write('# -*- coding: utf-8 -*-\n# Sinh boi tools/tao_bang_bcsc.py - KHONG sua tay. (nhom font, chu ky glyph) -> ky tu\nBANG = ')
         fh.write(pprint.pformat(bang, width=120)); fh.write('\n# (nhom font, chu ky glyph dau) -> dau to hop (combining)\nDAU = ')
         fh.write(pprint.pformat(dau, width=120)); fh.write('\n')
+        fh.write('# (nhom font, chu ky HINH net) -> ky tu / dau (du phong khi ban font khac hinting)\nBANG_HINH = ')
+        fh.write(pprint.pformat(bh, width=120)); fh.write('\nDAU_HINH = ')
+        fh.write(pprint.pformat(dh, width=120)); fh.write('\n')
     for r in bao: print(*r)
     print('tong', len(bang), len(dau))
 

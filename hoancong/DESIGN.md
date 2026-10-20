@@ -66,3 +66,6 @@ Tiêu chí đã chốt: đổi theo **tên tủ**; đầu ra **chỉ PDF**; theo
 - Test: `python3 tests/test_bcsc.py <BCSC.pdf> <bảng tra> [pdf khác]` → 40/40 (đọc chữ, tra tủ, bản sạch, nối tiếp, ca xấu).
 - 20/10/2026 (v2.5.1): BCSC Q5 T09 (321 trang) có glyph chưa có trong bảng (font subset khác bộ ký tự) → chạy `tao_bang_bcsc.py` gộp thêm
   (177→198 chữ, 34→41 dấu), kiểm lưới bằng mắt: đúng hết; chuyển 109/109. Trang báo rõ "ký tự lạ — gửi file để bổ sung bảng" khi không đọc được.
+- 20/10/2026 (v2.5.2): BCSC Q5 T08 báo 2408 ký tự lạ — cùng Times New Roman nhưng **khác hinting** (bản font khác) nên md5 byte glyph không khớp.
+  Thêm chữ ký theo HÌNH nét (`TTFNho.hinh`: điểm cuối contour + cờ on-curve + toạ độ, bỏ instructions) và bảng phụ `BANG_HINH`/`DAU_HINH`;
+  tra byte trước, không có thì tra hình. Không cần bổ sung bảng: đọc đủ, chuyển 51/51.

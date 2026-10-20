@@ -60,9 +60,10 @@ _MA = re.compile(r'Mã sự cố\s*:\s*(\S+)')
 
 
 def tim_bao_cao(tl):
-    """[{trang, ma, tu, phuong(dong), quan(dong)}] - moi bao cao 1 muc."""
-    kq = []
+    """[{trang, ma, tu, phuong(dong), quan(dong)}] - moi bao cao 1 muc. tl.ky_tu_la = so ky tu chua giai ma duoc."""
+    kq = []; tl.ky_tu_la = 0
     for i, page, ds in tl.cac_trang():
+        tl.ky_tu_la += sum(d['text'].count('\ufffd') for d in ds)
         ma = None
         for j, d in enumerate(ds):
             m = _MA.search(d['text'])
@@ -201,7 +202,7 @@ def chuyen(du_lieu, bang_tra, thu_muc_font, log=print, kieu='sach'):
                 L.append('1 1 1 rg %.2f %.2f %.2f %.2f re f' % (x - 1, bot - 0.5, x1 - x + 2.5, top - bot + 1))
             L.append('BT /HCBC %.2f Tf 0 0 0 rg 1 0 0 1 %.2f %.2f Tm %s Tj ET' % (sz, x, yb, hexs(s)))
 
-    tk = dict(bao_cao=len(bao), da_doi=sum(1 for r in bao if r['phuong_moi'] and not r['ghi_chu']),
+    tk = dict(ky_tu_la=getattr(tl, 'ky_tu_la', 0), bao_cao=len(bao), da_doi=sum(1 for r in bao if r['phuong_moi'] and not r['ghi_chu']),
               khong_doi=sum(1 for r in bao if not r['phuong_moi'] or r['ghi_chu']))
     if not sua_trang:
         return dict(pdf=du_lieu, bao_cao=bao, thong_ke=tk, chu_ky_bo=0)

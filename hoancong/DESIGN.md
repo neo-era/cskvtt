@@ -64,3 +64,5 @@ Tiêu chí đã chốt: đổi theo **tên tủ**; đầu ra **chỉ PDF**; theo
   - `kieu='noi_tiep'`: ghi nối tiếp (xref stream, /Prev), phủ trắng dòng cũ — giữ chữ ký bản gốc hợp lệ (không dùng trên giao diện).
 - **Ký số không làm thay được** (cần token/khoá riêng của người ký) → người ký ký lại trên file sạch.
 - Test: `python3 tests/test_bcsc.py <BCSC.pdf> <bảng tra> [pdf khác]` → 40/40 (đọc chữ, tra tủ, bản sạch, nối tiếp, ca xấu).
+- 20/10/2026 (v2.5.1): BCSC Q5 T09 (321 trang) có glyph chưa có trong bảng (font subset khác bộ ký tự) → chạy `tao_bang_bcsc.py` gộp thêm
+  (177→198 chữ, 34→41 dấu), kiểm lưới bằng mắt: đúng hết; chuyển 109/109. Trang báo rõ "ký tự lạ — gửi file để bổ sung bảng" khi không đọc được.

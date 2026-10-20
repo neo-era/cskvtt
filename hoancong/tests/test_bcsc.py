@@ -72,7 +72,7 @@ def kiem_trang(fo, ten):
 print('3a. Xuất bản sạch (mặc định) — để ký lại')
 r = chuyen(goc, rows, FONTS, log=lambda *a: None)
 out = r['pdf']; moi_ph = {b['trang']: b['phuong_moi'] for b in r['bao_cao']}
-T('đổi đủ 78/78', r['thong_ke'] == {'bao_cao': 78, 'da_doi': 78, 'khong_doi': 0}, r['thong_ke'])
+T('đổi đủ 78/78', {k: r['thong_ke'][k] for k in ('bao_cao', 'da_doi', 'khong_doi', 'ky_tu_la')} == {'bao_cao': 78, 'da_doi': 78, 'khong_doi': 0, 'ky_tu_la': 0}, r['thong_ke'])
 T('bỏ 2 chữ ký cũ', r['chu_ky_bo'] == 2)
 T('không còn lịch sử sửa (1 lần %%EOF, không chứa bản gốc)', out.count(b'%%EOF') == 1 and out[:len(goc)] != goc)
 T('sạch: không sót dữ liệu chữ ký cũ (/ByteRange, chứng thư)', b'/ByteRange' not in out and b'adbe.pkcs7' not in out)

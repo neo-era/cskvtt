@@ -3,7 +3,7 @@
    - Mã xử lý py/pylibs.zip?v=<phiên bản>: lưu THEO ĐÚNG phiên bản (khớp cả ?v=) → đổi phiên bản là bắt buộc tải bản mới,
      không bao giờ trả bản cũ cho trang mới. Chỉ giữ 1 phiên bản.
    - pyodide/*, font Google và font vẽ PDF (fonts/*.ttf): cache-first, giữ qua các lần cập nhật. Lưu sẵn khi cài để mở được khi mất mạng. */
-const VERSION = 'hc-shell-2.5.3';
+const VERSION = 'hc-shell-2.5.4';
 const PYO = 'hc-pyodide-0.26.4';
 const LIBS = 'hc-libs';
 const FONTS = 'hc-pdffonts';   // font de ve PDF: luu lau dai (cache-first)

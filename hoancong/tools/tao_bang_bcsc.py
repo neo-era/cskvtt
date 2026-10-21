@@ -4,7 +4,7 @@ Dung: python3 tools/tao_bang_bcsc.py BCSC.pdf [BCSC2.pdf ...]  -> ghi src/bcsc_b
 Cach nhan: Liberation Serif/Sans cung do rong chu voi Times New Roman/Arial.
  - glyph don: so voi glyph Liberation cung do rong (anh bitmap, IoU lon nhat)
  - glyph ghep = chu goc + dau: nhan rieng tung dau (keo gian vua khung, so voi dau to hop Liberation); luc chay ghep NFC"""
-import io, sys, os, unicodedata, pprint
+import io, sys, os, unicodedata, pprint, struct
 import numpy as np, pikepdf
 from fontTools.ttLib import TTFont
 from fontTools.pens.recordingPen import DecomposingRecordingPen
@@ -125,6 +125,11 @@ def nhan_font(du_lieu, ten, bang, dau, bao):
         if not t.tho(g): bang[(nhom, ky)] = ' ' if t.rong[g] else ''; return
         ds = ung.get(t.rong[g]) or [c for v in ung.values() for c in v]
         c, diem = chon(mi0, ds, A)
+        moc = {'O': 'Ơ', 'o': 'ơ', 'U': 'Ư', 'u': 'ư'}
+        if c in moc:                                  # chu co rau (Ơ ơ Ư ư) cung do rong voi chu thuong: xet dinh glyph cao vuot chu goc
+            ymax = struct.unpack('>h', t.tho(g)[8:10])[0]
+            lg = L['glyf'][lcm[ord(c)]]; lg.recalcBounds(L['glyf']) if hasattr(lg, 'recalcBounds') else None
+            if ymax > getattr(lg, 'yMax', 10 ** 6) + 80: c = moc[c]
         bang[(nhom, ky)] = c
         bao.append((ten, '%02x' % ma, c, round(diem[0][0], 3), diem[1][1] if len(diem) > 1 else '', round(diem[1][0], 3) if len(diem) > 1 else 0))
     for ma in range(256):
@@ -149,6 +154,7 @@ SUA_TAY = {
     ('serif', 'c6fc7e67e28d'): '5',   # TNR Bold 5 (may doan $)
     ('serif', '9007380a7aa6'): ',',   # TNR Italic , (may doan .)
     ('serif', 'd3092344c8ea'): '6',   # TNR Italic 6 (may doan o)
+    ('serif', '2e7796fb7460'): 'Ơ',   # TNR Ơ (goc cua Ờ, file PN T08; may doan O)
 }
 
 def main(pdfs):

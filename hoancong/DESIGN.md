@@ -71,3 +71,5 @@ Tiêu chí đã chốt: đổi theo **tên tủ**; đầu ra **chỉ PDF**; theo
   tra byte trước, không có thì tra hình. Không cần bổ sung bảng: đọc đủ, chuyển 51/51.
 - 20/10/2026 (v2.5.3): bản sạch bỏ luôn **hình chữ ký tay** ở các trang khối ký (ảnh nằm giữa dòng chức danh "… PHỤ TRÁCH …" và dòng họ tên);
   ảnh hiện trường giữ nguyên. BCSC Q1: 40 hình, Q5 T08/T09: 20 hình mỗi file.
+- 21/10/2026 (v2.5.4): DSBCSC Phú Nhuận T08 — 9 ký tự lạ (F, Ờ, …) → gộp bảng (198→223 chữ, 41→45 dấu). Bắt lỗi máy nhận Ơ thành O
+  (cùng độ rộng): thêm quy tắc "đỉnh glyph cao vượt chữ gốc >80 đơn vị → chữ có râu" + `SUA_TAY`. Chuyển 6/6 (P9, P5 → Đức Nhuận; P2 → Cầu Kiệu).

@@ -154,7 +154,8 @@ SUA_TAY = {
     ('serif', 'c6fc7e67e28d'): '5',   # TNR Bold 5 (may doan $)
     ('serif', '9007380a7aa6'): ',',   # TNR Italic , (may doan .)
     ('serif', 'd3092344c8ea'): '6',   # TNR Italic 6 (may doan o)
-    ('serif', '2e7796fb7460'): 'Ơ',   # TNR Ơ (goc cua Ờ, file PN T08; may doan O)
+    ('serif', '2e7796fb7460'): 'Ơ',
+    ('serif', 'e7023b6b0088'): '_',   # TNR gach duoi (file BT T09; may doan g)   # TNR Ơ (goc cua Ờ, file PN T08; may doan O)
 }
 
 def main(pdfs):

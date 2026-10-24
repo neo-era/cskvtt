@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>Hoàn công CSKVTT v2.5.5</title>
+<title>Hoàn công CSKVTT v2.6.0</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#14213d">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -66,7 +66,7 @@ ul.files li span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:
 ul.files li span:last-child{color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
 .row{display:flex;flex-wrap:wrap;gap:12px}
 .row>div{flex:1 1 160px;min-width:0}
-select,input[type=text],textarea{width:100%;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+select,input[type=text],input[type=tel],textarea{width:100%;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
 textarea{resize:vertical;min-height:62px}
 select:focus-visible,input:focus-visible,textarea:focus-visible,button:focus-visible,.drop:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .hint{color:var(--muted);font-size:.8rem;margin-top:4px;overflow-wrap:anywhere}
@@ -145,6 +145,24 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
 .sc-file .hd{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
 .sc-file .hd b{overflow-wrap:anywhere;min-width:0}
 td .arr{color:var(--muted)}
+/* Đăng ký sử dụng: nút tên trên thanh tiêu đề + hộp thoại nổi */
+.who{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px 0 8px;border-radius:999px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);color:var(--night-ink);font:inherit;font-size:.86rem;font-weight:600;cursor:pointer;max-width:100%;transition:background .18s ease,border-color .18s ease}
+.who:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.45)}
+.who:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.who .av{width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:.74rem;font-weight:700;flex:none}
+.who .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px}
+.who.chua .av{background:rgba(255,255,255,.18);color:var(--night-ink)}
+.dlg-bg{position:fixed;inset:0;background:rgba(10,16,32,.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:grid;place-items:center;padding:16px;z-index:40}
+.dlg{background:var(--panel);color:var(--ink);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.35);width:min(440px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:22px;animation:dlgIn .18s ease}
+@keyframes dlgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.dlg{animation:none}.who{transition:none}}
+.dlg h2{font-size:1.15rem;margin:0 0 4px}.dlg .sub{margin-bottom:16px}
+.fld{margin-bottom:12px}.fld label{display:block;font-weight:600;font-size:.88rem;margin-bottom:5px}.fld label i{font-style:normal;color:var(--bad)}
+.fld input{min-height:44px}
+.dlg .loi{color:var(--bad);font-size:.85rem;min-height:1.2em;margin:0}
+.acts{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:12px;flex-wrap:wrap}
+.lnk{background:none;border:0;color:var(--muted);font:inherit;font-size:.88rem;text-decoration:underline;cursor:pointer;min-height:44px;padding:0 8px}
+.lnk:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
 .rules{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:.83rem;display:grid;gap:3px}
 </style>
 </head>
@@ -152,8 +170,9 @@ td .arr{color:var(--muted)}
 
 
 <header class="top"><div class="in">
-  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.5.5</small></h1>
+  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.6.0</small></h1>
   <p class="tsub"><b>Chiếu sáng khu vực Trung Tâm</b><br>Hồ sơ hoàn công các gói Duy tu chiếu sáng</p>
+  <button class="who chua" id="whoBtn" type="button" aria-haspopup="dialog" aria-controls="dkDlg" title="Thông tin người dùng"><span class="av" id="whoAv" aria-hidden="true">?</span><span class="nm" id="whoNm">Chưa đăng ký</span></button>
   <button class="inst" id="instBtn" type="button" hidden aria-label="Cài ứng dụng Hoàn công lên máy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Cài ứng dụng</button>
 </div>
 <nav class="tabs" role="tablist" aria-label="Chức năng">
@@ -340,6 +359,19 @@ td .arr{color:var(--muted)}
     </ol>
   </section>
 </main>
+<div class="dlg-bg" id="dkBg" hidden>
+  <div class="dlg" id="dkDlg" role="dialog" aria-modal="true" aria-labelledby="dkT" aria-describedby="dkM">
+    <h2 id="dkT">Đăng ký sử dụng</h2>
+    <p class="sub" id="dkM">Cho biết anh/chị là ai để Chiếu sáng KVTT nắm ai đang dùng app. Chỉ ghi tên và việc đã làm (tên file, số liệu tóm tắt), không gửi nội dung file.</p>
+    <form id="dkForm" novalidate>
+      <div class="fld"><label for="dkTen">Họ và tên <i aria-hidden="true">*</i></label><input type="text" id="dkTen" autocomplete="name" maxlength="80" placeholder="vd Nguyễn Văn A" required></div>
+      <div class="fld"><label for="dkDv">Đơn vị / bộ phận <i aria-hidden="true">*</i></label><input type="text" id="dkDv" autocomplete="organization" maxlength="80" placeholder="vd Đội QLVH Quận 8" required></div>
+      <div class="fld"><label for="dkSdt">Số điện thoại <span class="hint">(không bắt buộc)</span></label><input type="tel" id="dkSdt" autocomplete="tel" maxlength="20" placeholder="09xx xxx xxx"></div>
+      <p class="loi" id="dkLoi" role="alert"></p>
+      <div class="acts"><button class="lnk" type="button" id="dkSau">Để sau</button><button class="btn" type="submit" id="dkLuu">Lưu và bắt đầu</button></div>
+    </form>
+  </div>
+</div>
 <div class="ios" id="iosHint" role="dialog" aria-labelledby="iosT" hidden><b id="iosT">Cài lên iPhone / iPad</b>Trong Safari, bấm nút <b style="display:inline">Chia sẻ</b> (ô vuông có mũi tên lên) → chọn <b style="display:inline">Thêm vào MH chính</b>.<br><button type="button" id="iosClose">Đã hiểu</button></div>
 
 <script>
@@ -366,7 +398,7 @@ function tuDienPhuong() {
 }
 document.getElementById('quan').addEventListener('input', tuDienPhuong);
 tuDienPhuong();
-const BUILD = '2.5.5-b05158';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
+const BUILD = '2.6.0-b05158';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
 const CHECKS_NEW = ['Quy đổi phường theo tủ','Khối lượng QLVH','Kế hoạch quý (biên bản số 5)','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu','Định dạng in'];
 const CHECKS_ADD = ['Phát sinh ngoài KH: chi tiết (BB13) khớp tổng hợp (BB12)','Phát sinh ngoài KH: phường theo tủ','Định dạng in'];
 const ST_PS = 'Ghi phát sinh ngoài KH (12, 13)', ST_IN = 'Định dạng in';
@@ -391,6 +423,79 @@ function renderBase() {
   updateRun();
 }
 Promise.all([IDB.get('mau'), IDB.get('master')]).then(([a, b]) => { mauRec = a; masterRec = b; renderBase(); });
+
+// ---- Đăng ký sử dụng + nhật ký (Google Sheet qua Apps Script). Không gửi nội dung file. ----
+const LOG_URL = window.HC_LOG_URL || '';     // URL ứng dụng web Apps Script (apps-script/HUONG_DAN.md); trống = chỉ xếp hàng trên máy
+let nguoi = null, mayId = null;
+const NK = {
+  async hang() { return (await IDB.get('nk_hang')) || []; },
+  async them(viec, file, chi_tiet) {
+    const n = nguoi || {};
+    const dong = {luc: new Date().toISOString(), ten: n.ten || '(chưa đăng ký)', don_vi: n.don_vi || '', sdt: n.sdt || '', viec, file: file || '', chi_tiet: chi_tiet || '', phien_ban: BUILD, may: mayId || ''};
+    const h = await NK.hang(); h.push(dong); await IDB.set('nk_hang', h.slice(-500));
+    NK.gui();
+  },
+  dang: false,
+  async gui() {
+    if (!LOG_URL || NK.dang || (navigator.onLine === false)) return;
+    NK.dang = true;
+    try {
+      let h = await NK.hang();
+      while (h.length) {
+        try { await fetch(LOG_URL, {method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify(h[0])}); }
+        catch (e) { break; }                     // mất mạng / máy chủ lỗi: giữ lại, lần sau gửi
+        h = await NK.hang(); h.shift(); await IDB.set('nk_hang', h);
+      }
+    } finally { NK.dang = false; }
+  }
+};
+window.__hcNhatKy = NK;
+window.addEventListener('online', () => NK.gui());
+function chuCaiDau(t) { const w = t.trim().split(/\s+/); return ((w.length > 1 ? w[w.length - 2][0] : '') + w[w.length - 1][0]).toUpperCase(); }
+function renderWho() {
+  const b = $('whoBtn');
+  b.classList.toggle('chua', !nguoi);
+  $('whoAv').textContent = nguoi ? chuCaiDau(nguoi.ten) : '?';
+  $('whoNm').textContent = nguoi ? nguoi.ten + ' · ' + nguoi.don_vi : 'Chưa đăng ký';
+  b.title = nguoi ? nguoi.ten + ' · ' + nguoi.don_vi + (nguoi.sdt ? ' · ' + nguoi.sdt : '') + ' (bấm để đổi)' : 'Bấm để đăng ký sử dụng';
+  b.setAttribute('aria-label', nguoi ? 'Người dùng: ' + nguoi.ten + ', ' + nguoi.don_vi + '. Bấm để đổi' : 'Chưa đăng ký. Bấm để đăng ký sử dụng');
+}
+let dkTruoc = null;
+function moDk() {
+  dkTruoc = document.activeElement;
+  $('dkTen').value = nguoi ? nguoi.ten : ''; $('dkDv').value = nguoi ? nguoi.don_vi : ''; $('dkSdt').value = nguoi ? nguoi.sdt : '';
+  $('dkLoi').textContent = ''; $('dkLuu').textContent = nguoi ? 'Lưu' : 'Lưu và bắt đầu'; $('dkSau').textContent = nguoi ? 'Huỷ' : 'Để sau';
+  $('dkBg').hidden = false; setTimeout(() => $('dkTen').focus(), 0);
+}
+function dongDk() { $('dkBg').hidden = true; if (dkTruoc && dkTruoc.focus) dkTruoc.focus(); }
+$('whoBtn').addEventListener('click', moDk);
+$('dkSau').addEventListener('click', dongDk);
+$('dkBg').addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { e.preventDefault(); dongDk(); }
+  if (e.key === 'Tab') {                         // giữ phím Tab trong hộp thoại
+    const f = [...$('dkDlg').querySelectorAll('input,button')]; const i = f.indexOf(document.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+  }
+});
+$('dkForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const sach = (v) => v.replace(/\s+/g, ' ').trim();
+  const ten = sach($('dkTen').value), dv = sach($('dkDv').value), sdt = sach($('dkSdt').value);
+  if (!ten) { $('dkLoi').textContent = 'Nhập họ và tên.'; $('dkTen').focus(); return; }
+  if (!dv) { $('dkLoi').textContent = 'Nhập đơn vị / bộ phận.'; $('dkDv').focus(); return; }
+  const cu = nguoi;
+  nguoi = {ten, don_vi: dv, sdt, t: Date.now()};
+  await IDB.set('nguoi_dung', nguoi); renderWho(); dongDk();
+  NK.them(cu ? 'Đổi thông tin' : 'Đăng ký', '', cu ? 'trước: ' + cu.ten + ' · ' + cu.don_vi : '');
+});
+(async () => {
+  mayId = await IDB.get('may_id');
+  if (!mayId) { mayId = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)).slice(0, 8); await IDB.set('may_id', mayId); }
+  nguoi = await IDB.get('nguoi_dung'); renderWho();
+  if (!nguoi) moDk();
+  NK.gui();
+})();
 
 // ---- month select: mặc định tháng trước ----
 const now = new Date(); const prev = now.getMonth() === 0 ? 12 : now.getMonth();
@@ -666,6 +771,7 @@ function onDone(m) {
   fillRows('tf', files);
   $('tf').querySelectorAll('td.n').forEach(td => { td.style.whiteSpace = 'normal'; td.style.textAlign = 'left'; });
   $('summary').hidden = false; $('out').hidden = false; $('fname').textContent = fname;
+  NK.them(r.mode === 'add' ? 'Bổ sung hồ sơ' : 'Lập hồ sơ', fname, r.mode === 'add' ? (r.ps ? 'phát sinh ' + r.ps.hm.length + ' hạng mục' : 'chỉ định dạng in') : 'Quận ' + q + ', tháng ' + th + ', ' + fmt(r.so_tu) + ' tủ, ' + pdfFiles.length + ' biên bản');
 }
 
 // ---------------- Tải hồ sơ PDF (vẽ ngay trên máy, không gửi file đi đâu) ----------------
@@ -685,6 +791,7 @@ function onPdf(m) {
     const pre = document.createElement('div'); pre.textContent = m.canh_bao.join('\n'); d.append(pre); $('pdfNote').append(d);
   }
   window.__lastPdf = m;
+  NK.them('Tải PDF hồ sơ', fn, tong + ' trang');
 }
 $('savePdf').addEventListener('click', () => {
   if (!result || busy || scBusy || $('savePdf').disabled) return;
@@ -753,7 +860,12 @@ $('scRun').addEventListener('click', () => {
   scState('busy', 'Đang xử lý… (vài chục giây mỗi file)');
   scQ = scFiles.map((_, i) => i); scNext();
 });
-function scDone(m) { scRes[m.idx] = Object.assign(scRes[m.idx], {pdf: m.pdf, bao_cao: m.bao_cao, tk: m.thong_ke, ky: m.chu_ky_bo, anh: m.anh_ky_bo}); renderScRes(); scNext(); }
+function scDone(m) {
+  scRes[m.idx] = Object.assign(scRes[m.idx], {pdf: m.pdf, bao_cao: m.bao_cao, tk: m.thong_ke, ky: m.chu_ky_bo, anh: m.anh_ky_bo}); renderScRes();
+  const tk = m.thong_ke || {};
+  NK.them('Chuyển BCSC', scRes[m.idx].name, tk.bao_cao + ' báo cáo, đổi ' + tk.da_doi + (tk.khong_doi ? ', cần xem ' + tk.khong_doi : '') + (tk.ky_tu_la ? ', ' + tk.ky_tu_la + ' ký tự lạ' : ''));
+  scNext();
+}
 function scFail(m) { scRes[m.idx].err = m.msg; window.__lastError = m; renderScRes(); scNext(); }
 const scTen = (n) => n.replace(/\.pdf$/i, '') + '_PHUONG_MOI.pdf';
 function taiSc(r) {

@@ -19,6 +19,10 @@ Trang tự nhận từng biên bản theo nội dung (không theo tên file). Bi
 (nhận theo tiêu đề sheet), chi tiết phải khớp tổng hợp từng hạng mục. Bước cuối luôn chỉnh định dạng in: A4, vừa 1 trang ngang,
 vùng in tới hết chữ ký, nới dòng chữ dài.
 
+**Đăng ký sử dụng**: lần đầu mở app trên mỗi máy hiện hộp thoại hỏi Họ tên, Đơn vị/bộ phận, SĐT (có thể "Để sau").
+Mỗi lần đăng ký / lập hồ sơ / tải PDF hồ sơ / chuyển BCSC, app ghi 1 dòng vào Google Sheet nhật ký (tên, đơn vị, việc, tên file,
+số liệu tóm tắt — không gửi nội dung file). Mất mạng thì xếp hàng trên máy, gửi bù sau. Cách gắn Sheet: `apps-script/HUONG_DAN.md`.
+
 Mọi xử lý chạy trong trình duyệt (Python/Pyodide). Biên bản, file mẫu, bảng tra **không tải lên đâu cả**
 và **không lưu trong repo này** (repo công khai).
 

@@ -74,3 +74,13 @@ Tiêu chí đã chốt: đổi theo **tên tủ**; đầu ra **chỉ PDF**; theo
 - 21/10/2026 (v2.5.4): DSBCSC Phú Nhuận T08 — 9 ký tự lạ (F, Ờ, …) → gộp bảng (198→223 chữ, 41→45 dấu). Bắt lỗi máy nhận Ơ thành O
   (cùng độ rộng): thêm quy tắc "đỉnh glyph cao vượt chữ gốc >80 đơn vị → chữ có râu" + `SUA_TAY`. Chuyển 6/6 (P9, P5 → Đức Nhuận; P2 → Cầu Kiệu).
 - 21/10/2026 (v2.5.5): DSBCSC Bình Thạnh 14/09 — 1 chữ lạ (J trong "Lô J") + gạch dưới "_" máy đoán sai → gộp bảng (223→247 chữ), sửa tay "_". Chuyển 134/134.
+
+## Đăng ký sử dụng + nhật ký Google Sheet — v2.6.0 (24/10/2026)
+Tiêu chí đã chốt: mục đích **chỉ để biết ai dùng** (không chặn, cho "Để sau"); ghi về **Google Sheet** qua Apps Script; UI phương án A (hộp thoại nổi).
+- `index.html`: nút tên trên thanh tiêu đề (`#whoBtn`) + hộp thoại `#dkDlg` (Esc đóng, Tab giữ trong hộp). Người dùng lưu IndexedDB `nguoi_dung`,
+  mã máy `may_id`. Chưa đăng ký: mỗi lần mở app hỏi lại; vẫn dùng được, nhật ký ghi "(chưa đăng ký)".
+- Nhật ký `NK`: hàng đợi IndexedDB `nk_hang` (tối đa 500), gửi lần lượt `fetch` no-cors text/plain tới `LOG_URL`; lỗi mạng thì giữ, gửi lại khi `online`/mở app.
+  Việc ghi: Đăng ký, Đổi thông tin, Lập hồ sơ, Bổ sung hồ sơ, Tải PDF hồ sơ, Chuyển BCSC. `LOG_URL` trống = chỉ xếp hàng.
+- `apps-script/Code.gs`: chỉ `appendRow` vào trang `NhatKy` (tự tạo tiêu đề), chặn công thức chèn (=,+,-,@), cắt 300 ký tự; không có đọc/sửa/xoá.
+- Hạn chế: tên tự khai; URL nằm trong repo công khai → ai cũng ghi thêm được (không đọc được); no-cors không biết máy chủ báo lỗi.
+- Test: `node tests/test_apps_script.js` (8/8); `NODE_PATH=$(npm root -g) node tests/test_dang_ky.js <bảng tra> <BCSC nhỏ>` (15/15, cần `python3 -m http.server 8765`).

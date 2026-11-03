@@ -191,7 +191,7 @@ for x in p13:
     for i in x['items']:
         m=look(i['tu'],by,bn)
         if not m: khong_ro.append(i['tu'])
-        i['phuong']=m[0] if m else '(không rõ)'; i['tuc']=m[3] if m else i['tu']
+        i['phuong']=m[0] if m else '(không rõ)'; i['tuc']=i['tu']
         grp.setdefault(i['phuong'],[]).append(i)
     for ph,its in grp.items():
         plan.append(('ph',ph)); plan+= [('dt',i) for i in its]

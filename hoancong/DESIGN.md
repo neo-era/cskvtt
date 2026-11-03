@@ -85,3 +85,6 @@ Tiêu chí đã chốt: mục đích **chỉ để biết ai dùng** (không ch�
 - Hạn chế: tên tự khai; URL nằm trong repo công khai → ai cũng ghi thêm được (không đọc được); no-cors không biết máy chủ báo lỗi.
 - Test: `node tests/test_apps_script.js` (8/8); `NODE_PATH=$(npm root -g) node tests/test_dang_ky.js <bảng tra> <BCSC nhỏ>` (15/15, cần `python3 -m http.server 8765`).
 - 03/11/2026 (v2.6.1): BB13 Q8 T10 trang 10 — chữ số lạc của cột Vị trí dính vào ô KL ("3 2,000") → `phatsinh.parse13` giữ số đúng định dạng KL (x,xxx) khi ô có nhiều số.
+- 03/11/2026 (v2.6.2): lỗi tra tủ gần đúng — "Tạ Quang Bửu 10" bị lấy thành "Tạ Quang Bửu - 1" (difflib 0.9), "Bình Đông 5" → "Bình Đông - 15"…
+  Sửa: khớp gần đúng chỉ khi CÙNG dãy số và phường thuộc quận (PREFER); tên tủ trong hồ sơ luôn GIỮ NHƯ BIÊN BẢN (không thay bằng tên bảng tra);
+  tủ chưa có trong bảng tra mà các tủ cùng tuyến (cùng tên, khác số) đều 1 phường → lấy phường đó và nêu rõ trong mục kiểm "Quy đổi phường theo tủ".

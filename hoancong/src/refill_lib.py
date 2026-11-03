@@ -54,7 +54,21 @@ def look(t,by,bn):
     if k in by: return _pick(by[k])
     kn=norm_ns(t)
     if kn in bn: return _pick(bn[kn])
-    m=get_close_matches(k,list(by),n=1,cutoff=0.9); return _pick(by[m[0]]) if m else None
+    so=re.findall(r'\d+',k)        # khop gan dung CHI khi cung day so (Ta Quang Buu 10 != Ta Quang Buu - 1)
+    for c in get_close_matches(k,list(by),n=5,cutoff=0.9):
+        if re.findall(r'\d+',c)!=so: continue
+        if PREFER and not any(x[0] in PREFER for x in by[c]): continue     # tu gan giong nhung o quan khac -> khong lay
+        return _pick(by[c])
+    # tu moi chua co trong bang tra: suy theo cac tu CUNG TUYEN (cung ten, khac so) trong quan nay - chi khi tat ca cung 1 phuong
+    goc=re.sub(r'(\s+\d+[a-z]?)+$','',k)
+    if goc!=k and PREFER:
+        anh=[x for kk,v in by.items() if re.fullmatch(re.escape(goc)+r'(\s+\d+[a-z]?)+',kk) for x in v if x[0] in PREFER and (not GOI or x[3]==GOI)]
+        ph=sorted(set(x[0] for x in anh))
+        if len(ph)==1:
+            SUY[t]=(ph[0],sorted(set(x[4].strip() for x in anh)))
+            return (ph[0],anh[0][1],'',t)
+    return None
+SUY={}   # ten tu -> (phuong suy ra, [tu cung tuyen]) : bao cao de nguoi dung kiem
 _FILES=None
 def detect_files():
     """Nhan dien PDF theo NOI DUNG (ten file co the dat lech), dua vao do rong bang o 2 trang dau:
@@ -139,7 +153,7 @@ def parse_qlvh(by,bn):
                     if not c0 and c1 and not c3 and not c4: continue
                     if quan_key(c3)==quan_key(QUAN):
                         m=look(c1,by,bn); ph=m[0] if m else '(không rõ)'; du=m[1] if m else ''
-                        out.append({'tu':(m[3] if m else c1),'diachi':c2,'kl':num(c6),'hm':hm,'grp':grp,'phuong':ph,'duong':du})
+                        out.append({'tu':c1,'diachi':c2,'kl':num(c6),'hm':hm,'grp':grp,'phuong':ph,'duong':du})
     return out
 _MAT_HUYEN={'vê':'về','điêu':'điều','nhiêu':'nhiều','đêu':'đều'}
 def sua_dau(t):
@@ -186,7 +200,7 @@ def parse_bd(by,bn):
                     if re.fullmatch(r'\d+',st.strip()) and ten and not tentu: hm=ten; dvt=u; continue
                     if quan_key(quan)==quan_key(QUAN) and tentu:
                         m=look(tentu,by,bn); ph=m[0] if m else '(không rõ)'
-                        out.append({'hm':hm,'dvt':dvt,'duong':duong,'tu':(m[3] if m else tentu),'mota':mota,'kl':num(nt),'phuong':ph})
+                        out.append({'hm':hm,'dvt':dvt,'duong':duong,'tu':tentu,'mota':mota,'kl':num(nt),'phuong':ph})
     return out
 
 def rewrite(ws, first_data, tail_start, ncols, nnew, writer, probe_row):

@@ -15,7 +15,10 @@ def tieout(G):
     ck=[]
     def add(ok,label,detail=''): ck.append({'ok':bool(ok),'label':label,'detail':detail})
     unk=[d['tu'] for d in qlvh+bd if d['phuong']=='(không rõ)']
-    add(not unk,'Quy đổi phường theo tủ','Khớp 100% tủ' if not unk else 'Chưa khớp: '+', '.join(sorted(set(unk))[:10]))
+    import refill_lib as _RL
+    _suy=['%s → %s'%(t,v[0].replace('Phường ','')) for t,v in sorted(_RL.SUY.items())]
+    add(not unk,'Quy đổi phường theo tủ',('Khớp 100% tủ' if not unk else 'Chưa khớp: '+', '.join(sorted(set(unk))[:10]))+
+        ('. Tủ chưa có trong bảng tra, suy theo tủ cùng tuyến (kiểm lại, bổ sung bảng tra): '+'; '.join(_suy) if _suy else ''))
     ngay=tong/ntu if ntu else 0
     add(ntu>0 and abs(ngay-round(ngay))<1e-9,'Khối lượng QLVH','%d tủ × %s ngày = %s'%(ntu,('%g'%ngay),'{:,.0f}'.format(tong).replace(',','.')))
     thb=sum(x['th'] or 0 for x in boq.values()); klbd=sum(x['kl'] or 0 for x in bd)

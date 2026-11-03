@@ -80,6 +80,8 @@ def parse13(path):
                         mota=r[6]
                         for k in (7,8):   # PDF cat chu cot Vi tri sang o KL ('u 1,000', '2,000\n)') -> giu 1 so, tra phan chu ve cot Vi tri
                             tk=(r[k] or '').split(); so=[t for t in tk if re.fullmatch(r'\d[\d.,]*',t)]
+                            dd=[t for t in so if re.fullmatch(r'\d{1,3}(\.\d{3})*,\d{3}',t)]
+                            if len(so)>1 and len(dd)==1: so=dd     # so le cua cot Vi tri bi cat dinh vao ('3 2,000') -> giu so dung dinh dang KL
                             if len(so)==1 and len(tk)>1:
                                 if k==7:   # chu lac o dong i cua o KL -> noi vao cuoi dong i cua o Vi tri
                                     ml=(mota or '').split('\n')

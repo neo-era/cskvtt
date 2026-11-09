@@ -90,3 +90,4 @@ Tiêu chí đã chốt: mục đích **chỉ để biết ai dùng** (không ch�
   tủ chưa có trong bảng tra mà các tủ cùng tuyến (cùng tên, khác số) đều 1 phường → lấy phường đó và nêu rõ trong mục kiểm "Quy đổi phường theo tủ".
 - 09/11/2026 (v2.6.3): BCSC bản sạch đổi chức danh khối ký bên Công ty "PHỤ TRÁCH KỸ THUẬT THI CÔNG" → "CÁN BỘ PHỤ TRÁCH KỸ THUẬT"
   (`CHUC_DANH` trong bcsc_sua.py; xoá đúng lệnh Tj cũ, viết lại bằng Liberation Serif Bold nhúng, căn giữa đúng chỗ cũ).
+- 09/11/2026 (v2.6.4): worker BCSC tải thêm LiberationSerif-Bold (thiếu → lỗi Errno 44 ở v2.6.3).

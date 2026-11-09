@@ -91,3 +91,4 @@ Tiêu chí đã chốt: mục đích **chỉ để biết ai dùng** (không ch�
 - 09/11/2026 (v2.6.3): BCSC bản sạch đổi chức danh khối ký bên Công ty "PHỤ TRÁCH KỸ THUẬT THI CÔNG" → "CÁN BỘ PHỤ TRÁCH KỸ THUẬT"
   (`CHUC_DANH` trong bcsc_sua.py; xoá đúng lệnh Tj cũ, viết lại bằng Liberation Serif Bold nhúng, căn giữa đúng chỗ cũ).
 - 09/11/2026 (v2.6.4): worker BCSC tải thêm LiberationSerif-Bold (thiếu → lỗi Errno 44 ở v2.6.3).
+- 09/11/2026 (v2.6.5): BCSC Tân Phú 1–12/10 — bổ sung bảng giải mã (&, D, Q, R, W, số…; 247→268 chữ, 47→48 dấu), kiểm lưới bằng mắt: đúng. Chuyển 49/49.

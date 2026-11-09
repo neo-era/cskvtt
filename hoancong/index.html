@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>Hoàn công CSKVTT v2.6.2</title>
+<title>Hoàn công CSKVTT v2.6.3</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#14213d">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -170,7 +170,7 @@ td .arr{color:var(--muted)}
 
 
 <header class="top"><div class="in">
-  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.6.2</small></h1>
+  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.6.3</small></h1>
   <p class="tsub"><b>Chiếu sáng khu vực Trung Tâm</b><br>Hồ sơ hoàn công các gói Duy tu chiếu sáng</p>
   <button class="who chua" id="whoBtn" type="button" aria-haspopup="dialog" aria-controls="dkDlg" title="Thông tin người dùng"><span class="av" id="whoAv" aria-hidden="true">?</span><span class="nm" id="whoNm">Chưa đăng ký</span></button>
   <button class="inst" id="instBtn" type="button" hidden aria-label="Cài ứng dụng Hoàn công lên máy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Cài ứng dụng</button>
@@ -352,7 +352,7 @@ td .arr{color:var(--muted)}
       <div id="scFiles"></div>
     </div>
     <ol class="rules">
-      <li>Chỉ thay 2 dòng: "- Phường …" → phường mới theo tủ; "- Quận …" → "- Thành phố Hồ Chí Minh". Nội dung khác giữ nguyên.</li>
+      <li>Chỉ thay 2 dòng: "- Phường …" → phường mới theo tủ; "- Quận …" → "- Thành phố Hồ Chí Minh"; và chức danh khối ký "PHỤ TRÁCH KỸ THUẬT THI CÔNG" → "CÁN BỘ PHỤ TRÁCH KỸ THUẬT". Nội dung khác giữ nguyên.</li>
       <li>Tủ trùng tên ở nhiều nơi: ưu tiên trùng đúng dấu, rồi phường thuộc quận cũ ghi trong báo cáo.</li>
       <li>Báo cáo không tra được tủ: giữ nguyên, ghi "Cần xem" để anh xử lý tay.</li>
       <li>Xuất bản sạch: chữ cũ bị xoá hẳn (không chỉ che), không giữ lịch sử sửa. Chữ ký số cũ, ô ký và hình chữ ký tay ở các khối ký bị bỏ hết vì nội dung đã đổi; hai bên ký lại bằng phần mềm ký số của mình.</li>
@@ -398,7 +398,7 @@ function tuDienPhuong() {
 }
 document.getElementById('quan').addEventListener('input', tuDienPhuong);
 tuDienPhuong();
-const BUILD = '2.6.2-e4f759';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
+const BUILD = '2.6.3-9b21f3';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
 const CHECKS_NEW = ['Quy đổi phường theo tủ','Khối lượng QLVH','Kế hoạch quý (biên bản số 5)','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu','Định dạng in'];
 const CHECKS_ADD = ['Phát sinh ngoài KH: chi tiết (BB13) khớp tổng hợp (BB12)','Phát sinh ngoài KH: phường theo tủ','Định dạng in'];
 const ST_PS = 'Ghi phát sinh ngoài KH (12, 13)', ST_IN = 'Định dạng in';
@@ -889,7 +889,7 @@ function renderScRes() {
     else if (!r.pdf) { p.textContent = 'Đang chờ…'; w.append(p); }
     else if (!r.tk.bao_cao) { p.textContent = r.tk.ky_tu_la ? 'Không đọc được chữ trong file này (' + r.tk.ky_tu_la + ' ký tự lạ) — bảng giải mã chưa có font của file. Gửi file để bổ sung bảng giải mã.' : 'Không thấy báo cáo sự cố nào (mục 3 – "Tủ điều khiển") trong file này.'; if (r.tk.ky_tu_la) p.className = 'err'; w.append(p); }
     else {
-      p.textContent = r.tk.bao_cao + ' báo cáo · đổi ' + r.tk.da_doi + (r.tk.khong_doi ? ' · cần xem ' + r.tk.khong_doi : '') + ' · tải về: ' + scTen(r.name); w.append(p);
+      p.textContent = r.tk.bao_cao + ' báo cáo · đổi ' + r.tk.da_doi + (r.tk.khong_doi ? ' · cần xem ' + r.tk.khong_doi : '') + (r.tk.chuc_danh ? ' · đổi chức danh ' + r.tk.chuc_danh + ' khối ký' : '') + ' · tải về: ' + scTen(r.name); w.append(p);
       if ((r.ky || r.anh) && r.tk.da_doi) { const k = document.createElement('div'); k.className = 'db'; k.textContent = 'Đã bỏ ' + (r.ky ? r.ky + ' chữ ký số cũ, các ô ký' : '') + (r.ky && r.anh ? ' và ' : '') + (r.anh ? r.anh + ' hình chữ ký tay' : '') + ' — file cần ký lại.'; w.append(k); }
       const tw = document.createElement('div'); tw.className = 'tbl';
       const t = document.createElement('table'); t.innerHTML = '<thead><tr><th>Mã SC</th><th>Tủ</th><th>Phường</th><th></th></tr></thead>';

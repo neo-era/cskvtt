@@ -74,6 +74,9 @@ r = chuyen(goc, rows, FONTS, log=lambda *a: None)
 out = r['pdf']; moi_ph = {b['trang']: b['phuong_moi'] for b in r['bao_cao']}
 T('đổi đủ 78/78', {k: r['thong_ke'][k] for k in ('bao_cao', 'da_doi', 'khong_doi', 'ky_tu_la')} == {'bao_cao': 78, 'da_doi': 78, 'khong_doi': 0, 'ky_tu_la': 0}, r['thong_ke'])
 T('bỏ 2 chữ ký cũ', r['chu_ky_bo'] == 2)
+_t = subprocess.run(['pdftotext', '-', '-'], input=out, capture_output=True).stdout.decode() if shutil.which('pdftotext') else ''
+T('sạch: chức danh "PHỤ TRÁCH KỸ THUẬT THI CÔNG" → "CÁN BỘ PHỤ TRÁCH KỸ THUẬT" ở mọi khối ký (%d chỗ)' % r['thong_ke']['chuc_danh'],
+  r['thong_ke']['chuc_danh'] > 0 and (not _t or ('THI CÔNG' not in _t and _t.count('CÁN BỘ PHỤ TRÁCH KỸ THUẬT') == r['thong_ke']['chuc_danh'])))
 pm_ = pdfplumber.open(__import__('io').BytesIO(out))
 con = sum(1 for pg in pm_.pages for im in pg.images if any('PHỤ TRÁCH' in d['text'] for d in []) or (170 < im['top'] < 250 and round(im['x0']) in (126, 396)))
 T('sạch: bỏ hết hình chữ ký tay ở khối ký (%d hình), ảnh hiện trường giữ nguyên' % r['anh_ky_bo'],

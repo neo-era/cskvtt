@@ -10,6 +10,24 @@ from bcsc import DocBCSC
 from quan_phuong import phuong_cua_quan, quan_key
 
 DONG_QUAN_MOI = 'Thành phố Hồ Chí Minh'
+# Chuc danh o khoi ky (ben Cong ty CS) doi theo yeu cau anh Lam 09/11/2026
+CHUC_DANH = [('PHỤ TRÁCH KỸ THUẬT THI CÔNG', 'CÁN BỘ PHỤ TRÁCH KỸ THUẬT')]
+FONT_DAM = 'LiberationSerif-Bold.ttf'
+
+
+def tim_chuc_danh(tl):
+    """{so trang: [(cu, moi, x0, x1, y chan chu, co chu, dam?)]} - vi tri chuc danh can doi o khoi ky."""
+    kq = {}
+    for i, page in enumerate(tl.pdf.pages):
+        for d in tl.dong(page):
+            chu = ''.join(ch for ch, _ in d['chars'])
+            for cu, moi in CHUC_DANH:
+                j = chu.find(cu)
+                if j < 0 or moi in chu: continue
+                cs = [c for _, c in d['chars'][j:j + len(cu)]]
+                kq.setdefault(i, []).append((cu, moi, cs[0]['x0'], cs[-1]['x1'], cs[0]['matrix'][5], cs[0]['size'],
+                                             'Bold' in cs[0]['fontname']))
+    return kq
 FONT_CHU = 'LiberationSerif-Regular.ttf'          # cung do rong chu voi Times New Roman cua ban goc
 
 
@@ -152,9 +170,9 @@ class GhiNoiTiep:
         return bytes(out)
 
 
-def _font_obj(ttf, dung):
+def _font_obj(ttf, dung, ps='HCBCSC+LiberationSerif'):
     """(FontFile2, FontDescriptor, CIDFont, ToUnicode, Type0) dang byte; tham chieu giua chung la %(ff)d... de dien so doi tuong."""
-    sub = ttf.subset(list(dung)); sc = 1000.0 / ttf.upm; ps = 'HCBCSC+LiberationSerif'; gs = sorted(dung)
+    sub = ttf.subset(list(dung)); sc = 1000.0 / ttf.upm; gs = sorted(dung)
     fd = ('<</Type/FontDescriptor/FontName/%s/Flags 34/FontBBox[%d %d %d %d]/ItalicAngle 0/Ascent %d/Descent %d/CapHeight %d/StemV 80/FontFile2 %%(ff)d 0 R>>'
           % (ps, ttf.bbox[0] * sc, ttf.bbox[1] * sc, ttf.bbox[2] * sc, ttf.bbox[3] * sc, ttf.asc * sc, ttf.desc * sc, ttf.cap * sc))
     cid = ('<</Type/Font/Subtype/CIDFontType2/BaseFont/%s/CIDSystemInfo<</Registry(Adobe)/Ordering(Identity)/Supplement 0>>/FontDescriptor %%(fd)d 0 R/W[%s]/DW 1000/CIDToGIDMap/Identity>>'
@@ -210,16 +228,36 @@ def chuyen(du_lieu, bang_tra, thu_muc_font, log=print, kieu='sach'):
                 L.append('1 1 1 rg %.2f %.2f %.2f %.2f re f' % (x - 1, bot - 0.5, x1 - x + 2.5, top - bot + 1))
             L.append('BT /HCBC %.2f Tf 0 0 0 rg 1 0 0 1 %.2f %.2f Tm %s Tj ET' % (sz, x, yb, hexs(s)))
 
-    tk = dict(ky_tu_la=getattr(tl, 'ky_tu_la', 0), bao_cao=len(bao), da_doi=sum(1 for r in bao if r['phuong_moi'] and not r['ghi_chu']),
+    ttfb = xuat_pdf.TTF(open(os.path.join(thu_muc_font, FONT_DAM), 'rb').read(), FONT_DAM)
+    dungb = {}
+    def hexb(s):
+        o = []
+        for ch in unicodedata.normalize('NFC', s):
+            g = ttfb.cmap.get(ord(ch))
+            if not g: raise ValueError('font không có chữ "%s"' % ch)
+            dungb[g] = ch; o.append('%04X' % g)
+        return '<' + ''.join(o) + '>'
+    n_cd = 0
+    if kieu == 'sach':
+        for so, ds in tim_chuc_danh(tl).items():
+            e = sua_trang.setdefault(so, [tl.pdf.pages[so], [], []])
+            for cu, moi, x0, x1, yb, sz, dam in ds:
+                f, fn = (ttfb, 'HCBD') if dam else (ttf, 'HCBC')
+                xm = (x0 + x1) / 2 - f.rong(moi, sz) / 2                       # canh giua dung cho chuc danh cu
+                e[2].append((x0, yb)); n_cd += 1
+                e[1].append('BT /%s %.2f Tf 0 0 0 rg 1 0 0 1 %.2f %.2f Tm %s Tj ET' % (fn, sz, xm, yb, hexb(moi) if dam else hexs(moi)))
+    tk = dict(ky_tu_la=getattr(tl, 'ky_tu_la', 0), chuc_danh=n_cd, bao_cao=len(bao), da_doi=sum(1 for r in bao if r['phuong_moi'] and not r['ghi_chu']),
               khong_doi=sum(1 for r in bao if not r['phuong_moi'] or r['ghi_chu']))
     if not sua_trang:
         return dict(pdf=du_lieu, bao_cao=bao, thong_ke=tk, chu_ky_bo=0)
-    sub, fd_s, cid_s, tu_s, t0_s = _font_obj(ttf, dung)
     if kieu == 'sach':
-        out, bo, anh = _ghi_sach(du_lieu, sua_trang, (sub, fd_s, cid_s, tu_s, t0_s), getattr(tl, 'anh_ky', {}))
+        fonts = [('/HCBC', _font_obj(ttf, dung))] if dung else []
+        if dungb: fonts.append(('/HCBD', _font_obj(ttfb, dungb, 'HCBCSD+LiberationSerif-Bold')))
+        out, bo, anh = _ghi_sach(du_lieu, sua_trang, fonts, getattr(tl, 'anh_ky', {}))
         log('BCSC: %d báo cáo, đổi %d, không đổi %d; bỏ %d chữ ký số cũ, %d hình chữ ký' % (tk['bao_cao'], tk['da_doi'], tk['khong_doi'], bo, anh))
         return dict(pdf=out, bao_cao=bao, thong_ke=tk, chu_ky_bo=bo, anh_ky_bo=anh)
 
+    sub, fd_s, cid_s, tu_s, t0_s = _font_obj(ttf, dung)
     g = GhiNoiTiep(du_lieu, tl.pdf.doc)
     ff = g.moi(g.stream(b'/Length1 %d' % len(sub), sub))
     fd = g.moi((fd_s % dict(ff=ff)).encode())
@@ -281,7 +319,7 @@ def _loc_chu(ops, xoa):
     return kq, bo
 
 
-def _ghi_sach(du_lieu, sua_trang, font, anh_ky=None):
+def _ghi_sach(du_lieu, sua_trang, fonts, anh_ky=None):
     """Ghi lai TOAN BO file (pypdf): xoa chu cu, them chu moi, bo toan bo o/chu ky so, khong con lich su sua."""
     import io
     from pypdf import PdfReader, PdfWriter
@@ -300,7 +338,6 @@ def _ghi_sach(du_lieu, sua_trang, font, anh_ky=None):
                     if not ok: del f['/ToUnicode']
         except Exception:
             pass
-    sub, fd_s, cid_s, tu_s, t0_s = font
 
     def st(dic, data):
         s = DecodedStreamObject(); s.set_data(data)
@@ -311,12 +348,14 @@ def _ghi_sach(du_lieu, sua_trang, font, anh_ky=None):
         txt = re.sub(r'%\((\w+)\)d 0 R', 'null', b)            # tham chieu dien sau ('0 0 R' lam pypdf doc lech, mat /W)
         o = read_object(io.BytesIO(txt.encode()), None)
         return o
-    ff = st({'/Length1': NumberObject(len(sub))}, sub)
-    fd = tu_chuoi(fd_s, ff=1); fd[NameObject('/FontFile2')] = ff; fd = w._add_object(fd)
-    cid = tu_chuoi(cid_s, fd=1); cid[NameObject('/FontDescriptor')] = fd; cid = w._add_object(cid)
-    tu = st({}, tu_s)
-    t0 = tu_chuoi(t0_s, cid=1, tu=1); t0[NameObject('/DescendantFonts')] = ArrayObject([cid]); t0[NameObject('/ToUnicode')] = tu
-    fo = w._add_object(t0)
+    fo = {}
+    for ten, (sub, fd_s, cid_s, tu_s, t0_s) in fonts:
+        ff = st({'/Length1': NumberObject(len(sub))}, sub)
+        fd = tu_chuoi(fd_s, ff=1); fd[NameObject('/FontFile2')] = ff; fd = w._add_object(fd)
+        cid = tu_chuoi(cid_s, fd=1); cid[NameObject('/FontDescriptor')] = fd; cid = w._add_object(cid)
+        tu = st({}, tu_s)
+        t0 = tu_chuoi(t0_s, cid=1, tu=1); t0[NameObject('/DescendantFonts')] = ArrayObject([cid]); t0[NameObject('/ToUnicode')] = tu
+        fo[ten] = w._add_object(t0)
 
     for so, (page, L, xoa) in sorted(sua_trang.items()):
         pg = w.pages[so]
@@ -330,7 +369,8 @@ def _ghi_sach(du_lieu, sua_trang, font, anh_ky=None):
         res = pg.get('/Resources')
         res = res.get_object() if res is not None else DictionaryObject()
         fr = res.get('/Font'); fr = fr.get_object() if fr is not None else DictionaryObject()
-        fr = DictionaryObject(fr); fr[NameObject('/HCBC')] = fo
+        fr = DictionaryObject(fr)
+        for ten, ref in fo.items(): fr[NameObject(ten)] = ref
         res = DictionaryObject(res); res[NameObject('/Font')] = fr
         pg[NameObject('/Resources')] = res
 

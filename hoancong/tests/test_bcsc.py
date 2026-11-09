@@ -107,6 +107,24 @@ if shutil.which('pdfsig'):
     s_ = subprocess.run(['pdfsig', fo], capture_output=True, text=True).stdout
     T('nối tiếp: 2 chữ ký số bản gốc vẫn hợp lệ', s_.count('Signature is Valid') == 2, s_[-400:])
 
+print('3c. Sửa tay trên app / tủ đã nhớ')
+r = chuyen(goc, rows, FONTS, log=lambda *a: None, sua={'1': {'tu': 'Tủ sửa tay', 'phuong': 'Tân Định'}})
+b1 = r['bao_cao'][0]
+pm_ = pdfplumber.open(__import__('io').BytesIO(r['pdf']))
+c1 = ''.join(c['text'] for c in pm_.pages[0].chars if 'HCBCSC+' in c['fontname'])
+T('sửa tay trang 1 → Tân Định: PDF ghi đúng, đánh dấu "sửa tay", tên tủ sửa', c1.startswith('- Phường Tân Định') and b1['nguon'] == 'sửa tay' and b1['tu'] == 'Tủ sửa tay' and b1['tu_goc'] == b0['tu'], (c1[:30], b1))
+T('sửa tay chỉ đổi đúng báo cáo đó', r['bao_cao'][1]['phuong_moi'] == moi_ph[r['bao_cao'][1]['trang']] and r['thong_ke']['da_doi'] == 78)
+r = chuyen(goc, [x for x in rows if x[0] != 'Nguyễn Du 2'], FONTS, log=lambda *a: None, nho=[{'ten': 'Nguyễn Du 2', 'ten_goc': 'Nguyễn Du 2', 'phuong': 'Phường Bến Thành'}])
+nd = [b for b in r['bao_cao'] if b['tu_goc'] == 'Nguyễn Du 2']
+T('tủ đã nhớ (không có trong bảng tra) tự đổi, không còn Cần xem', r['thong_ke']['khong_doi'] == 0 and nd and all(b['nguon'] == 'đã nhớ' and b['phuong_moi'] == 'Phường Bến Thành' for b in nd), r['thong_ke'])
+r = chuyen(goc, rows, FONTS, log=lambda *a: None, nho=[{'ten': 'Tên khác', 'ten_goc': b0['tu'], 'phuong': 'Phường Tân Định'}])
+T('nhớ theo tên đọc từ PDF (cả khi có ký tự lạ) được ưu tiên hơn bảng tra', r['bao_cao'][0]['phuong_moi'] == 'Phường Tân Định' and r['bao_cao'][0]['nguon'] == 'đã nhớ')
+from bcsc_sua import xuat_nho
+import openpyxl
+xn = os.path.join(d, 'nho.xlsx'); xuat_nho([{'ten': 'Đường A & B Khu ADC', 'ten_goc': 'Đường A \ufffd B Khu ADC', 'phuong': 'Phú Thạnh', 'ngay': '09/11/2026'}], xn)
+wsx = openpyxl.load_workbook(xn).active
+T('xuất Excel tủ đã nhớ: đủ cột, phường chuẩn "Phường …"', wsx['B2'].value == 'Đường A & B Khu ADC' and wsx['C2'].value == 'Phường Phú Thạnh', [c.value for c in wsx[2]])
+
 print('4. Ca xấu')
 bot = [x for x in rows if x[0] != 'Nguyễn Du 2']
 r2 = chuyen(goc, bot, FONTS, log=lambda *a: None)

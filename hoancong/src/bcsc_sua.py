@@ -184,8 +184,15 @@ def _font_obj(ttf, dung, ps='HCBCSC+LiberationSerif'):
     return sub, fd, cid, '\n'.join(cm).encode(), t0
 
 
-def chuyen(du_lieu, bang_tra, thu_muc_font, log=print, kieu='sach'):
+def _chuan_phuong(p):
+    p = re.sub(r'\s+', ' ', unicodedata.normalize('NFC', str(p or ''))).strip()
+    return p if not p or re.match(r'^(Phường|Xã|Thị trấn)\s', p) else 'Phường ' + p
+
+
+def chuyen(du_lieu, bang_tra, thu_muc_font, log=print, kieu='sach', sua=None, nho=None):
     """bang_tra: duong dan (.xlsx/.json) hoac danh sach dong [(ten_tu, phuong, ...)].
+    sua: {so trang (chuoi): {'tu': ten tu sua lai, 'phuong': phuong chon tay}} - nguoi dung sua tren app cho file nay.
+    nho: [{'ten': ten tu, 'ten_goc': ten doc duoc tu PDF, 'phuong': ...}] - tu da nho tren may (uu tien hon bang tra).
     kieu='sach'    : file moi hoan toan - XOA chu cu, bo lich su sua va cac chu ky cu, giu o ky trong de ky lai.
     kieu='noi_tiep': ghi noi tiep, giu ban da ky ben trong (phu trang chu cu)."""
     from pdfminer.pdftypes import resolve1
@@ -205,11 +212,23 @@ def chuyen(du_lieu, bang_tra, thu_muc_font, log=print, kieu='sach'):
         return '<' + ''.join(o) + '>'
 
     bao = []; sua_trang = {}                    # so trang -> [page, [lenh ve], [(x, y chan chu) dong cu can xoa]]
+    sua = sua or {}
+    nho_goc, nho_ten = {}, {}
+    for x in (nho or []):
+        if x.get('phuong'):
+            if x.get('ten_goc'): nho_goc[x['ten_goc']] = _chuan_phuong(x['phuong'])
+            if x.get('ten'): nho_ten[_nguyen(x['ten'])] = _chuan_phuong(x['phuong'])
     for bc in bcs:
         ph_cu = _PH.match(bc['phuong']['text']).group(2).strip() if bc['phuong'] else ''
         q_cu = _QU.match(bc['quan']['text']).group(2).strip() if bc['quan'] else ''
-        ph_moi, ghi = tra.tra(bc['tu'], q_cu)
-        r = dict(trang=bc['trang'] + 1, ma=bc['ma'], tu=bc['tu'], phuong_cu=ph_cu, quan_cu=q_cu, phuong_moi=ph_moi or '', ghi_chu=ghi)
+        k = str(bc['trang'] + 1); tu = bc['tu']; nguon = ''
+        if k in sua and sua[k].get('phuong'):                       # sua tay tren app
+            tu = (sua[k].get('tu') or tu).strip(); ph_moi, ghi, nguon = _chuan_phuong(sua[k]['phuong']), '', 'sửa tay'
+        elif bc['tu'] in nho_goc or _nguyen(bc['tu']) in nho_ten:      # tu da nho tren may
+            ph_moi, ghi, nguon = nho_goc.get(bc['tu']) or nho_ten[_nguyen(bc['tu'])], '', 'đã nhớ'
+        else:
+            ph_moi, ghi = tra.tra(bc['tu'], q_cu)
+        r = dict(trang=bc['trang'] + 1, ma=bc['ma'], tu=tu, tu_goc=bc['tu'], phuong_cu=ph_cu, quan_cu=q_cu, phuong_moi=ph_moi or '', ghi_chu=ghi, nguon=nguon)
         if not bc['phuong']: r['ghi_chu'] = 'không thấy dòng Phường'; ph_moi = None
         bao.append(r)
         if not ph_moi: continue
@@ -432,3 +451,23 @@ def _ghi_sach(du_lieu, sua_trang, fonts, anh_ky=None):
         except Exception: pass
     b = io.BytesIO(); w.write(b)
     return b.getvalue(), bo, anh
+
+
+def xuat_nho(nho, out):
+    """Xuat danh sach tu da nho tren may ra Excel (de bo sung bang tra chinh thuc)."""
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, Border, Side
+    wb = openpyxl.Workbook(); ws = wb.active; ws.title = 'Tu bo sung'
+    tieu = ['STT', 'Tên tủ điều khiển', 'Phường/Xã mới', 'Tên đọc từ PDF', 'Ngày nhớ', 'File nguồn']
+    ws.append(tieu)
+    for i, x in enumerate(nho, 1):
+        ws.append([i, x.get('ten', ''), _chuan_phuong(x.get('phuong', '')), x.get('ten_goc', '') if x.get('ten_goc') != x.get('ten') else '',
+                   x.get('ngay', ''), x.get('file', '')])
+    m = Side(style='thin'); b = Border(left=m, right=m, top=m, bottom=m)
+    for row in ws.iter_rows():
+        for c in row:
+            c.border = b; c.font = Font(name='Times New Roman', size=12, bold=c.row == 1)
+            c.alignment = Alignment(vertical='center', wrap_text=True, horizontal='center' if c.column in (1, 5) or c.row == 1 else 'left')
+    for col, w in zip('ABCDEF', (6, 34, 24, 30, 13, 36)): ws.column_dimensions[col].width = w
+    ws.freeze_panes = 'A2'
+    wb.save(out)

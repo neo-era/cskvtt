@@ -92,3 +92,4 @@ Tiêu chí đã chốt: mục đích **chỉ để biết ai dùng** (không ch�
   (`CHUC_DANH` trong bcsc_sua.py; xoá đúng lệnh Tj cũ, viết lại bằng Liberation Serif Bold nhúng, căn giữa đúng chỗ cũ).
 - 09/11/2026 (v2.6.4): worker BCSC tải thêm LiberationSerif-Bold (thiếu → lỗi Errno 44 ở v2.6.3).
 - 09/11/2026 (v2.6.5): BCSC Tân Phú 1–12/10 — bổ sung bảng giải mã (&, D, Q, R, W, số…; 247→268 chữ, 47→48 dấu), kiểm lưới bằng mắt: đúng. Chuyển 49/49.
+- 09/11/2026 (v2.6.6): BCSC — sửa ngay trên app: nút Sửa ở từng dòng (tên tủ + phường mới, gợi ý phường của quận cũ, gõ tìm toàn TP), Áp dụng tự chuyển lại riêng file đó; "Nhớ cho lần sau" lưu tủ → phường trong IndexedDB (`tu_nho`, ưu tiên hơn bảng tra); mục "Tủ đã nhớ" xoá từng tủ + Xuất Excel (TU_BO_SUNG_BANG_TRA.xlsx) để bổ sung bảng tra chính thức. Chỉ dòng Phường/Quận đổi.

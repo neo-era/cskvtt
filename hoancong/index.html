@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>Hoàn công CSKVTT v2.6.5</title>
+<title>Hoàn công CSKVTT v2.6.6</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#14213d">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -141,6 +141,18 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
 .tabs button[aria-selected="true"]{opacity:1;border-bottom-color:var(--accent)}
 .tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 @media (prefers-reduced-motion:reduce){.tabs button{transition:none}}
+.sc-edit td{background:var(--bg)}
+.sc-edit .row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px}
+.sc-edit label{display:block;font-size:.8rem;font-weight:600;margin-bottom:4px}
+.sc-edit input[type=text]{min-height:40px;width:100%}
+.sc-edit .acts{justify-content:space-between;margin-top:8px}
+.sc-edit .chk{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;min-height:40px}
+.btn.xs{padding:4px 10px;min-height:32px;font-size:.8rem}
+.pill.tay{background:var(--accent-soft,rgba(196,140,40,.15));color:var(--accent-ink-2,#8a5a00)}
+.nho{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+.nho summary{cursor:pointer;font-weight:600;min-height:40px;display:flex;align-items:center}
+.nho table td,.nho table th{font-size:.85rem}
+@media (max-width:560px){.sc-edit .row{grid-template-columns:1fr}}
 .sc-file{border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:12px}
 .sc-file .hd{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
 .sc-file .hd b{overflow-wrap:anywhere;min-width:0}
@@ -170,7 +182,7 @@ td .arr{color:var(--muted)}
 
 
 <header class="top"><div class="in">
-  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.6.5</small></h1>
+  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.6.6</small></h1>
   <p class="tsub"><b>Chiếu sáng khu vực Trung Tâm</b><br>Hồ sơ hoàn công các gói Duy tu chiếu sáng</p>
   <button class="who chua" id="whoBtn" type="button" aria-haspopup="dialog" aria-controls="dkDlg" title="Thông tin người dùng"><span class="av" id="whoAv" aria-hidden="true">?</span><span class="nm" id="whoNm">Chưa đăng ký</span></button>
   <button class="inst" id="instBtn" type="button" hidden aria-label="Cài ứng dụng Hoàn công lên máy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Cài ứng dụng</button>
@@ -351,6 +363,12 @@ td .arr{color:var(--muted)}
       </div>
       <div id="scFiles"></div>
     </div>
+    <details class="nho" id="nhoBox" hidden>
+      <summary>Tủ đã nhớ trên máy này (<span id="nhoN">0</span>)</summary>
+      <p class="hint">Các tủ anh đã sửa tay và chọn "Nhớ cho lần sau". Lần chuyển sau gặp lại sẽ tự đổi theo đây (ưu tiên hơn bảng tra).</p>
+      <div class="tbl"><table><thead><tr><th>Tủ</th><th>Phường mới</th><th>Ngày</th><th></th></tr></thead><tbody id="nhoBody"></tbody></table></div>
+      <p style="margin-top:10px"><button class="btn ghost small" type="button" id="nhoXuat">Xuất Excel để bổ sung bảng tra</button></p>
+    </details>
     <ol class="rules">
       <li>Chỉ thay 2 dòng: "- Phường …" → phường mới theo tủ; "- Quận …" → "- Thành phố Hồ Chí Minh"; và chức danh khối ký "PHỤ TRÁCH KỸ THUẬT THI CÔNG" → "CÁN BỘ PHỤ TRÁCH KỸ THUẬT". Nội dung khác giữ nguyên.</li>
       <li>Tủ trùng tên ở nhiều nơi: ưu tiên trùng đúng dấu, rồi phường thuộc quận cũ ghi trong báo cáo.</li>
@@ -398,7 +416,7 @@ function tuDienPhuong() {
 }
 document.getElementById('quan').addEventListener('input', tuDienPhuong);
 tuDienPhuong();
-const BUILD = '2.6.5-7c642e';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
+const BUILD = '2.6.6-1b678c';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
 const CHECKS_NEW = ['Quy đổi phường theo tủ','Khối lượng QLVH','Kế hoạch quý (biên bản số 5)','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu','Định dạng in'];
 const CHECKS_ADD = ['Phát sinh ngoài KH: chi tiết (BB13) khớp tổng hợp (BB12)','Phát sinh ngoài KH: phường theo tủ','Định dạng in'];
 const ST_PS = 'Ghi phát sinh ngoài KH (12, 13)', ST_IN = 'Định dạng in';
@@ -670,6 +688,19 @@ out
       post({type: 'pdffail', msg: 'thiếu font'});
     } catch (e) { post({type: 'pdffail', msg: String(e && e.message || e)}); }
   }
+  if (m.type === 'xuat_nho') {
+    try {
+      py.globals.set('NHO_JS', JSON.stringify(m.nho || []));
+      py.runPython(\`
+import os, json
+os.chdir('/app')
+import bcsc_sua
+bcsc_sua.xuat_nho(json.loads(NHO_JS), '/work/tu_nho.xlsx')
+\`);
+      const x = py.FS.readFile('/work/tu_nho.xlsx'); const buf = x.buffer.slice(x.byteOffset, x.byteOffset + x.byteLength);
+      post({type: 'nhodone', buf}, [buf]);
+    } catch (e) { post({type: 'nhofail', msg: String(e && e.message || e)}); }
+  }
   if (m.type === 'bcsc') {
     try {
       py.FS.mkdirTree('/app/fonts');
@@ -680,13 +711,14 @@ out
       py.FS.writeFile('/work/sc/in.pdf', new Uint8Array(m.pdf));
       const master = '/work/sc/master.' + (m.master.json ? 'json' : 'xlsx'); py.FS.writeFile(master, new Uint8Array(m.master.buf));
       py.globals.set('SC_MASTER', master);
+      py.globals.set('SC_SUA', JSON.stringify(m.sua || {})); py.globals.set('SC_NHO', JSON.stringify(m.nho || []));
       post({type: 'scstage', label: 'Đang đọc và chuyển: ' + m.name});
       const js = py.runPython(\`
 import os, sys, json, traceback
 os.chdir('/app')
 try:
     import bcsc_sua
-    R = bcsc_sua.chuyen(open('/work/sc/in.pdf', 'rb').read(), SC_MASTER, '/app/fonts', log=lambda *a: None)
+    R = bcsc_sua.chuyen(open('/work/sc/in.pdf', 'rb').read(), SC_MASTER, '/app/fonts', log=lambda *a: None, sua=json.loads(SC_SUA), nho=json.loads(SC_NHO))
     open('/work/sc/out.pdf', 'wb').write(R['pdf'])
     out = json.dumps({'ok': True, 'bao_cao': R['bao_cao'], 'thong_ke': R['thong_ke'], 'chu_ky_bo': R.get('chu_ky_bo', 0), 'anh_ky_bo': R.get('anh_ky_bo', 0)}, ensure_ascii=False)
 except Exception as e:
@@ -713,6 +745,8 @@ worker.onmessage = (ev) => {
   else if (m.type === 'scstage') scState('busy', m.label);
   else if (m.type === 'scdone') scDone(m);
   else if (m.type === 'scfail') scFail(m);
+  else if (m.type === 'nhodone') { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([m.buf], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})); a.download = 'TU_BO_SUNG_BANG_TRA.xlsx'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000); $('nhoXuat').disabled = false; }
+  else if (m.type === 'nhofail') { $('nhoXuat').disabled = false; scErr('Không xuất được Excel: ' + m.msg); }
   else if (m.type === 'fail') { busy = false; updateRun(); engine('ok', 'Bộ xử lý sẵn sàng'); showErr('Không lập được hồ sơ: ' + m.msg); window.__lastError = m; }
 };
 worker.onerror = (e) => { engine('bad', 'Bộ xử lý gặp lỗi'); showErr('Bộ xử lý gặp lỗi: ' + (e.message || 'không rõ')); };
@@ -845,7 +879,7 @@ let scQ = [];
 function scNext() {
   const i = scQ.shift();
   if (i === undefined) {
-    scBusy = false;
+    scBusy = false; renderScRes();          // bat lai nut Sua sau khi xong
     const loi = scRes.filter(r => r.err).length;
     updateRun(); scState(loi ? 'bad' : 'ok', loi ? 'Xong, ' + loi + ' file không xử lý được' : 'Đã chuyển xong — bấm "Tải PDF đã chuyển"');
     return;
@@ -853,27 +887,91 @@ function scNext() {
   const f = scFiles[i];
   f.arrayBuffer().then(buf => {
     const mb = masterRec.buf.slice(0);
-    worker.postMessage({type: 'bcsc', idx: i, name: f.name, pdf: buf, master: {buf: mb, json: !!masterRec.json}}, [buf, mb]);
+    worker.postMessage({type: 'bcsc', idx: i, name: f.name, pdf: buf, master: {buf: mb, json: !!masterRec.json}, sua: (scRes[i] && scRes[i].sua) || {}, nho: scNho}, [buf, mb]);
   }).catch(e => scFail({idx: i, msg: 'không đọc được file (' + String(e && e.message || e) + ')'}));
 }
 $('scRun').addEventListener('click', () => {
   if (scBusy || !scFiles.length) return;
-  scBusy = true; scErr(''); scRes = scFiles.map(f => ({name: f.name})); renderScRes(); updateRun();
+  scBusy = true; scErr(''); scRes = scFiles.map(f => ({name: f.name, sua: {}})); renderScRes(); updateRun();
   scState('busy', 'Đang xử lý… (vài chục giây mỗi file)');
   scQ = scFiles.map((_, i) => i); scNext();
 });
 function scDone(m) {
+  const lanSua = scRes[m.idx].dang; delete scRes[m.idx].dang;
   scRes[m.idx] = Object.assign(scRes[m.idx], {pdf: m.pdf, bao_cao: m.bao_cao, tk: m.thong_ke, ky: m.chu_ky_bo, anh: m.anh_ky_bo}); renderScRes();
+  if (lanSua) { NK.them('Sửa tay BCSC', scRes[m.idx].name, Object.entries(scRes[m.idx].sua).map(([k, v]) => 'tr.' + k + ' ' + v.tu + ' → ' + v.phuong).join('; ').slice(0, 280)); scNext(); return; }
   const tk = m.thong_ke || {};
   NK.them('Chuyển BCSC', scRes[m.idx].name, tk.bao_cao + ' báo cáo, đổi ' + tk.da_doi + (tk.khong_doi ? ', cần xem ' + tk.khong_doi : '') + (tk.ky_tu_la ? ', ' + tk.ky_tu_la + ' ký tự lạ' : ''));
   scNext();
 }
-function scFail(m) { scRes[m.idx].err = m.msg; window.__lastError = m; renderScRes(); scNext(); }
+function chayLai(i) {                 // sua tay xong: chuyen lai rieng file nay
+  if (scBusy) return;
+  scBusy = true; scErr(''); updateRun();
+  const r = scRes[i]; r.dang = true; delete r.err; renderScRes();
+  scState('busy', 'Đang cập nhật: ' + r.name + '…');
+  scQ = [i]; scNext();
+}
+function scFail(m) { delete scRes[m.idx].dang; scRes[m.idx].err = m.msg; window.__lastError = m; renderScRes(); scNext(); }
 const scTen = (n) => n.replace(/\.pdf$/i, '') + '_PHUONG_MOI.pdf';
 function taiSc(r) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([r.pdf], {type: 'application/pdf'})); a.download = scTen(r.name);
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
 }
+// ---- Sua tay 1 bao cao + tu da nho (IndexedDB 'tu_nho') ----
+let scNho = [];
+window.__sc = () => ({scRes, scBusy, scNho});          // cho kiem thu tu dong
+IDB.get('tu_nho').then(v => { scNho = v || []; renderNho(); });
+const TAT_PHUONG = [...new Set(Object.values(QUAN_PHUONG).flat())];
+let dlId = 0;
+function moSua(i, o, tr, nut) {
+  if (tr.nextSibling && tr.nextSibling.classList && tr.nextSibling.classList.contains('sc-edit')) { tr.nextSibling.remove(); return; }
+  const ed = document.createElement('tr'); ed.className = 'sc-edit';
+  const td = document.createElement('td'); td.colSpan = 4; ed.append(td);
+  const id = 'se' + (++dlId);
+  const goiY = phuongCuaQuan(o.quan_cu); const ds = [...goiY, ...TAT_PHUONG.filter(p => !goiY.includes(p))];
+  td.innerHTML = '<div class="row"><div><label for="' + id + 't">Tên tủ (sửa nếu đọc sai)</label><input type="text" id="' + id + 't"></div>' +
+    '<div><label for="' + id + 'p">Phường mới</label><input type="text" id="' + id + 'p" list="' + id + 'l" placeholder="gõ để tìm, vd Phú Thạnh"><datalist id="' + id + 'l"></datalist></div></div>' +
+    '<p class="loi" role="alert" style="margin:6px 0 0"></p>' +
+    '<div class="acts"><label class="chk"><input type="checkbox" checked> Nhớ cho lần sau</label><span><button type="button" class="lnk">Huỷ</button> <button type="button" class="btn small">Áp dụng</button></span></div>';
+  const [iT, iP] = td.querySelectorAll('input[type=text]'); const dl = td.querySelector('datalist');
+  ds.forEach(p => { const op = document.createElement('option'); op.value = p.replace(/^Phường /, ''); dl.append(op); });
+  iT.value = (o.tu || '').replace(/\ufffd/g, ''); iP.value = (o.phuong_moi || (goiY.length === 1 ? goiY[0] : '')).replace(/^Phường /, '');
+  if (/\ufffd/.test(o.tu || '')) { iT.value = o.tu.replace(/\ufffd/g, '?'); }
+  const loi = td.querySelector('.loi'), chk = td.querySelector('input[type=checkbox]');
+  td.querySelector('.lnk').addEventListener('click', () => { ed.remove(); nut.focus(); });
+  td.querySelector('.btn').addEventListener('click', async () => {
+    const tu = iT.value.replace(/\s+/g, ' ').trim(); let ph = iP.value.replace(/\s+/g, ' ').trim();
+    if (!tu || /\?/.test(tu) && /\ufffd/.test(o.tu || '')) { loi.textContent = 'Sửa tên tủ: thay dấu ? bằng ký tự đúng.'; iT.focus(); return; }
+    if (!ph) { loi.textContent = 'Chọn phường mới.'; iP.focus(); return; }
+    if (!/^(Phường|Xã|Thị trấn)\s/.test(ph)) ph = (TAT_PHUONG.find(p => p.replace(/^(Phường|Xã) /, '') === ph) || 'Phường ' + ph);
+    if (!TAT_PHUONG.includes(ph) && !confirmPh(ph, loi)) return;
+    scRes[i].sua = scRes[i].sua || {}; scRes[i].sua[String(o.trang)] = {tu, phuong: ph};
+    if (chk.checked) {
+      scNho = scNho.filter(x => x.ten_goc !== o.tu_goc && x.ten !== tu);
+      scNho.push({ten: tu, ten_goc: o.tu_goc || o.tu, phuong: ph, ngay: new Date().toLocaleDateString('vi-VN'), file: scRes[i].name});
+      await IDB.set('tu_nho', scNho); renderNho();
+    }
+    chayLai(i);
+  });
+  tr.after(ed); iT.focus(); if (iT.value && !/\?/.test(iT.value)) iP.focus();
+}
+function confirmPh(ph, loi) {        // phuong ngoai danh sach: bam Ap dung lan 2 de xac nhan
+  if (loi.dataset.ph === ph) return true;
+  loi.dataset.ph = ph; loi.textContent = '"' + ph + '" không có trong danh sách phường đã biết. Bấm Áp dụng lần nữa nếu đúng.'; return false;
+}
+function renderNho() {
+  $('nhoBox').hidden = !scNho.length; $('nhoN').textContent = scNho.length;
+  const tb = $('nhoBody'); tb.textContent = '';
+  scNho.forEach((x, k) => {
+    const tr = document.createElement('tr');
+    [x.ten, x.phuong.replace(/^Phường /, ''), x.ngay || ''].forEach(v => { const td = document.createElement('td'); td.textContent = v; tr.append(td); });
+    const td = document.createElement('td'); const b = document.createElement('button'); b.type = 'button'; b.className = 'lnk'; b.textContent = 'Xoá';
+    b.setAttribute('aria-label', 'Xoá tủ đã nhớ ' + x.ten);
+    b.addEventListener('click', async () => { scNho.splice(k, 1); await IDB.set('tu_nho', scNho); renderNho(); });
+    td.append(b); tr.append(td); tb.append(tr);
+  });
+}
+$('nhoXuat').addEventListener('click', () => { if (!ready) return; $('nhoXuat').disabled = true; worker.postMessage({type: 'xuat_nho', nho: scNho}); });
 function renderScRes() {
   const box = $('scFiles'); box.textContent = '';
   let n = 0, d = 0, x = 0;
@@ -889,6 +987,7 @@ function renderScRes() {
     const p = document.createElement('div'); p.className = 'hint';
     if (r.err) { p.className = 'err'; p.textContent = 'Không xử lý được: ' + r.err; w.append(p); }
     else if (!r.pdf) { p.textContent = 'Đang chờ…'; w.append(p); }
+    else if (r.dang) { p.textContent = 'Đang cập nhật theo phần sửa tay…'; w.append(p); }
     else if (!r.tk.bao_cao) { p.textContent = r.tk.ky_tu_la ? 'Không đọc được chữ trong file này (' + r.tk.ky_tu_la + ' ký tự lạ) — bảng giải mã chưa có font của file. Gửi file để bổ sung bảng giải mã.' : 'Không thấy báo cáo sự cố nào (mục 3 – "Tủ điều khiển") trong file này.'; if (r.tk.ky_tu_la) p.className = 'err'; w.append(p); }
     else {
       p.textContent = r.tk.bao_cao + ' báo cáo · đổi ' + r.tk.da_doi + (r.tk.khong_doi ? ' · cần xem ' + r.tk.khong_doi : '') + (r.tk.chuc_danh ? ' · đổi chức danh ' + r.tk.chuc_danh + ' khối ký' : '') + ' · tải về: ' + scTen(r.name); w.append(p);
@@ -905,9 +1004,13 @@ function renderScRes() {
         c3.append(document.createTextNode(o.phuong_cu || '–'));
         if (o.phuong_moi && !o.ghi_chu) { const s1 = document.createElement('span'); s1.className = 'arr'; s1.textContent = ' → '; const s2 = document.createElement('b'); s2.textContent = o.phuong_moi.replace(/^Phường /, ''); c3.append(s1, s2); }
         const c4 = document.createElement('td'); const pl = document.createElement('span');
-        pl.className = 'pill ' + (o.ghi_chu ? 'bad' : 'ok'); pl.textContent = o.ghi_chu ? 'Cần xem' : 'Đã đổi'; c4.append(pl);
+        pl.className = 'pill ' + (o.ghi_chu ? 'bad' : (o.nguon ? 'tay' : 'ok')); pl.textContent = o.ghi_chu ? 'Cần xem' : (o.nguon === 'sửa tay' ? 'Sửa tay' : o.nguon === 'đã nhớ' ? 'Đã nhớ' : 'Đã đổi'); c4.append(pl);
         if (o.ghi_chu) { const g = document.createElement('div'); g.className = 'hint'; g.textContent = o.ghi_chu; c4.append(g); }
+        const sb = document.createElement('button'); sb.type = 'button'; sb.className = 'btn ' + (o.ghi_chu ? '' : 'ghost ') + 'xs'; sb.textContent = 'Sửa';
+        sb.setAttribute('aria-label', 'Sửa tủ và phường của báo cáo ' + (o.ma || ''));
+        sb.style.marginTop = '6px'; sb.disabled = scBusy; c4.append(document.createElement('br'), sb);
         tr.append(c1, c2, c3, c4); tb.append(tr);
+        sb.addEventListener('click', () => moSua(scRes.indexOf(r), o, tr, sb));
       });
       t.append(tb); tw.append(t); w.append(tw);
     }

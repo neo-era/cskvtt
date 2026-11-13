@@ -12,7 +12,7 @@ BCSC = sys.argv[3] if len(sys.argv) > 3 else None
 ok = fail = 0
 
 
-def T(dk, ten, chi_tiet=''):
+def T(ten, dk, chi_tiet=''):
     global ok, fail
     if dk: ok += 1; print('  ĐẠT ', ten)
     else: fail += 1; print('  LỖI ', ten, chi_tiet)
@@ -43,6 +43,12 @@ nhieu = [('Lắp kẹp đầu cáp', 70, 'cái')]
 k2 = N.tinh_nhan_luc(nhieu, dm)
 T('khối lượng lớn: số người = làm tròn lên tổng công (70×0,103 → 08)', k2['cong_nhan'] == math.ceil(70 * 0.103), k2)
 T('xe thang làm tròn lên theo tổng ca (70×0,026 → 02)', k2['thiet_bi'].startswith('02 xe thang'), k2['thiet_bi'])
+k5 = N.tinh_nhan_luc([('Lắp đặt cáp nguồn nổi', 9.91, '100m'), ('Lắp kẹp đầu cáp', 122, 'cái')], dm)
+T('vượt năng lực (Q8 19/10): chặn ở 12 người, 03 xe thang và báo vượt', k5['cong_nhan'] == 12 and k5['thiet_bi'].startswith('03 xe thang') and k5['vuot'] and k5['cong_nhan_dm'] > 12 and k5['xe_dm'] > 3, k5)
+k6 = N.tinh_nhan_luc([('Cung cấp gói data 3G/4G kết nối tủ về trung tâm điều khiển', 1, 'tủ')], dm)
+T('ngày chỉ cung cấp vật tư/dịch vụ: để trống nhân lực, thiết bị', k6['chi_cung_cap'] and k6['cong_nhan'] == 0 and k6['thiet_bi'] == '', k6)
+k7 = N.tinh_nhan_luc([('Lắp đặt cáp nguồn nổi', 0.5, '100m'), ('Việc lạ', 1, 'cái')], dm, tran=(0, 0))
+T('không chặn khi trần = 0', not k7['vuot'] and k7['cong_nhan'] == 4, k7)
 k3 = N.tinh_nhan_luc([('Việc lạ chưa có định mức', 3, 'cái')], dm)
 T('việc chưa có định mức: báo thiếu, vẫn tối thiểu 1 tổ', k3['thieu'] == ['Việc lạ chưa có định mức'] and k3['cong_nhan'] == 4 and k3['thiet_bi'] == '01 xe thang', k3)
 k4 = N.tinh_nhan_luc([], dm)
@@ -79,6 +85,14 @@ de_xuat = N.de_xuat(ngay, dm)
 T('đề xuất đủ mọi ngày, không thiếu định mức với file thật', len(de_xuat) == len(ngay) and not any(x['thieu'] for x in de_xuat), [x['thieu'] for x in de_xuat if x['thieu']][:3])
 T('đề xuất mặc định tick "Bình thường"', all(x['vsmt'] == 'binh_thuong' == x['atld'] for x in de_xuat))
 
+loi = [(n_['ngay'], t_) for n_ in ngay for t_ in n_['doc_loi']]
+T('mọi dòng "•" đều đọc được (kể cả đơn vị nhiều chữ "đầu cáp", "1 Trụ")', not loi, loi[:4])
+d7 = [n_ for n_ in ngay if n_['ngay'] == '2026-10-07'][0]
+dv7 = {x['ten']: x['dv'] for x in d7['muc']}
+T('ngày 07/10: đủ 21 việc, có "Tháo dỡ trụ đèn thép" đơn vị "1 Trụ"', len(d7['muc']) == 21 and dv7.get('Tháo dỡ trụ đèn thép') == '1 Trụ', (len(d7['muc']), dv7.get('Tháo dỡ trụ đèn thép')))
+T('không ngày nào thiếu ô cần điền', not any(n_['thieu_o'] for n_ in ngay), [(n_['ngay'], n_['thieu_o']) for n_ in ngay if n_['thieu_o']][:3])
+T('ngày 30/10 chỉ cung cấp gói data → để trống nhân lực', [x for x in de_xuat if x['ngay'] == '2026-10-30'][0]['chi_cung_cap'])
+
 print('6. Điền vào PDF')
 gt = {}
 for i, x in enumerate(de_xuat):
@@ -92,7 +106,7 @@ po = pdfplumber.open(io.BytesIO(out))
 T('giữ nguyên số trang', len(po.pages) == len(pp.pages))
 t1 = po.pages[0].extract_text()
 T('nhiệt độ sáng/chiều đúng dòng "Nhiệt độ"', re.search(r'Nhiệt độ\s+29°C – 31°C\s+28°C – 32°C', t1) is not None, t1[:400])
-T('số công nhân điền trước chữ "người"', re.search(r'Công nhân:\s*%02d\s*người' % de_xuat[0]['cong_nhan'], t1) is not None)
+T('số công nhân điền trước chữ "người"', re.search(r'Công nhân:\s*%s\s*người' % r'\s*'.join('%02d' % de_xuat[0]['cong_nhan']), t1) is not None, re.findall(r'Công nhân:.*', t1))
 T('thiết bị điền sau "Thiết bị thi công:"', re.search(r'Thiết bị thi công:\s*' + re.escape(de_xuat[0]['thiet_bi']), t1) is not None)
 p2 = po.pages[ngay[1]['trang'][0]].extract_text()
 T('ngày có mưa chiều: "Bình thường  Có mưa", không còn chữ cũ chồng lên', re.search(r'Thời tiết\s+Bình thường\s+Có mưa\s*$', p2, re.M) is not None, [l for l in p2.splitlines() if 'Thời tiết' in l])
@@ -101,7 +115,7 @@ T('báo số ô đã tick = 2 × số ngày', R['tick'] == 2 * len(ngay), (R['ti
 with tempfile.TemporaryDirectory() as d:
     f = os.path.join(d, 'o.pdf'); open(f, 'wb').write(out)
     q = subprocess.run(['qpdf', '--check', f], capture_output=True, text=True)
-    T('qpdf --check không lỗi', q.returncode in (0, 3) and 'error' not in q.stdout.lower(), q.stdout[-300:])
+    T('qpdf --check không lỗi', q.returncode == 0 and 'No syntax or stream encoding errors found' in q.stdout, q.stdout[-300:])
     # o tick: so pixel muc dam trong o "Tot" ngay 3 tang so voi ban goc
     vt = ngay[2]['vi_tri']['vsmt'][0]; tr = vt['trang'] + 1
     g0 = os.path.join(d, 'g'); g1 = os.path.join(d, 'h')

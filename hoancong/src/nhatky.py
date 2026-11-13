@@ -8,9 +8,11 @@ Nguoi dung xem/sua tung ngay tren app roi moi xuat (de_xuat -> sua -> dien)."""
 import io, math, os, re, unicodedata
 
 TO_NGUOI, TO_XE = 4, 1                                  # toi thieu 1 to
+TRAN_NGUOI, TRAN_XE = 12, 3                             # nang luc toi da/ngay cua don vi (anh Lam chot 13/11/2026: 3 to)
+MAY_NHO = 0.1                                           # may phu < 0,1 ca/ngay: khong ghi vao nhat ky
 TICK = ('tot', 'binh_thuong', 'kem')
 _NGAY = re.compile(r'^Ngày\s+(\d{1,2})\s+tháng\s+(\d{1,2})\s+năm\s+(\d{4})\s*$')
-_VIEC = re.compile(r'^•\s*(.+?):\s*([\d.,]+)\s+(\S+)\s*$')
+_VIEC = re.compile(r'^•\s*(.+):\s*([\d.,]+)\s+(.+?)\s*$')     # don vi co the nhieu chu: "đầu cáp", "1 Trụ"
 
 
 def _k(s):
@@ -56,7 +58,7 @@ def doc_dinh_muc(du_lieu, ten_file):
     for r in dong:
         v = [x for x in r if x not in (None, '')]
         if not v: continue
-        hm = [i for i, x in enumerate(v) if isinstance(x, str) and re.fullmatch(r'HM\d+', x.strip())]
+        hm = [i for i, x in enumerate(v) if isinstance(x, str) and re.fullmatch(r'HM\d+(_\w+)?', x.strip())]
         if hm and hm[0] >= 1 and hm[0] + 2 < len(v) and isinstance(v[hm[0] + 1], str) and isinstance(v[hm[0] + 2], str):
             i = hm[0]
             cur = {'ten': v[i + 1].strip(), 'dv': v[i + 2].strip(), 'nc': 0.0, 'may': {}}
@@ -91,8 +93,11 @@ def _ten_may(t):
     return t[:1].lower() + t[1:]
 
 
-def tinh_nhan_luc(viec, dm):
-    """viec: [(ten, khoi luong, don vi)] -> cong_nhan, thiet_bi (chuoi), cong (tong cong), thieu (viec khong co dinh muc)."""
+def tinh_nhan_luc(viec, dm, tran=None):
+    """viec: [(ten, khoi luong, don vi)] -> cong_nhan, thiet_bi (chuoi), cong (tong cong), thieu (viec khong co dinh muc),
+    cong_nhan_dm / xe_dm (theo dung dinh muc, chua chan), vuot (dinh muc vuot nang luc -> da chan o tran),
+    chi_cung_cap (ngay chi co viec cung cap vat tu/dich vu: khong ghi nhan luc, thiet bi)."""
+    tn, tx = tran or (TRAN_NGUOI, TRAN_XE)
     cong = 0.0; nang = 0.0; khac = {}; thieu = []
     for ten, kl, dv in viec:
         m = tra_dinh_muc(dm, ten)
@@ -103,10 +108,14 @@ def tinh_nhan_luc(viec, dm):
             if re.search(r'xe (thang|nang)', _k(mt)): nang += kl * ca
             else:
                 t = _ten_may(mt); khac[t] = khac.get(t, 0) + kl * ca
-    cn = max(TO_NGUOI, math.ceil(cong - 1e-9))
-    tb = ['%02d xe thang' % max(TO_XE, math.ceil(nang - 1e-9))]
-    tb += ['%02d %s' % (max(1, math.ceil(v - 1e-9)), t) for t, v in sorted(khac.items()) if v > 0]
-    return dict(cong_nhan=cn, cong=round(cong, 6), thiet_bi=', '.join(tb), thieu=thieu)
+    if viec and not thieu and cong <= 1e-9 and nang <= 1e-9 and not any(v > 1e-9 for v in khac.values()):
+        return dict(cong_nhan=0, cong=0.0, thiet_bi='', thieu=[], cong_nhan_dm=0, xe_dm=0, vuot=False, chi_cung_cap=True)
+    cn_dm = max(TO_NGUOI, math.ceil(cong - 1e-9)); xe_dm = max(TO_XE, math.ceil(nang - 1e-9))
+    cn, xe = (min(cn_dm, tn) if tn else cn_dm), (min(xe_dm, tx) if tx else xe_dm)
+    tb = ['%02d xe thang' % xe]
+    tb += ['%02d %s' % (max(1, math.ceil(v - 1e-9)), t) for t, v in sorted(khac.items()) if v >= MAY_NHO - 1e-9]
+    return dict(cong_nhan=cn, cong=round(cong, 6), thiet_bi=', '.join(tb), thieu=thieu, cong_nhan_dm=cn_dm, xe_dm=xe_dm,
+                ca_xe=round(nang, 4), vuot=cn < cn_dm or xe < xe_dm, chi_cung_cap=False)
 
 
 # ---------------- Thoi tiet (Open-Meteo, theo gio) ----------------
@@ -155,27 +164,34 @@ def doc_nhat_ky(du_lieu):
     for so, pg in enumerate(trang):
         try: dong = pg.extract_text_lines()
         except Exception as e: raise ValueError('Không đọc được file PDF (trang %d): %s' % (so + 1, e))
-        H = float(pg.height)
-        for i, l in enumerate(dong):
-            if l['text'].strip() == 'NHẬT KÝ THI CÔNG HÀNG NGÀY' and i + 1 < len(dong) and _NGAY.match(dong[i + 1]['text'].strip()):
-                g = _NGAY.match(dong[i + 1]['text'].strip())
-                cur = {'ngay': '%s-%02d-%02d' % (g.group(3), int(g.group(2)), int(g.group(1))), 'trang': [], 'muc': [], 'vi_tri': {}, '_ten': set(), '_tick': []}
-                ngay.append(cur)
-                break
+        tde = [i for i, l in enumerate(dong) if l['text'].strip() == 'NHẬT KÝ THI CÔNG HÀNG NGÀY' and i + 1 < len(dong) and _NGAY.match(dong[i + 1]['text'].strip())]
+        if len(tde) > 1 or (tde and tde[0] > 2):
+            raise ValueError('Trang %d có ngày mới bắt đầu giữa trang — mẫu nhật ký này chưa hỗ trợ, gửi file để bổ sung' % (so + 1))
+        for i in tde:
+            g = _NGAY.match(dong[i + 1]['text'].strip())
+            cur = {'ngay': '%s-%02d-%02d' % (g.group(3), int(g.group(2)), int(g.group(1))), 'trang': [], 'muc': [], 'vi_tri': {}, '_ten': set(), '_tick': [], 'doc_loi': []}
+            ngay.append(cur)
         if cur is None:
             continue
         cur['trang'].append(so)
         vt = cur['vi_tri']
         for i, l in enumerate(dong):
             t = l['text'].strip(); cs = l['chars']
-            m = _VIEC.match(t)
-            if m and m.group(1) not in cur['_ten']:
-                cur['_ten'].add(m.group(1))
-                try: cur['muc'].append({'ten': m.group(1).strip(), 'kl': so_kl(m.group(2)), 'dv': m.group(3)})
-                except ValueError: pass
+            if t.startswith('•'):
+                m = _VIEC.match(t)
+                if not m and i + 1 < len(dong) and not dong[i + 1]['text'].strip().startswith(('•', '-')):   # ten viec xuong dong
+                    m = _VIEC.match(t + ' ' + dong[i + 1]['text'].strip())
+                if not m: cur['doc_loi'].append(t)
+                elif m.group(1) not in cur['_ten']:
+                    cur['_ten'].add(m.group(1))
+                    try: cur['muc'].append({'ten': m.group(1).strip(), 'kl': so_kl(m.group(2)), 'dv': m.group(3)})
+                    except ValueError: cur['doc_loi'].append(t)
+            if 'Sáng' in t and 'Chiều' in t and 'cot' not in vt:                 # tieu de cot bang thoi tiet
+                a, b = _cum(l, 'Sáng'), _cum(l, 'Chiều')
+                if a and b: vt['cot'] = [(a[0][0] + a[0][1]) / 2, (b[0][0] + b[0][1]) / 2]
             if t.startswith('Thời tiết') and 'thoi_tiet' not in vt:
-                o = _cum(l, 'Bình thường')
-                if len(o) == 2: vt['thoi_tiet'] = {'trang': so, 'y': _y(cs[0]), 'o': o, 'size': cs[0]['size'], 'x_xoa': o[0][0]}
+                nh = _cum(l, 'Thời tiết'); sau = [c for c in cs if c['text'].strip() and nh and c['x0'] > nh[0][1] + 3]
+                vt['thoi_tiet'] = {'trang': so, 'y': _y(cs[0]), 'size': cs[0]['size'], 'x_xoa': sau[0]['x0'] if sau else None}
             elif t.startswith('Nhiệt độ') and 'nhiet_do' not in vt:
                 vt['nhiet_do'] = {'trang': so, 'y': _y(cs[0]), 'size': cs[0]['size']}
             elif t.startswith('- Công nhân:') and 'cong_nhan' not in vt:
@@ -192,8 +208,10 @@ def doc_nhat_ky(du_lieu):
     if ngay[0]['trang'][0] != 0:                          # trang le truoc ngay dau: gan vao ngay dau
         ngay[0]['trang'] = list(range(ngay[0]['trang'][0])) + ngay[0]['trang']
     for n in ngay:
-        n.pop('_ten', None); tk = n.pop('_tick')
-        for k, o in zip(('vsmt', 'atld'), tk): n['vi_tri'][k] = o
+        n.pop('_ten', None); tk = n.pop('_tick'); vt = n['vi_tri']
+        for k, o in zip(('vsmt', 'atld'), tk): vt[k] = o
+        n['thieu_o'] = [ten for k, ten in (('cot', 'cột Sáng/Chiều'), ('nhiet_do', 'dòng Nhiệt độ'), ('cong_nhan', 'dòng Công nhân'),
+                                            ('thiet_bi', 'dòng Thiết bị'), ('vsmt', 'ô tick mục 4'), ('atld', 'ô tick mục 5')) if not vt.get(k)]
     return ngay
 
 
@@ -225,13 +243,15 @@ def _o_tick(pg, l, so):
     return kq
 
 
-def de_xuat(ngay, dm):
+def de_xuat(ngay, dm, tran=None):
     kq = []
     for n in ngay:
-        k = tinh_nhan_luc([(x['ten'], x['kl'], x['dv']) for x in n['muc']], dm)
+        k = tinh_nhan_luc([(x['ten'], x['kl'], x['dv']) for x in n['muc']], dm, tran)
         y, mth, d = n['ngay'].split('-')
         kq.append(dict(ngay=n['ngay'], ngay_vn='%s/%s/%s' % (d, mth, y), so_trang=len(n['trang']), so_viec=len(n['muc']),
                        cong_nhan=k['cong_nhan'], cong=k['cong'], thiet_bi=k['thiet_bi'], thieu=k['thieu'],
+                       cong_nhan_dm=k['cong_nhan_dm'], xe_dm=k['xe_dm'], vuot=k['vuot'], chi_cung_cap=k['chi_cung_cap'],
+                       doc_loi=n.get('doc_loi', []), thieu_o=n.get('thieu_o', []),
                        sang='', chieu='', mua_sang=False, mua_chieu=False, vsmt='binh_thuong', atld='binh_thuong'))
     return kq
 
@@ -266,14 +286,14 @@ def dien(du_lieu, gia_tri, thu_muc_font, log=print, giu_ky=False, ngay=None):
         g = gia_tri.get(n['ngay'])
         if not g: continue
         n_ngay += 1; vt = n['vi_tri']
-        tt, nd = vt.get('thoi_tiet'), vt.get('nhiet_do')
-        if tt and nd:
-            for (x0, x1), buoi in zip(tt['o'], ('sang', 'chieu')):
-                chu(nd['trang'], (g.get(buoi) or '').strip(), (x0 + x1) / 2, nd['y'], nd['size'], True)
-        if tt and (g.get('mua_sang') or g.get('mua_chieu')):
-            sua.setdefault(tt['trang'], [None, [], []])[2].append((tt['x_xoa'], tt['y']))
-            for (x0, x1), buoi in zip(tt['o'], ('sang', 'chieu')):
-                chu(tt['trang'], 'Có mưa' if g.get('mua_' + buoi) else 'Bình thường', (x0 + x1) / 2, tt['y'], tt['size'], True)
+        tt, nd, cot = vt.get('thoi_tiet'), vt.get('nhiet_do'), vt.get('cot')
+        if cot and nd:
+            for cx, buoi in zip(cot, ('sang', 'chieu')):
+                chu(nd['trang'], (g.get(buoi) or '').strip(), cx, nd['y'], nd['size'], True)
+        if cot and tt and (g.get('mua_sang') or g.get('mua_chieu')):
+            if tt['x_xoa'] is not None: sua.setdefault(tt['trang'], [None, [], []])[2].append((tt['x_xoa'], tt['y']))
+            for cx, buoi in zip(cot, ('sang', 'chieu')):
+                chu(tt['trang'], 'Có mưa' if g.get('mua_' + buoi) else 'Bình thường', cx, tt['y'], tt['size'], True)
         cn = vt.get('cong_nhan')
         try: so_cn = int(g.get('cong_nhan') or 0)
         except (TypeError, ValueError): so_cn = 0

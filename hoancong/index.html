@@ -384,6 +384,9 @@ td .arr{color:var(--muted)}
       <p class="hint" id="njTt"></p>
       <div class="njtool">
         <button class="btn ghost small" type="button" id="njTtLai">Lấy lại thời tiết</button>
+        <span class="hint" style="margin-left:auto">Năng lực tối đa/ngày:</span>
+        <label class="hint"><input type="number" id="njTranN" value="12" min="0" max="99" inputmode="numeric" style="width:64px;min-height:40px" aria-label="Số người tối đa mỗi ngày"> người</label>
+        <label class="hint"><input type="number" id="njTranX" value="3" min="0" max="99" inputmode="numeric" style="width:56px;min-height:40px" aria-label="Số xe thang tối đa mỗi ngày"> xe thang</label>
       </div>
       <div class="tbl"><table class="nj"><thead><tr><th scope="col">Ngày</th><th scope="col">Nhiệt độ sáng</th><th scope="col">Nhiệt độ chiều</th><th scope="col">Mưa</th><th scope="col">Công nhân</th><th scope="col">Thiết bị thi công</th><th scope="col">Vệ sinh MT</th><th scope="col">ATLĐ, ATGT</th></tr></thead><tbody id="njBody"></tbody></table></div>
       <div class="kyopt" style="margin-top:16px">
@@ -393,6 +396,7 @@ td .arr{color:var(--muted)}
           <button type="button" role="radio" id="njKyGiu" aria-checked="false" tabindex="-1">Giữ hình ký</button>
         </div>
       </div>
+      <label class="chk" id="njXnBox" hidden style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:.88rem;min-height:44px"><input type="checkbox" id="njXacNhan"> Tôi đã xem các ngày tô đỏ (vượt năng lực, thiếu định mức hoặc thiếu chỗ điền)</label>
       <div class="out">
         <button class="btn" id="njXuat" type="button" disabled>Xuất PDF đã điền</button>
         <span class="fn" id="njFn"></span>
@@ -510,7 +514,7 @@ function tuDienPhuong() {
 }
 document.getElementById('quan').addEventListener('input', tuDienPhuong);
 tuDienPhuong();
-const BUILD = '2.8.0-c7869e';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
+const BUILD = '2.8.0-c0b0bf';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
 const CHECKS_NEW = ['Quy đổi phường theo tủ','Khối lượng QLVH','Kế hoạch quý (biên bản số 5)','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu','Định dạng in'];
 const CHECKS_ADD = ['Phát sinh ngoài KH: chi tiết (BB13) khớp tổng hợp (BB12)','Phát sinh ngoài KH: phường theo tủ','Định dạng in'];
 const ST_PS = 'Ghi phát sinh ngoài KH (12, 13)', ST_IN = 'Định dạng in';
@@ -796,7 +800,8 @@ bcsc_sua.xuat_nho(json.loads(NHO_JS), '/work/tu_nho.xlsx')
       post({type: 'nhodone', buf}, [buf]);
     } catch (e) { post({type: 'nhofail', msg: String(e && e.message || e)}); }
   }
-  if (m.type === 'nk_dm' || m.type === 'nk_doc' || m.type === 'nk_tt' || m.type === 'nk_dien') {    // Nhat ky thi cong
+  if (m.type === 'nk_dm' || m.type === 'nk_doc' || m.type === 'nk_dx' || m.type === 'nk_tt' || m.type === 'nk_dien') {    // Nhat ky thi cong
+    const luot = m.arg && m.arg.luot;
     try {
       py.FS.mkdirTree('/work/nk');
       if (m.type === 'nk_dien' && !py.FS.analyzePath('/app/fonts/LiberationSerif-Regular.ttf').exists) {
@@ -805,7 +810,7 @@ bcsc_sua.xuat_nho(json.loads(NHO_JS), '/work/tu_nho.xlsx')
       }
       if (m.buf) py.FS.writeFile('/work/nk/in.bin', new Uint8Array(m.buf));
       py.globals.set('NJ_ARG', JSON.stringify(m.arg || {}));
-      post({type: 'njstage', label: {nk_dm: 'Đang đọc định mức…', nk_doc: 'Đang đọc nhật ký…', nk_tt: 'Đang tính thời tiết…', nk_dien: 'Đang điền và xuất PDF…'}[m.type]});
+      post({type: 'njstage', label: {nk_dm: 'Đang đọc định mức…', nk_doc: 'Đang đọc nhật ký…', nk_dx: 'Đang tính lại nhân lực…', nk_tt: 'Đang tính thời tiết…', nk_dien: 'Đang điền và xuất PDF…'}[m.type]});
       const js = py.runPython(\`
 import os, json, traceback
 os.chdir('/app')
@@ -818,7 +823,9 @@ try:
         out = {'ok': True, 'dm': D, 'n': len(D['muc'])}
     elif k == 'nk_doc':
         NJ_GOC = open('/work/nk/in.bin', 'rb').read(); NJ_NGAY = NJ.doc_nhat_ky(NJ_GOC)
-        out = {'ok': True, 'ngay': NJ.de_xuat(NJ_NGAY, A['dm'])}
+        out = {'ok': True, 'ngay': NJ.de_xuat(NJ_NGAY, A['dm'], A.get('tran'))}
+    elif k == 'nk_dx':
+        out = {'ok': True, 'ngay': NJ.de_xuat(NJ_NGAY, A['dm'], A.get('tran'))}
     elif k == 'nk_tt':
         out = {'ok': True, 'tt': NJ.thoi_tiet(A['js'])}
     else:
@@ -831,12 +838,12 @@ except Exception as e:
 out
 \`);
       const res = JSON.parse(js);
-      if (!res.ok) { post({type: 'njfail', k: m.type, msg: res.error, trace: res.trace}); return; }
+      if (!res.ok) { post({type: 'njfail', k: m.type, luot, msg: res.error, trace: res.trace}); return; }
       if (m.type === 'nk_dien') {
         const x = py.FS.readFile('/work/nk/out.pdf'); const buf = x.buffer.slice(x.byteOffset, x.byteOffset + x.byteLength);
-        post({type: 'njdone', k: m.type, res, pdf: buf}, [buf]);
-      } else post({type: 'njdone', k: m.type, res});
-    } catch (e) { post({type: 'njfail', k: m.type, msg: String(e && e.message || e)}); }
+        post({type: 'njdone', k: m.type, luot, res, pdf: buf}, [buf]);
+      } else post({type: 'njdone', k: m.type, luot, res});
+    } catch (e) { post({type: 'njfail', k: m.type, luot, msg: String(e && e.message || e)}); }
   }
   if (m.type === 'bcsc') {
     try {
@@ -998,27 +1005,40 @@ document.querySelector('.tabs').addEventListener('keydown', (e) => {
 try { const t = location.hash === '#su-co' ? 'sc' : location.hash === '#nhat-ky' ? 'nk' : localStorage.getItem('hc-tab'); if (t) chonTab(t); } catch (e) {}
 
 // ---------------- Nhật ký thi công: điền nhiệt độ, nhân lực, thiết bị, tick ----------------
-let njDmTen = '', njFile = null, njDm = null, njRows = [], njBusy = false, njGiuKy = false, njTtNguon = '';
+let njLuot = 0, njTtDang = false, njTran = {n: 12, x: 3}, njDmTen = '', njFile = null, njDm = null, njRows = [], njBusy = false, njGiuKy = false, njTtNguon = '';
 const NJ_TICK = [['tot', 'Tốt'], ['binh_thuong', 'Bình thường'], ['kem', 'Kém']];
 const NJ_TOADO = {lat: 10.7769, lon: 106.7009};          // TP.HCM (trung tam)
-window.__nj = () => ({njRows, njBusy, njDm: njDm && {n: njDm.n, ten: njDm.ten}, njGiuKy});
+window.__nj = () => ({njRows, njBusy, njTtDang, njDm: njDm && {n: njDm.n, ten: njDm.ten}, njGiuKy, njTran});
+const njBan = () => njBusy || njTtDang;
+const njCanXem = () => njRows.some(x => x.vuot || (x.thieu && x.thieu.length) || (x.thieu_o && x.thieu_o.length) || (x.doc_loi && x.doc_loi.length));
 function njState(st, t) { $('njDot').className = 'dot ' + st; $('njText').textContent = t; }
 function njErr(t) { $('njErr').hidden = !t; $('njErr').textContent = t || ''; }
 function njUpd() {
-  $('njDoc').disabled = !(ready && njFile && njDm && !njBusy);
-  $('njXuat').disabled = !(ready && njRows.length && !njBusy);
-  $('njKyBo').disabled = $('njKyGiu').disabled = njBusy; $('njTtLai').disabled = njBusy || !njRows.length;
+  $('njDoc').disabled = !(ready && njFile && njDm && !njBan());
+  $('njXuat').disabled = !(ready && njRows.length && !njBan() && (!njCanXem() || $('njXacNhan').checked));
+  $('njKyBo').disabled = $('njKyGiu').disabled = njBan(); $('njTtLai').disabled = njBan() || !njRows.length;
+  $('njDmBtn').disabled = njBan(); $('njTranN').disabled = $('njTranX').disabled = njBan();
+  $('njXnBox').hidden = !njCanXem();
   if (!njBusy && ready) njState('ok', !njFile ? 'Chọn file nhật ký' : !njDm ? 'Chọn file định mức' : njRows.length ? 'Sẵn sàng xuất PDF' : 'Sẵn sàng đọc nhật ký');
 }
-function njGui(k, arg, buf) { njBusy = true; njErr(''); njUpd(); worker.postMessage(Object.assign({type: k, arg: Object.assign({k}, arg)}, buf ? {buf} : {}), buf ? [buf] : []); }
-function njFail(m) { njBusy = false; njState('bad', 'Có lỗi'); njErr((m.k === 'nk_dm' ? '' : '') + m.msg); window.__lastError = m; njUpd(); }
+function njGui(k, arg, buf) { njBusy = true; njErr(''); njUpd(); worker.postMessage(Object.assign({type: k, arg: Object.assign({k, luot: njLuot}, arg)}, buf ? {buf} : {}), buf ? [buf] : []); }
+const njCu = (m) => ['nk_doc', 'nk_dx', 'nk_tt'].includes(m.k) && m.luot !== njLuot;     // ket qua cua lan doc truoc: bo
+function njFail(m) { njBusy = false; if (njCu(m)) { njUpd(); return; } njState('bad', 'Có lỗi'); njErr(m.msg); window.__lastError = m; njUpd(); }
 function njDone(m) {
   njBusy = false; const r = m.res;
+  if (njCu(m)) { njUpd(); return; }
   if (m.k === 'nk_dm') {
     njDm = {muc: r.dm.muc, nguon: r.dm.nguon, n: r.n, ten: njDmTen || 'định mức', ngay: new Date().toLocaleDateString('vi-VN')};
     IDB.set('nk_dm', njDm); njDmHien(); NK.them('Nạp định mức nhật ký', njDm.ten, r.n + ' mục');
+  } else if (m.k === 'nk_dx') {
+    const cu = {}; njRows.forEach(x => { cu[x.ngay] = x; });
+    njRows = r.ngay.map(x => { const o = cu[x.ngay]; if (!o) return x;
+      ['sang', 'chieu', 'mua_sang', 'mua_chieu', 'vsmt', 'atld', '_sua_tt'].forEach(k => { x[k] = o[k]; });
+      if (o._sua_nl) ['cong_nhan', 'thiet_bi', '_sua_nl'].forEach(k => { x[k] = o[k]; });
+      return x; });
+    $('njXacNhan').checked = false; njRender();
   } else if (m.k === 'nk_doc') {
-    njRows = r.ngay; njRender(); njThoiTiet();
+    njRows = r.ngay; $('njXacNhan').checked = false; njRender(); njThoiTiet();
     NK.them('Đọc nhật ký', njFile.name, njRows.length + ' ngày');
   } else if (m.k === 'nk_tt') {
     let n = 0;
@@ -1041,10 +1061,13 @@ $('njDm').addEventListener('change', async (e) => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
   if (!/\.(xlsb|xlsx)$/i.test(f.name)) { njErr('File định mức phải là .xlsb hoặc .xlsx (file Mã công việc).'); return; }
   if (!ready) { njErr('Bộ xử lý chưa sẵn sàng, chờ một chút rồi chọn lại.'); return; }
+  if (njBan()) { njErr('Đang xử lý — chờ xong rồi chọn file định mức.'); return; }
   njBusy = true; njUpd(); njState('busy', 'Đang đọc định mức…'); const buf = await f.arrayBuffer(); njDmTen = f.name; njGui('nk_dm', {ten: f.name}, buf);
 });
 function njChon(f) {
   if (!f) return;
+  if (njBan()) { njErr('Đang xử lý nhật ký trước — chờ xong rồi chọn file mới.'); return; }
+  njLuot++;
   if (!/\.pdf$/i.test(f.name)) { njErr('Chọn file PDF nhật ký thi công.'); return; }
   njFile = f; njRows = []; njErr(''); $('njFn').textContent = '';
   const ul = $('njList'); ul.textContent = ''; const li = document.createElement('li'); const a = document.createElement('span'); a.textContent = f.name; const b = document.createElement('span'); b.textContent = kb(f.size); li.append(a, b); ul.append(li);
@@ -1057,7 +1080,15 @@ njDrop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === '
 ['dragenter', 'dragover'].forEach(t => njDrop.addEventListener(t, (e) => { e.preventDefault(); njDrop.classList.add('over'); }));
 ['dragleave', 'drop'].forEach(t => njDrop.addEventListener(t, (e) => { e.preventDefault(); njDrop.classList.remove('over'); }));
 njDrop.addEventListener('drop', (e) => njChon(e.dataTransfer.files[0]));
-$('njDoc').addEventListener('click', async () => { if (!njFile || !njDm || njBusy) return; njRows = []; njTtNguon = ''; njRender(); njBusy = true; njUpd(); njGui('nk_doc', {dm: {muc: njDm.muc}}, await njFile.arrayBuffer()); });
+$('njDoc').addEventListener('click', async () => { if (!njFile || !njDm || njBan()) return; njLuot++; njRows = []; njTtNguon = ''; njRender(); njBusy = true; njUpd(); njGui('nk_doc', {dm: {muc: njDm.muc}, tran: [njTran.n, njTran.x]}, await njFile.arrayBuffer()); });
+function njTranDoi() {
+  const n = Math.max(0, Math.min(99, Math.round(+$('njTranN').value || 0))), x = Math.max(0, Math.min(99, Math.round(+$('njTranX').value || 0)));
+  njTran = {n, x}; $('njTranN').value = n; $('njTranX').value = x; IDB.set('nk_tran', njTran);
+  if (njRows.length && njDm && !njBan()) njGui('nk_dx', {dm: {muc: njDm.muc}, tran: [n, x]});
+}
+$('njTranN').addEventListener('change', njTranDoi); $('njTranX').addEventListener('change', njTranDoi);
+IDB.get('nk_tran').then(v => { if (v && v.n != null) { njTran = v; $('njTranN').value = v.n; $('njTranX').value = v.x; } });
+$('njXacNhan').addEventListener('change', njUpd);
 async function njLayTT(ngay0, ngay1) {           // Open-Meteo: du bao luu tru (toi hom nay) -> du phong ERA5
   const q = 'latitude=' + NJ_TOADO.lat + '&longitude=' + NJ_TOADO.lon + '&start_date=' + ngay0 + '&end_date=' + ngay1 + '&hourly=temperature_2m,precipitation&timezone=Asia%2FHo_Chi_Minh';
   for (const u of ['https://historical-forecast-api.open-meteo.com/v1/forecast?', 'https://archive-api.open-meteo.com/v1/archive?']) {
@@ -1072,9 +1103,12 @@ async function njLayTT(ngay0, ngay1) {           // Open-Meteo: du bao luu tru (
 }
 async function njThoiTiet() {
   if (!njRows.length) return;
-  const ds = njRows.map(x => x.ngay).sort(); const hn = new Date().toISOString().slice(0, 10);
-  njTtNguon = 'Đang lấy thời tiết…'; njRender();
+  const ds = njRows.map(x => x.ngay).sort(); const d = new Date(); const hn = new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  if (ds[0] > hn) { njTtNguon = 'Các ngày trong nhật ký đều sau hôm nay — chưa có số liệu thời tiết, anh nhập tay.'; njRender(); return; }
+  const luot = njLuot; njTtDang = true; njTtNguon = 'Đang lấy thời tiết…'; njRender(); njUpd(); njState('busy', 'Đang lấy thời tiết…');
   const js = await njLayTT(ds[0], ds[ds.length - 1] > hn ? hn : ds[ds.length - 1]);
+  njTtDang = false;
+  if (luot !== njLuot) { njUpd(); return; }
   if (!js) { njTtNguon = 'Không lấy được thời tiết (mất mạng hoặc máy chủ thời tiết không trả lời) — anh nhập tay, hoặc bấm "Lấy lại thời tiết".'; njRender(); njUpd(); return; }
   njGui('nk_tt', {js});
 }
@@ -1088,13 +1122,18 @@ function njRender() {
   $('nk3').style.color = thieu ? 'var(--bad)' : 'var(--ok)'; $('njTt').textContent = njTtNguon;
   const tb = $('njBody'); tb.textContent = '';
   njRows.forEach((x, i) => {
-    const tr = document.createElement('tr'); if (x.thieu && x.thieu.length) tr.className = 'thieu';
+    const tr = document.createElement('tr'); if ((x.thieu && x.thieu.length) || x.vuot || (x.thieu_o && x.thieu_o.length) || (x.doc_loi && x.doc_loi.length)) tr.className = 'thieu';
     const td = () => { const c = document.createElement('td'); tr.append(c); return c; };
     const c0 = td(); c0.className = 'ngay'; const b = document.createElement('b'); b.textContent = x.ngay_vn; const sm = document.createElement('small'); sm.textContent = x.so_viec + ' việc · ' + fmt(x.cong) + ' công · ' + x.so_trang + ' tr.'; c0.append(b, sm);
-    if (x.thieu && x.thieu.length) { const w = document.createElement('span'); w.className = 'canh'; w.textContent = 'Chưa có định mức: ' + x.thieu.join('; '); c0.append(w); }
+    const canh = (t, cls) => { const w = document.createElement('span'); w.className = cls || 'canh'; w.textContent = t; c0.append(w); };
+    if (x.thieu && x.thieu.length) canh('Chưa có định mức: ' + x.thieu.join('; '));
+    if (x.vuot) canh('Định mức ' + x.cong_nhan_dm + ' người / ' + x.xe_dm + ' xe thang — vượt năng lực, đã chặn ở ' + njTran.n + '/' + String(njTran.x).padStart(2, '0'));
+    if (x.thieu_o && x.thieu_o.length) canh('Không tìm thấy chỗ điền: ' + x.thieu_o.join(', '));
+    if (x.doc_loi && x.doc_loi.length) canh('Không đọc được dòng: ' + x.doc_loi.join(' | '));
+    if (x.chi_cung_cap) canh('Chỉ cung cấp vật tư/dịch vụ — để trống nhân lực, thiết bị', 'hint');
     const o = (k, cls, typ, lab) => { const c = td(); const inp = document.createElement('input'); inp.type = typ; inp.className = cls; inp.value = x[k] == null ? '' : x[k]; inp.setAttribute('aria-label', lab + ' ngày ' + x.ngay_vn);
       if (typ === 'number') { inp.min = 0; inp.max = 99; inp.step = 1; inp.inputMode = 'numeric'; }
-      inp.addEventListener('change', () => { x[k] = typ === 'number' ? (inp.value === '' ? 0 : Math.max(0, Math.min(99, Math.round(+inp.value || 0)))) : inp.value.trim(); if (k === 'sang' || k === 'chieu') x._sua_tt = true; if (typ === 'number') inp.value = x[k] || ''; });
+      inp.addEventListener('change', () => { x[k] = typ === 'number' ? (inp.value === '' ? 0 : Math.max(0, Math.min(99, Math.round(+inp.value || 0)))) : inp.value.trim(); if (k === 'sang' || k === 'chieu') x._sua_tt = true; if (k === 'cong_nhan' || k === 'thiet_bi') x._sua_nl = true; if (typ === 'number') inp.value = x[k] || ''; });
       c.append(inp); return inp; };
     o('sang', 'nd', 'text', 'Nhiệt độ sáng'); o('chieu', 'nd', 'text', 'Nhiệt độ chiều');
     const cm = td(); const mw = document.createElement('div'); mw.className = 'mua';

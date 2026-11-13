@@ -257,8 +257,13 @@ def de_xuat(ngay, dm, tran=None):
 
 
 # ---------------- Dien vao PDF ----------------
-def dien(du_lieu, gia_tri, thu_muc_font, log=print, giu_ky=False, ngay=None):
-    """gia_tri: {'YYYY-MM-DD': {sang, chieu, mua_sang, mua_chieu, cong_nhan, thiet_bi, vsmt, atld}}"""
+FONT_SO_TRANG = 'Carlito-Regular.ttf'                  # chu khong chan nhu mau "Trang 34"
+_CHAN = re.compile(r'^Ngày\s+\d{1,2}\s+tháng\s+\d{1,2}\s+năm\s+\d{4}\s*-\s*\d+/\d+$')
+
+
+def dien(du_lieu, gia_tri, thu_muc_font, log=print, giu_ky=False, ngay=None, so_trang=None):
+    """gia_tri: {'YYYY-MM-DD': {sang, chieu, mua_sang, mua_chieu, cong_nhan, thiet_bi, vsmt, atld}}
+    so_trang: {'bat_dau': 1} -> ghi "Trang N" giua chan moi trang (cung hang chu "Ngày … - k/n"); None: khong danh so."""
     import xuat_pdf, bcsc_sua as B
     ngay = ngay or doc_nhat_ky(du_lieu)
     ttf = xuat_pdf.TTF(open(os.path.join(thu_muc_font, B.FONT_CHU), 'rb').read(), B.FONT_CHU)
@@ -280,7 +285,24 @@ def dien(du_lieu, gia_tri, thu_muc_font, log=print, giu_ky=False, ngay=None):
         sua.setdefault(so, [None, [], []])[1].append('BT /HCBC %.2f Tf 0 0 0 rg 1 0 0 1 %.2f %.2f Tm %s Tj ET' % (sz, x, y, hexs(s)))
 
     import pdfplumber
-    H = {i: float(p.height) for i, p in enumerate(pdfplumber.open(io.BytesIO(du_lieu)).pages)}
+    _pl = pdfplumber.open(io.BytesIO(du_lieu))
+    H = {i: float(p.height) for i, p in enumerate(_pl.pages)}
+    n_so = 0; fonts_them = []
+    if so_trang:
+        tts = xuat_pdf.TTF(open(os.path.join(thu_muc_font, FONT_SO_TRANG), 'rb').read(), FONT_SO_TRANG); dung_s = {}
+        try: n0 = int(so_trang.get('bat_dau', 1))
+        except (TypeError, ValueError): n0 = 1
+        for i, pg in enumerate(_pl.pages):
+            y = 24.0
+            for l in reversed(pg.extract_text_lines()):
+                if _CHAN.match(l['text'].strip()): y = _y(l['chars'][0]) + 1.5; break
+            s = 'Trang %d' % (n0 + i); o = []
+            for ch in s:
+                g_ = tts.cmap.get(ord(ch)); dung_s[g_] = ch; o.append('%04X' % g_)
+            x = float(pg.width) / 2 - tts.rong(s, 12) / 2
+            sua.setdefault(i, [None, [], []])[1].append('BT /HCSO 12 Tf 0 0 0 rg 1 0 0 1 %.2f %.2f Tm <%s> Tj ET' % (x, y, ''.join(o)))
+            n_so += 1
+        fonts_them.append(('/HCSO', B._font_obj(tts, dung_s, 'HCNKSO+Carlito')))
     n_tick = 0; n_ngay = 0
     for n in ngay:
         g = gia_tri.get(n['ngay'])
@@ -312,11 +334,11 @@ def dien(du_lieu, gia_tri, thu_muc_font, log=print, giu_ky=False, ngay=None):
                 'q 0 0 0 RG 1.4 w 1 J 1 j %.2f %.2f m %.2f %.2f l %.2f %.2f l S Q' % (
                     x0 + 0.18 * w_, y0 + 0.52 * h_, x0 + 0.42 * w_, y0 + 0.2 * h_, x0 + 0.9 * w_, y0 + 0.92 * h_))
             n_tick += 1
-    fonts = [('/HCBC', B._font_obj(ttf, dung))] if dung else []
+    fonts = ([('/HCBC', B._font_obj(ttf, dung))] if dung else []) + fonts_them
     if giu_ky:
         out, bo, (phang, khong_ve) = B._ghi_sach(du_lieu, sua, fonts, None, giu_hinh=True)
         log('Nhật ký: điền %d ngày, tick %d ô; giữ %d hình chữ ký số' % (n_ngay, n_tick, phang))
-        return dict(pdf=out, ngay=n_ngay, tick=n_tick, chu_ky_bo=bo, ky_giu=phang, ky_khong_ve=khong_ve, che_do='giu_ky')
+        return dict(pdf=out, ngay=n_ngay, tick=n_tick, chu_ky_bo=bo, ky_giu=phang, ky_khong_ve=khong_ve, che_do='giu_ky', so_trang=n_so)
     out, bo, _ = B._ghi_sach(du_lieu, sua, fonts, None)
     log('Nhật ký: điền %d ngày, tick %d ô; bỏ %d chữ ký số' % (n_ngay, n_tick, bo))
-    return dict(pdf=out, ngay=n_ngay, tick=n_tick, chu_ky_bo=bo, ky_giu=0, ky_khong_ve=0, che_do='bo_ky')
+    return dict(pdf=out, ngay=n_ngay, tick=n_tick, chu_ky_bo=bo, ky_giu=0, ky_khong_ve=0, che_do='bo_ky', so_trang=n_so)

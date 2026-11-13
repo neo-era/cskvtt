@@ -152,6 +152,37 @@ with tempfile.TemporaryDirectory() as d:
 rd = __import__('pypdf').PdfReader(io.BytesIO(out))
 T('bỏ chữ ký (mặc định): không còn ô ký số', not any((a.get_object().get('/FT') == '/Sig') for p in rd.pages for a in (p.get('/Annots') or [])) and b'/ByteRange' not in out)
 
+print('6b. Đánh số trang "Trang N"')
+R3 = N.dien(goc, gt, FONTS, log=lambda *a: None, so_trang={'bat_dau': 1})
+p3 = pdfplumber.open(io.BytesIO(R3['pdf']))
+def _trang(pg):
+    ws = [w_ for w_ in pg.extract_words() if w_['top'] > pg.height - 60]
+    for i_, w_ in enumerate(ws):
+        if w_['text'] == 'Trang' and i_ + 1 < len(ws) and ws[i_ + 1]['text'].isdigit(): return int(ws[i_ + 1]['text']), w_
+    return None, None
+so = [_trang(pg)[0] for pg in p3.pages]
+T('mọi trang có "Trang N" liên tục từ 1', so == list(range(1, len(p3.pages) + 1)), so[:8])
+n1, w1 = _trang(p3.pages[0])
+T('số trang nằm giữa chân trang, cùng hàng chữ "Ngày … - k/n"', w1 and abs((w1['x0'] + 30) - float(p3.pages[0].width) / 2) < 25 and w1['bottom'] > p3.pages[0].height - 35, w1 and (w1['x0'], w1['bottom']))
+T('chữ số trang kiểu không chân (Carlito) như mẫu', w1 and 'Carlito' in [c_ for c_ in p3.pages[0].chars if c_['text'] == 'T' and c_['top'] > p3.pages[0].height - 60][0]['fontname'])
+R4 = N.dien(goc, gt, FONTS, log=lambda *a: None, so_trang={'bat_dau': 35})
+T('bắt đầu từ số khác (35)', _trang(pdfplumber.open(io.BytesIO(R4['pdf'])).pages[1])[0] == 36)
+T('không chọn đánh số → không có "Trang N"', _trang(po.pages[0])[0] is None)
+KY = sys.argv[4] if len(sys.argv) > 4 else None
+if KY:
+    print('6c. Nhật ký đã ký số')
+    gk = open(KY, 'rb').read(); nk = N.doc_nhat_ky(gk); dk = N.de_xuat(nk, dm)
+    gtk = {x['ngay']: dict(x, sang='29°C – 31°C', chieu='28°C – 32°C') for x in dk}
+    Rb = N.dien(gk, gtk, FONTS, log=lambda *a: None, so_trang={'bat_dau': 1})
+    T('bỏ chữ ký: gỡ hết chữ ký số, không còn /ByteRange', Rb['chu_ky_bo'] >= 1 and b'/ByteRange' not in Rb['pdf'], Rb['chu_ky_bo'])
+    Rg = N.dien(gk, gtk, FONTS, log=lambda *a: None, giu_ky=True, so_trang={'bat_dau': 1})
+    T('giữ hình ký: vẽ lại hình chữ ký số đã ký', Rg['ky_giu'] == Rb['chu_ky_bo'] and Rg['ky_khong_ve'] == 0 and b'/ByteRange' not in Rg['pdf'], (Rg['ky_giu'], Rg['ky_khong_ve']))
+    with tempfile.TemporaryDirectory() as d:
+        for nm, b_ in (('b', Rb['pdf']), ('g', Rg['pdf'])):
+            f = os.path.join(d, nm + '.pdf'); open(f, 'wb').write(b_)
+            q = subprocess.run(['qpdf', '--check', f], capture_output=True, text=True)
+            T('qpdf --check (%s)' % ('bỏ ký' if nm == 'b' else 'giữ hình ký'), q.returncode == 0, q.stdout[-200:])
+
 print('7. Ca xấu')
 try:
     N.doc_nhat_ky(b'%PDF-1.4 hong'); T('PDF hỏng → báo lỗi rõ', False)

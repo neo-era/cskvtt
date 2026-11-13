@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>Hoàn công CSKVTT v2.8.0</title>
+<title>Hoàn công CSKVTT v2.8.1</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#14213d">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -200,7 +200,7 @@ td .arr{color:var(--muted)}
 
 
 <header class="top"><div class="in">
-  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.8.0</small></h1>
+  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.8.1</small></h1>
   <p class="tsub"><b>Chiếu sáng khu vực Trung Tâm</b><br>Hồ sơ hoàn công các gói Duy tu chiếu sáng</p>
   <button class="who chua" id="whoBtn" type="button" aria-haspopup="dialog" aria-controls="dkDlg" title="Thông tin người dùng"><span class="av" id="whoAv" aria-hidden="true">?</span><span class="nm" id="whoNm">Chưa đăng ký</span></button>
   <button class="inst" id="instBtn" type="button" hidden aria-label="Cài ứng dụng Hoàn công lên máy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Cài ứng dụng</button>
@@ -396,6 +396,10 @@ td .arr{color:var(--muted)}
           <button type="button" role="radio" id="njKyGiu" aria-checked="false" tabindex="-1">Giữ hình ký</button>
         </div>
       </div>
+      <div class="njtool" style="margin-top:4px">
+        <label class="chk" style="display:inline-flex;gap:8px;align-items:center;min-height:44px;font-size:.9rem"><input type="checkbox" id="njSoTrang" checked> Đánh số trang ("Trang 1, 2, …" giữa chân trang)</label>
+        <label class="hint">bắt đầu từ <input type="number" id="njSoTu" value="1" min="1" max="9999" inputmode="numeric" style="width:72px;min-height:40px" aria-label="Số trang bắt đầu"></label>
+      </div>
       <label class="chk" id="njXnBox" hidden style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:.88rem;min-height:44px"><input type="checkbox" id="njXacNhan"> Tôi đã xem các ngày tô đỏ (vượt năng lực, thiếu định mức hoặc thiếu chỗ điền)</label>
       <div class="out">
         <button class="btn" id="njXuat" type="button" disabled>Xuất PDF đã điền</button>
@@ -514,7 +518,7 @@ function tuDienPhuong() {
 }
 document.getElementById('quan').addEventListener('input', tuDienPhuong);
 tuDienPhuong();
-const BUILD = '2.8.0-c0b0bf';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
+const BUILD = '2.8.1-48547d';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
 const CHECKS_NEW = ['Quy đổi phường theo tủ','Khối lượng QLVH','Kế hoạch quý (biên bản số 5)','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu','Định dạng in'];
 const CHECKS_ADD = ['Phát sinh ngoài KH: chi tiết (BB13) khớp tổng hợp (BB12)','Phát sinh ngoài KH: phường theo tủ','Định dạng in'];
 const ST_PS = 'Ghi phát sinh ngoài KH (12, 13)', ST_IN = 'Định dạng in';
@@ -804,9 +808,11 @@ bcsc_sua.xuat_nho(json.loads(NHO_JS), '/work/tu_nho.xlsx')
     const luot = m.arg && m.arg.luot;
     try {
       py.FS.mkdirTree('/work/nk');
-      if (m.type === 'nk_dien' && !py.FS.analyzePath('/app/fonts/LiberationSerif-Regular.ttf').exists) {
-        py.FS.mkdirTree('/app/fonts'); post({type: 'njstage', label: 'Tải font chữ (lần đầu)'});
-        py.FS.writeFile('/app/fonts/LiberationSerif-Regular.ttf', await getBuf(BASE + 'fonts/LiberationSerif-Regular.ttf'));
+      if (m.type === 'nk_dien') {
+        py.FS.mkdirTree('/app/fonts');
+        for (const f of ['LiberationSerif-Regular.ttf', 'Carlito-Regular.ttf']) {      // chu dien + chu so trang
+          if (!py.FS.analyzePath('/app/fonts/' + f).exists) { post({type: 'njstage', label: 'Tải font chữ (lần đầu)'}); py.FS.writeFile('/app/fonts/' + f, await getBuf(BASE + 'fonts/' + f)); }
+        }
       }
       if (m.buf) py.FS.writeFile('/work/nk/in.bin', new Uint8Array(m.buf));
       py.globals.set('NJ_ARG', JSON.stringify(m.arg || {}));
@@ -829,7 +835,7 @@ try:
     elif k == 'nk_tt':
         out = {'ok': True, 'tt': NJ.thoi_tiet(A['js'])}
     else:
-        R = NJ.dien(NJ_GOC, A['gt'], '/app/fonts', log=lambda *a: None, giu_ky=bool(A.get('giu_ky')), ngay=NJ_NGAY)
+        R = NJ.dien(NJ_GOC, A['gt'], '/app/fonts', log=lambda *a: None, giu_ky=bool(A.get('giu_ky')), ngay=NJ_NGAY, so_trang=A.get('so_trang'))
         open('/work/nk/out.pdf', 'wb').write(R.pop('pdf'))
         out = dict(R, ok=True)
     out = json.dumps(out, ensure_ascii=False)
@@ -1049,7 +1055,7 @@ function njDone(m) {
     const ten = njFile.name.replace(/\.pdf$/i, '') + '_DA_DIEN' + (r.che_do === 'giu_ky' ? '_GIU_KY' : '') + '.pdf';
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([m.pdf], {type: 'application/pdf'})); a.download = ten;
     document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
-    $('njFn').textContent = 'Đã tải: ' + ten + ' · điền ' + r.ngay + ' ngày, tick ' + r.tick + ' ô' + (r.che_do === 'giu_ky' ? ', giữ ' + r.ky_giu + ' hình ký' : r.chu_ky_bo ? ', bỏ ' + r.chu_ky_bo + ' chữ ký số' : '');
+    $('njFn').textContent = 'Đã tải: ' + ten + ' · điền ' + r.ngay + ' ngày, tick ' + r.tick + ' ô' + (r.so_trang ? ', đánh số ' + r.so_trang + ' trang' : '') + (r.che_do === 'giu_ky' ? ', giữ ' + r.ky_giu + ' hình ký' : r.chu_ky_bo ? ', bỏ ' + r.chu_ky_bo + ' chữ ký số' : '');
     NK.them('Xuất nhật ký', ten, r.ngay + ' ngày');
   }
   njUpd();
@@ -1150,7 +1156,9 @@ function njRender() {
 $('njXuat').addEventListener('click', () => {
   if (!njRows.length || njBan() || (njCanXem() && !$('njXacNhan').checked)) return;
   const gt = {}; njRows.forEach(x => { gt[x.ngay] = {sang: x.sang || '', chieu: x.chieu || '', mua_sang: !!x.mua_sang, mua_chieu: !!x.mua_chieu, cong_nhan: x.cong_nhan || 0, thiet_bi: x.thiet_bi || '', vsmt: x.vsmt || '', atld: x.atld || ''}; });
-  njGui('nk_dien', {gt, giu_ky: njGiuKy});
+  const bd = Math.max(1, Math.min(9999, Math.round(+$('njSoTu').value || 1))); $('njSoTu').value = bd;
+  IDB.set('nk_so', {on: $('njSoTrang').checked, tu: bd});
+  njGui('nk_dien', {gt, giu_ky: njGiuKy, so_trang: $('njSoTrang').checked ? {bat_dau: bd} : null});
 });
 function njSetKy(v, luu) {
   njGiuKy = !!v; [['njKyBo', !njGiuKy], ['njKyGiu', njGiuKy]].forEach(([id, on]) => { const b = $(id); b.setAttribute('aria-checked', on); b.tabIndex = on ? 0 : -1; });
@@ -1159,6 +1167,8 @@ function njSetKy(v, luu) {
 $('njKyBo').addEventListener('click', () => njSetKy(false, true)); $('njKyGiu').addEventListener('click', () => njSetKy(true, true));
 [$('njKyBo'), $('njKyGiu')].forEach(b => b.addEventListener('keydown', (e) => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) { e.preventDefault(); njSetKy(!njGiuKy, true); $(njGiuKy ? 'njKyGiu' : 'njKyBo').focus(); } }));
 IDB.get('nk_ky').then(v => njSetKy(v === 'giu', false));
+IDB.get('nk_so').then(v => { if (v) { $('njSoTrang').checked = !!v.on; $('njSoTu').value = v.tu || 1; } $('njSoTu').disabled = !$('njSoTrang').checked; });
+$('njSoTrang').addEventListener('change', () => { $('njSoTu').disabled = !$('njSoTrang').checked; });
 
 // ---------------- Chuyển báo cáo sự cố (BCSC) ----------------
 function scState(st, t) { $('scDot').className = 'dot ' + st; $('scText').textContent = t; }

@@ -148,6 +148,17 @@ sig = [f for f in (af.get_object().get('/Fields', []) if af else []) if f.get_ob
 ann = [a for pg in rd_k.pages for a in (pg.get('/Annots') or []) if a.get_object().get('/FT') == '/Sig']
 T('giữ hình ký: không còn ô ký số (không báo "chữ ký không hợp lệ")', not sig and not ann and '/Perms' not in rd_k.trailer['/Root'], (len(sig), len(ann)))
 T('giữ hình ký: không còn dữ liệu chữ ký số cũ (/Contents chữ ký) trong file', b'/ByteRange' not in rk['pdf'] and b'adbe.pkcs7' not in rk['pdf'])
+from pypdf import PdfWriter as _PW
+from pypdf.generic import NameObject as _N, DictionaryObject as _D
+_w = _PW(clone_from=_PR(io.BytesIO(goc), strict=False)); _ky = []
+for _a in _w.pages[-1].get('/Annots') or []:
+    _o = _a.get_object()
+    if _o.get('/FT') == '/Sig' and _o.get('/V') is not None: _ky.append(_o)
+_ky[0][_N('/AP')] = _D({_N('/N'): _D({_N('/On'): _ky[0]['/AP'].raw_get('/N')})}); _ky[0][_N('/AS')] = _N('/On')   # /N dang dict trang thai
+del _ky[1]['/AP']                                                                                                  # khong co hinh hien thi
+_bb = io.BytesIO(); _w.write(_bb)
+rx = chuyen(_bb.getvalue(), rows, FONTS, log=lambda *a: None, giu_ky=True)
+T('giữ hình ký: /N dạng trạng thái vẫn vẽ được; ô ký không có hình thì báo, không làm hỏng file', rx.get('ky_khong_ve') == 1 and rx['ky_giu'] == rk['ky_giu'] - 1 and rx['thong_ke']['da_doi'] == 78, (rx.get('ky_khong_ve'), rx.get('ky_giu')))
 fk = os.path.join(d, 'giu_ky.pdf'); open(fk, 'wb').write(rk['pdf']); kiem_trang(fk, 'giữ hình ký')
 
 print('4. Ca xấu')

@@ -275,10 +275,10 @@ def chuyen(du_lieu, bang_tra, thu_muc_font, log=print, kieu='sach', sua=None, nh
         fonts = [('/HCBC', _font_obj(ttf, dung))] if dung else []
         if dungb: fonts.append(('/HCBD', _font_obj(ttfb, dungb, 'HCBCSD+LiberationSerif-Bold')))
         if giu_ky:
-            out, bo, phang = _ghi_sach(du_lieu, sua_trang, fonts, None, giu_hinh=True)
+            out, bo, (phang, khong_ve) = _ghi_sach(du_lieu, sua_trang, fonts, None, giu_hinh=True)
             giu = sum(len(v) for v in getattr(tl, 'anh_ky', {}).values()) + phang
-            log('BCSC: %d báo cáo, đổi %d, không đổi %d; giữ %d hình ký (gỡ %d chữ ký số cũ)' % (tk['bao_cao'], tk['da_doi'], tk['khong_doi'], giu, bo))
-            return dict(pdf=out, bao_cao=bao, thong_ke=tk, chu_ky_bo=bo, anh_ky_bo=0, ky_giu=giu, che_do='giu_ky')
+            log('BCSC: %d báo cáo, đổi %d, không đổi %d; giữ %d hình ký (gỡ %d chữ ký số cũ, %d không giữ được hình)' % (tk['bao_cao'], tk['da_doi'], tk['khong_doi'], giu, bo, khong_ve))
+            return dict(pdf=out, bao_cao=bao, thong_ke=tk, chu_ky_bo=bo, anh_ky_bo=0, ky_giu=giu, ky_khong_ve=khong_ve, che_do='giu_ky')
         out, bo, anh = _ghi_sach(du_lieu, sua_trang, fonts, getattr(tl, 'anh_ky', {}))
         log('BCSC: %d báo cáo, đổi %d, không đổi %d; bỏ %d chữ ký số cũ, %d hình chữ ký' % (tk['bao_cao'], tk['da_doi'], tk['khong_doi'], bo, anh))
         return dict(pdf=out, bao_cao=bao, thong_ke=tk, chu_ky_bo=bo, anh_ky_bo=anh, ky_giu=0, che_do='bo_ky')
@@ -420,8 +420,9 @@ def _ghi_sach(du_lieu, sua_trang, fonts, anh_ky=None, giu_hinh=False):
                 if isinstance(r_, IndirectObject): xoa_obj.add(r_.idnum)
                 del xo[t]
         res[NameObject('/XObject')] = xo; pg[NameObject('/Resources')] = res
-    phang = 0
+    phang = 0; khong_ve = 0
     if giu_hinh:                                                # ve hinh chu ky so (da ky) thang len trang
+        af_dr = w._root_object.get('/AcroForm'); af_dr = af_dr.get_object().get('/DR') if af_dr is not None else None
         for so, pg in enumerate(w.pages):
             an = pg.get('/Annots')
             if an is None: continue
@@ -429,22 +430,29 @@ def _ghi_sach(du_lieu, sua_trang, fonts, anh_ky=None, giu_hinh=False):
             for a in an.get_object():
                 o = a.get_object(); par = o.get('/Parent'); fld = par.get_object() if par is not None else o
                 if fld.get('/FT') != '/Sig' or fld.get('/V') is None: continue          # o ky trong: khong ve
-                if int(o.get('/F', 0)) & 2: continue                                    # an
-                ap = o.get('/AP'); n = ap.get_object().get('/N') if ap is not None else None
-                if n is None or '/Rect' not in o: continue
-                ns = n.get_object()
-                if not hasattr(ns, 'get_data'): continue
-                bb = [float(v) for v in ns.get('/BBox', [0, 0, 0, 0])]
-                mx = [float(v) for v in ns.get('/Matrix', [1, 0, 0, 1, 0, 0])]
-                pts = [(x * mx[0] + y * mx[2] + mx[4], x * mx[1] + y * mx[3] + mx[5]) for x in (bb[0], bb[2]) for y in (bb[1], bb[3])]
-                bx0, by0 = min(p[0] for p in pts), min(p[1] for p in pts); bx1, by1 = max(p[0] for p in pts), max(p[1] for p in pts)
-                rc = [float(v) for v in o['/Rect']]; rx0, ry0, rx1, ry1 = min(rc[0], rc[2]), min(rc[1], rc[3]), max(rc[0], rc[2]), max(rc[1], rc[3])
-                if bx1 - bx0 <= 0 or by1 - by0 <= 0: continue
-                sx, sy = (rx1 - rx0) / (bx1 - bx0), (ry1 - ry0) / (by1 - by0)
-                if '/Type' not in ns: ns[NameObject('/Type')] = NameObject('/XObject')
-                if '/Subtype' not in ns: ns[NameObject('/Subtype')] = NameObject('/Form')
-                ref = n if isinstance(n, IndirectObject) else w._add_object(ns)
-                ve.append(('/HCKy%d' % len(ve), ref, (sx, 0, 0, sy, rx0 - bx0 * sx, ry0 - by0 * sy)))
+                f_ = int(o.get('/F', 4))
+                if f_ & (2 | 32) or not f_ & 4: continue                                # an / khong in: ban goc khong in ra
+                try:
+                    ap = o.get('/AP'); n = ap.get_object().get('/N') if ap is not None else None
+                    if n is not None and not hasattr(n.get_object(), 'get_data'):        # /N dang dict trang thai
+                        dn = n.get_object(); k_ = o.get('/AS')
+                        n = dn.raw_get(k_) if k_ is not None and k_ in dn else (dn.raw_get(list(dn.keys())[0]) if len(dn) == 1 else None)
+                    ns = n.get_object() if n is not None else None
+                    if ns is None or not hasattr(ns, 'get_data') or '/Rect' not in o: raise ValueError('không có hình hiển thị')
+                    bb = [float(v.get_object()) for v in ns.get('/BBox', [0, 0, 0, 0])]
+                    mx = [float(v.get_object()) for v in ns.get('/Matrix', [1, 0, 0, 1, 0, 0])]
+                    pts = [(x * mx[0] + y * mx[2] + mx[4], x * mx[1] + y * mx[3] + mx[5]) for x in (bb[0], bb[2]) for y in (bb[1], bb[3])]
+                    bx0, by0 = min(p[0] for p in pts), min(p[1] for p in pts); bx1, by1 = max(p[0] for p in pts), max(p[1] for p in pts)
+                    rc = [float(v.get_object()) for v in o['/Rect']]; rx0, ry0, rx1, ry1 = min(rc[0], rc[2]), min(rc[1], rc[3]), max(rc[0], rc[2]), max(rc[1], rc[3])
+                    if bx1 - bx0 <= 0 or by1 - by0 <= 0: raise ValueError('BBox rỗng')
+                    sx, sy = (rx1 - rx0) / (bx1 - bx0), (ry1 - ry0) / (by1 - by0)
+                    if '/Resources' not in ns and af_dr is not None: ns[NameObject('/Resources')] = af_dr
+                    if '/Type' not in ns: ns[NameObject('/Type')] = NameObject('/XObject')
+                    if '/Subtype' not in ns: ns[NameObject('/Subtype')] = NameObject('/Form')
+                    ref = n if isinstance(n, IndirectObject) else w._add_object(ns)
+                    ve.append(('/HCKy%d' % len(ve), ref, (sx, 0, 0, sy, rx0 - bx0 * sx, ry0 - by0 * sy)))
+                except Exception:
+                    khong_ve += 1
             if not ve: continue
             res = DictionaryObject(pg['/Resources'].get_object()) if '/Resources' in pg else DictionaryObject()
             xo = res.get('/XObject'); xo = DictionaryObject(xo.get_object()) if xo is not None else DictionaryObject()
@@ -453,8 +461,8 @@ def _ghi_sach(du_lieu, sua_trang, fonts, anh_ky=None, giu_hinh=False):
                 xo[NameObject(ten)] = ref
                 lenh.append('q %.4f %.4f %.4f %.4f %.4f %.4f cm %s Do Q' % (m + (ten,)))
             res[NameObject('/XObject')] = xo; pg[NameObject('/Resources')] = res
-            cs = ContentStream(pg.get_contents(), w)
-            pg[NameObject('/Contents')] = st({}, b'q\n' + cs.get_data() + b'\nQ\n' + '\n'.join(lenh).encode() + b'\n')
+            c = pg.get_contents(); goc = c.get_data() if c is not None else b''     # noi byte, khong phan tich lai noi dung
+            pg[NameObject('/Contents')] = st({}, b'q\n' + goc + b'\nQ\n' + '\n'.join(lenh).encode() + b'\n')
             phang += len(ve)
     af = w._root_object.get('/AcroForm')
     if af is not None:
@@ -495,7 +503,8 @@ def _ghi_sach(du_lieu, sua_trang, fonts, anh_ky=None, giu_hinh=False):
         try: pg.compress_content_streams()
         except Exception: pass
     b = io.BytesIO(); w.write(b)
-    return b.getvalue(), bo, (phang if giu_hinh else anh)
+    if giu_hinh: return b.getvalue(), bo, (phang, khong_ve)
+    return b.getvalue(), bo, anh
 
 
 def xuat_nho(nho, out):

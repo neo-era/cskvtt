@@ -120,7 +120,7 @@ td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:12px;flex-wrap:wrap}
 .seg button{border:0;background:transparent;padding:10px 14px;min-height:44px;font:inherit;font-size:.9rem;color:var(--muted);cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--accent);color:#fff;font-weight:600}
+.seg button[aria-pressed="true"],.seg button[aria-checked="true"]{background:var(--accent);color:#fff;font-weight:600}
 [hidden]{display:none!important}
 /* Nút cài ứng dụng (PWA) trên thanh tiêu đề — chỉ hiện khi máy cài được */
 .appver{font-size:.72rem;font-weight:600;color:var(--night-ink);opacity:.75;border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:middle;letter-spacing:.02em}
@@ -350,8 +350,8 @@ td .arr{color:var(--muted)}
         <div class="kyopt">
           <span class="lbl" id="kyLbl">Chữ ký trong file xuất</span>
           <div class="seg" role="radiogroup" aria-labelledby="kyLbl">
-            <button type="button" role="radio" id="kyBo" aria-checked="true" aria-pressed="true">Bỏ chữ ký</button>
-            <button type="button" role="radio" id="kyGiu" aria-checked="false" aria-pressed="false" tabindex="-1">Giữ hình ký</button>
+            <button type="button" role="radio" id="kyBo" aria-checked="true">Bỏ chữ ký</button>
+            <button type="button" role="radio" id="kyGiu" aria-checked="false" tabindex="-1">Giữ hình ký</button>
           </div>
           <p class="hint" id="kyHint"></p>
         </div>
@@ -428,7 +428,7 @@ function tuDienPhuong() {
 }
 document.getElementById('quan').addEventListener('input', tuDienPhuong);
 tuDienPhuong();
-const BUILD = '2.7.0-64b003';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
+const BUILD = '2.7.0-b94487';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
 const CHECKS_NEW = ['Quy đổi phường theo tủ','Khối lượng QLVH','Kế hoạch quý (biên bản số 5)','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu','Định dạng in'];
 const CHECKS_ADD = ['Phát sinh ngoài KH: chi tiết (BB13) khớp tổng hợp (BB12)','Phát sinh ngoài KH: phường theo tủ','Định dạng in'];
 const ST_PS = 'Ghi phát sinh ngoài KH (12, 13)', ST_IN = 'Định dạng in';
@@ -554,6 +554,7 @@ function renderFiles() {
 function updateRun() {
   $('run').disabled = !(ready && (mode === 'add' ? !!hsFile : pdfFiles.length) && mauRec && masterRec && !busy && !pdfDang && !scBusy);
   $('scRun').disabled = !(ready && scFiles.length && masterRec && !busy && !pdfDang && !scBusy);
+  $('kyBo').disabled = $('kyGiu').disabled = scBusy;              // khong doi che do giua luc dang chuyen
   if (!pdfDang) $('savePdf').disabled = scBusy;
   if (!scBusy && !scRes.length) { if (ready) scState(masterRec ? 'ok' : '', masterRec ? (scFiles.length ? 'Sẵn sàng' : 'Chọn file báo cáo sự cố') : 'Chọn bảng tra tủ → phường'); }
 }
@@ -732,7 +733,7 @@ try:
     import bcsc_sua
     R = bcsc_sua.chuyen(open('/work/sc/in.pdf', 'rb').read(), SC_MASTER, '/app/fonts', log=lambda *a: None, sua=json.loads(SC_SUA), nho=json.loads(SC_NHO), giu_ky=bool(SC_GIU))
     open('/work/sc/out.pdf', 'wb').write(R['pdf'])
-    out = json.dumps({'ok': True, 'bao_cao': R['bao_cao'], 'thong_ke': R['thong_ke'], 'chu_ky_bo': R.get('chu_ky_bo', 0), 'anh_ky_bo': R.get('anh_ky_bo', 0), 'ky_giu': R.get('ky_giu', 0), 'che_do': R.get('che_do', 'bo_ky')}, ensure_ascii=False)
+    out = json.dumps({'ok': True, 'bao_cao': R['bao_cao'], 'thong_ke': R['thong_ke'], 'chu_ky_bo': R.get('chu_ky_bo', 0), 'anh_ky_bo': R.get('anh_ky_bo', 0), 'ky_giu': R.get('ky_giu', 0), 'ky_khong_ve': R.get('ky_khong_ve', 0), 'che_do': R.get('che_do', 'bo_ky')}, ensure_ascii=False)
 except Exception as e:
     out = json.dumps({'ok': False, 'error': str(e) or e.__class__.__name__, 'trace': traceback.format_exc()[-1500:]}, ensure_ascii=False)
 out
@@ -740,7 +741,7 @@ out
       const res = JSON.parse(js);
       if (!res.ok) { post({type: 'scfail', idx: m.idx, msg: res.error, trace: res.trace}); return; }
       const x = py.FS.readFile('/work/sc/out.pdf'); const buf = x.buffer.slice(x.byteOffset, x.byteOffset + x.byteLength);
-      post({type: 'scdone', idx: m.idx, pdf: buf, bao_cao: res.bao_cao, thong_ke: res.thong_ke, chu_ky_bo: res.chu_ky_bo, anh_ky_bo: res.anh_ky_bo, ky_giu: res.ky_giu, che_do: res.che_do}, [buf]);
+      post({type: 'scdone', idx: m.idx, pdf: buf, bao_cao: res.bao_cao, thong_ke: res.thong_ke, chu_ky_bo: res.chu_ky_bo, anh_ky_bo: res.anh_ky_bo, ky_giu: res.ky_giu, ky_khong_ve: res.ky_khong_ve, che_do: res.che_do}, [buf]);
     } catch (e) { post({type: 'scfail', idx: m.idx, msg: String(e && e.message || e)}); }
   }
 };`;
@@ -899,18 +900,18 @@ function scNext() {
   const f = scFiles[i];
   f.arrayBuffer().then(buf => {
     const mb = masterRec.buf.slice(0);
-    worker.postMessage({type: 'bcsc', idx: i, name: f.name, pdf: buf, master: {buf: mb, json: !!masterRec.json}, sua: (scRes[i] && scRes[i].sua) || {}, nho: scNho, giu_ky: scGiuKy}, [buf, mb]);
+    worker.postMessage({type: 'bcsc', idx: i, name: f.name, pdf: buf, master: {buf: mb, json: !!masterRec.json}, sua: (scRes[i] && scRes[i].sua) || {}, nho: scNho, giu_ky: !!(scRes[i] && scRes[i].giu_ky)}, [buf, mb]);
   }).catch(e => scFail({idx: i, msg: 'không đọc được file (' + String(e && e.message || e) + ')'}));
 }
 $('scRun').addEventListener('click', () => {
   if (scBusy || !scFiles.length) return;
-  scBusy = true; scErr(''); scRes = scFiles.map(f => ({name: f.name, sua: {}})); renderScRes(); updateRun();
+  scBusy = true; scErr(''); const giu = scGiuKy; scRes = scFiles.map(f => ({name: f.name, sua: {}, giu_ky: giu})); renderScRes(); updateRun();
   scState('busy', 'Đang xử lý… (vài chục giây mỗi file)');
   scQ = scFiles.map((_, i) => i); scNext();
 });
 function scDone(m) {
   const lanSua = scRes[m.idx].dang; delete scRes[m.idx].dang;
-  scRes[m.idx] = Object.assign(scRes[m.idx], {pdf: m.pdf, bao_cao: m.bao_cao, tk: m.thong_ke, ky: m.chu_ky_bo, anh: m.anh_ky_bo, giu: m.ky_giu, che_do: m.che_do}); renderScRes();
+  scRes[m.idx] = Object.assign(scRes[m.idx], {pdf: m.pdf, bao_cao: m.bao_cao, tk: m.thong_ke, ky: m.chu_ky_bo, anh: m.anh_ky_bo, giu: m.ky_giu, khong_ve: m.ky_khong_ve, che_do: m.che_do}); renderScRes();
   if (lanSua) { NK.them('Sửa tay BCSC', scRes[m.idx].name, Object.entries(scRes[m.idx].sua).map(([k, v]) => 'tr.' + k + ' ' + v.tu + ' → ' + v.phuong).join('; ').slice(0, 280)); scNext(); return; }
   const tk = m.thong_ke || {};
   NK.them('Chuyển BCSC', scRes[m.idx].name, tk.bao_cao + ' báo cáo, đổi ' + tk.da_doi + (tk.khong_doi ? ', cần xem ' + tk.khong_doi : '') + (tk.ky_tu_la ? ', ' + tk.ky_tu_la + ' ký tự lạ' : '') + (m.che_do === 'giu_ky' ? ', giữ hình ký' : ', bỏ chữ ký'));
@@ -919,7 +920,7 @@ function scDone(m) {
 function chayLai(i) {                 // sua tay xong: chuyen lai rieng file nay
   if (scBusy) return;
   scBusy = true; scErr(''); updateRun();
-  const r = scRes[i]; r.dang = true; delete r.err; renderScRes();
+  const r = scRes[i]; r.dang = true; delete r.err; r.giu_ky = r.che_do ? r.che_do === 'giu_ky' : r.giu_ky; renderScRes();
   scState('busy', 'Đang cập nhật: ' + r.name + '…');
   scQ = [i]; scNext();
 }
@@ -934,7 +935,7 @@ let scGiuKy = false;
 const KY_HINT = {false: 'Gỡ chữ ký số, ô ký và hình chữ ký tay — xuất bản sạch để ký lại.', true: 'Giữ hình chữ ký tay và hình chữ ký số như bản gốc. Chữ ký số không còn hiệu lực sau khi sửa nên app gỡ phần xác thực, chỉ giữ hình.'};
 function setKy(v, luu) {
   scGiuKy = !!v;
-  [['kyBo', !scGiuKy], ['kyGiu', scGiuKy]].forEach(([id, on]) => { const b = $(id); b.setAttribute('aria-checked', on); b.setAttribute('aria-pressed', on); b.tabIndex = on ? 0 : -1; });
+  [['kyBo', !scGiuKy], ['kyGiu', scGiuKy]].forEach(([id, on]) => { const b = $(id); b.setAttribute('aria-checked', on); b.tabIndex = on ? 0 : -1; });
   $('kyHint').textContent = KY_HINT[scGiuKy];
   if (luu) {
     IDB.set('sc_ky', scGiuKy ? 'giu' : 'bo');
@@ -1021,7 +1022,8 @@ function renderScRes() {
     else if (!r.tk.bao_cao) { p.textContent = r.tk.ky_tu_la ? 'Không đọc được chữ trong file này (' + r.tk.ky_tu_la + ' ký tự lạ) — bảng giải mã chưa có font của file. Gửi file để bổ sung bảng giải mã.' : 'Không thấy báo cáo sự cố nào (mục 3 – "Tủ điều khiển") trong file này.'; if (r.tk.ky_tu_la) p.className = 'err'; w.append(p); }
     else {
       p.textContent = r.tk.bao_cao + ' báo cáo · đổi ' + r.tk.da_doi + (r.tk.khong_doi ? ' · cần xem ' + r.tk.khong_doi : '') + (r.tk.chuc_danh ? ' · đổi chức danh ' + r.tk.chuc_danh + ' khối ký' : '') + ' · tải về: ' + scTen(r.name, r); w.append(p);
-      if (r.che_do === 'giu_ky' && r.tk.da_doi) { const k = document.createElement('div'); k.className = 'db'; k.textContent = 'Giữ ' + (r.giu || 0) + ' hình ký' + (r.ky ? '; đã gỡ ' + r.ky + ' chữ ký số cũ (không còn hiệu lực sau khi sửa)' : '') + ' — dùng như bản in đã ký.'; w.append(k); }
+      if (r.che_do === 'giu_ky' && r.tk.da_doi) { const k = document.createElement('div'); k.className = 'db'; k.textContent = 'Giữ ' + (r.giu || 0) + ' hình ký' + (r.ky ? '; đã gỡ ' + r.ky + ' chữ ký số cũ (không còn hiệu lực sau khi sửa)' : '') + ' — dùng như bản in đã ký.'; w.append(k);
+        if (r.khong_ve) { const e = document.createElement('div'); e.className = 'err'; e.textContent = r.khong_ve + ' chữ ký số không giữ được hình (file không có hình hiển thị đọc được) — kiểm tra lại các trang ký.'; w.append(e); } }
       else if ((r.ky || r.anh) && r.tk.da_doi) { const k = document.createElement('div'); k.className = 'db'; k.textContent = 'Đã bỏ ' + (r.ky ? r.ky + ' chữ ký số cũ, các ô ký' : '') + (r.ky && r.anh ? ' và ' : '') + (r.anh ? r.anh + ' hình chữ ký tay' : '') + ' — file cần ký lại.'; w.append(k); }
       const tw = document.createElement('div'); tw.className = 'tbl';
       const t = document.createElement('table'); t.innerHTML = '<thead><tr><th>Mã SC</th><th>Tủ</th><th>Phường</th><th></th></tr></thead>';

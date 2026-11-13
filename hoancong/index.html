@@ -1148,7 +1148,7 @@ function njRender() {
   });
 }
 $('njXuat').addEventListener('click', () => {
-  if (!njRows.length) return;
+  if (!njRows.length || njBan() || (njCanXem() && !$('njXacNhan').checked)) return;
   const gt = {}; njRows.forEach(x => { gt[x.ngay] = {sang: x.sang || '', chieu: x.chieu || '', mua_sang: !!x.mua_sang, mua_chieu: !!x.mua_chieu, cong_nhan: x.cong_nhan || 0, thiet_bi: x.thiet_bi || '', vsmt: x.vsmt || '', atld: x.atld || ''}; });
   njGui('nk_dien', {gt, giu_ky: njGiuKy});
 });

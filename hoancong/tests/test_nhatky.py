@@ -93,6 +93,25 @@ T('ngày 07/10: đủ 21 việc, có "Tháo dỡ trụ đèn thép" đơn vị "
 T('không ngày nào thiếu ô cần điền', not any(n_['thieu_o'] for n_ in ngay), [(n_['ngay'], n_['thieu_o']) for n_ in ngay if n_['thieu_o']][:3])
 T('ngày 30/10 chỉ cung cấp gói data → để trống nhân lực', [x for x in de_xuat if x['ngay'] == '2026-10-30'][0]['chi_cung_cap'])
 
+print('5b. Ca giả: dòng • hỏng, tên việc xuống dòng, thiếu chỗ điền')
+from reportlab.pdfgen import canvas as _cv
+from reportlab.pdfbase import pdfmetrics as _pm
+from reportlab.pdfbase.ttfonts import TTFont as _TT
+_pm.registerFont(_TT('L', os.path.join(FONTS, 'LiberationSerif-Regular.ttf')))
+_b = io.BytesIO(); _c = _cv.Canvas(_b); _c.setFont('L', 11); _y = 800
+for _s in ['NHẬT KÝ THI CÔNG HÀNG NGÀY', 'Ngày 05 tháng 10 năm 2026', '1. Công việc',
+           '• Lắp đặt cáp nguồn nổi: 0,500 100m', '• Thay thế bóng, chấn lưu, kích đèn HPS 2 cấp công suất',
+           '150/100W: 3,000 bộ', '• Việc hỏng không có khối lượng', '- Ghi chú', '• Tên: abc cái']:
+    _c.drawString(40, _y, _s); _y -= 18
+_c.save()
+_n = N.doc_nhat_ky(_b.getvalue())[0]
+_mu = {m_['ten']: (m_['kl'], m_['dv']) for m_ in _n['muc']}
+T('tên việc xuống dòng được nối lại', _mu.get('Thay thế bóng, chấn lưu, kích đèn HPS 2 cấp công suất 150/100W') == (3.0, 'bộ'), _mu)
+T('dòng • không đọc được thì báo trong doc_loi (2 dòng)', len(_n['doc_loi']) == 2 and any('Việc hỏng' in x for x in _n['doc_loi']), _n['doc_loi'])
+T('ngày thiếu chỗ điền được báo (thieu_o đủ 6 mục)', len(_n['thieu_o']) == 6, _n['thieu_o'])
+_dx = N.de_xuat([_n], dm)[0]
+T('đề xuất mang theo cảnh báo doc_loi/thieu_o để app tô đỏ', _dx['doc_loi'] and _dx['thieu_o'])
+
 print('6. Điền vào PDF')
 gt = {}
 for i, x in enumerate(de_xuat):

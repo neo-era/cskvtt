@@ -125,6 +125,31 @@ xn = os.path.join(d, 'nho.xlsx'); xuat_nho([{'ten': 'Đường A & B Khu ADC', '
 wsx = openpyxl.load_workbook(xn).active
 T('xuất Excel tủ đã nhớ: đủ cột, phường chuẩn "Phường …"', wsx['B2'].value == 'Đường A & B Khu ADC' and wsx['C2'].value == 'Phường Phú Thạnh', [c.value for c in wsx[2]])
 
+print('3d. Giữ hình ký (giu_ky=True)')
+from pypdf import PdfReader as _PR
+import io
+def _dem_do(pdfb):                                   # so lenh ve XObject (Do) moi trang
+    from pypdf.generic import ContentStream
+    rd = _PR(io.BytesIO(pdfb)); kq = []
+    for pg in rd.pages:
+        try: kq.append(sum(1 for o, op in ContentStream(pg.get_contents(), rd).operations if op == b'Do'))
+        except Exception: kq.append(0)
+    return rd, kq
+rk = chuyen(goc, rows, FONTS, log=lambda *a: None, giu_ky=True)
+rb = chuyen(goc, rows, FONTS, log=lambda *a: None)
+T('giữ hình ký: vẫn đổi đủ phường như chế độ bỏ', rk['thong_ke']['da_doi'] == rb['thong_ke']['da_doi'] == 78)
+T('giữ hình ký: không bỏ hình chữ ký tay nào', rk.get('anh_ky_bo', 0) == 0 and rb['anh_ky_bo'] > 0, (rk.get('anh_ky_bo'), rb['anh_ky_bo']))
+T('giữ hình ký: báo số hình ký giữ lại (tay + hình chữ ký số)', rk.get('ky_giu', 0) >= rb['anh_ky_bo'] + rb['chu_ky_bo'] and rk.get('che_do') == 'giu_ky', (rk.get('ky_giu'), rk.get('che_do')))
+_, d_goc = _dem_do(goc); rd_k, d_k = _dem_do(rk['pdf']); _, d_b = _dem_do(rb['pdf'])
+T('giữ hình ký: các trang có hình ký tay giữ đủ lệnh vẽ hình như bản gốc', all(d_k[i] >= d_goc[i] for i in range(len(d_goc))) and sum(d_b) < sum(d_goc), (sum(d_goc), sum(d_k), sum(d_b)))
+T('giữ hình ký: hình chữ ký số được vẽ thẳng lên trang (trang ký có thêm hình)', d_k[-1] >= d_goc[-1] + rb['chu_ky_bo'], (d_goc[-1], d_k[-1]))
+af = rd_k.trailer['/Root'].get('/AcroForm')
+sig = [f for f in (af.get_object().get('/Fields', []) if af else []) if f.get_object().get('/FT') == '/Sig']
+ann = [a for pg in rd_k.pages for a in (pg.get('/Annots') or []) if a.get_object().get('/FT') == '/Sig']
+T('giữ hình ký: không còn ô ký số (không báo "chữ ký không hợp lệ")', not sig and not ann and '/Perms' not in rd_k.trailer['/Root'], (len(sig), len(ann)))
+T('giữ hình ký: không còn dữ liệu chữ ký số cũ (/Contents chữ ký) trong file', b'/ByteRange' not in rk['pdf'] and b'adbe.pkcs7' not in rk['pdf'])
+fk = os.path.join(d, 'giu_ky.pdf'); open(fk, 'wb').write(rk['pdf']); kiem_trang(fk, 'giữ hình ký')
+
 print('4. Ca xấu')
 bot = [x for x in rows if x[0] != 'Nguyễn Du 2']
 r2 = chuyen(goc, bot, FONTS, log=lambda *a: None)

@@ -189,12 +189,14 @@ def _chuan_phuong(p):
     return p if not p or re.match(r'^(Phường|Xã|Thị trấn)\s', p) else 'Phường ' + p
 
 
-def chuyen(du_lieu, bang_tra, thu_muc_font, log=print, kieu='sach', sua=None, nho=None):
+def chuyen(du_lieu, bang_tra, thu_muc_font, log=print, kieu='sach', sua=None, nho=None, giu_ky=False):
     """bang_tra: duong dan (.xlsx/.json) hoac danh sach dong [(ten_tu, phuong, ...)].
     sua: {so trang (chuoi): {'tu': ten tu sua lai, 'phuong': phuong chon tay}} - nguoi dung sua tren app cho file nay.
     nho: [{'ten': ten tu, 'ten_goc': ten doc duoc tu PDF, 'phuong': ...}] - tu da nho tren may (uu tien hon bang tra).
     kieu='sach'    : file moi hoan toan - XOA chu cu, bo lich su sua va cac chu ky cu, giu o ky trong de ky lai.
-    kieu='noi_tiep': ghi noi tiep, giu ban da ky ben trong (phu trang chu cu)."""
+    kieu='noi_tiep': ghi noi tiep, giu ban da ky ben trong (phu trang chu cu).
+    giu_ky=True (voi kieu 'sach'): GIU HINH KY - giu hinh chu ky tay, ve hinh chu ky so thang len trang;
+        van go o/du lieu chu ky so (chu ky so khong con hieu luc sau khi sua)."""
     from pdfminer.pdftypes import resolve1
     import xuat_pdf
     rows = doc_bang_tra(bang_tra) if isinstance(bang_tra, str) else bang_tra
@@ -268,13 +270,18 @@ def chuyen(du_lieu, bang_tra, thu_muc_font, log=print, kieu='sach', sua=None, nh
     tk = dict(ky_tu_la=getattr(tl, 'ky_tu_la', 0), chuc_danh=n_cd, bao_cao=len(bao), da_doi=sum(1 for r in bao if r['phuong_moi'] and not r['ghi_chu']),
               khong_doi=sum(1 for r in bao if not r['phuong_moi'] or r['ghi_chu']))
     if not sua_trang:
-        return dict(pdf=du_lieu, bao_cao=bao, thong_ke=tk, chu_ky_bo=0)
+        return dict(pdf=du_lieu, bao_cao=bao, thong_ke=tk, chu_ky_bo=0, anh_ky_bo=0, ky_giu=0, che_do='giu_ky' if giu_ky else 'bo_ky')
     if kieu == 'sach':
         fonts = [('/HCBC', _font_obj(ttf, dung))] if dung else []
         if dungb: fonts.append(('/HCBD', _font_obj(ttfb, dungb, 'HCBCSD+LiberationSerif-Bold')))
+        if giu_ky:
+            out, bo, phang = _ghi_sach(du_lieu, sua_trang, fonts, None, giu_hinh=True)
+            giu = sum(len(v) for v in getattr(tl, 'anh_ky', {}).values()) + phang
+            log('BCSC: %d báo cáo, đổi %d, không đổi %d; giữ %d hình ký (gỡ %d chữ ký số cũ)' % (tk['bao_cao'], tk['da_doi'], tk['khong_doi'], giu, bo))
+            return dict(pdf=out, bao_cao=bao, thong_ke=tk, chu_ky_bo=bo, anh_ky_bo=0, ky_giu=giu, che_do='giu_ky')
         out, bo, anh = _ghi_sach(du_lieu, sua_trang, fonts, getattr(tl, 'anh_ky', {}))
         log('BCSC: %d báo cáo, đổi %d, không đổi %d; bỏ %d chữ ký số cũ, %d hình chữ ký' % (tk['bao_cao'], tk['da_doi'], tk['khong_doi'], bo, anh))
-        return dict(pdf=out, bao_cao=bao, thong_ke=tk, chu_ky_bo=bo, anh_ky_bo=anh)
+        return dict(pdf=out, bao_cao=bao, thong_ke=tk, chu_ky_bo=bo, anh_ky_bo=anh, ky_giu=0, che_do='bo_ky')
 
     sub, fd_s, cid_s, tu_s, t0_s = _font_obj(ttf, dung)
     g = GhiNoiTiep(du_lieu, tl.pdf.doc)
@@ -338,8 +345,10 @@ def _loc_chu(ops, xoa):
     return kq, bo
 
 
-def _ghi_sach(du_lieu, sua_trang, fonts, anh_ky=None):
-    """Ghi lai TOAN BO file (pypdf): xoa chu cu, them chu moi, bo toan bo o/chu ky so, khong con lich su sua."""
+def _ghi_sach(du_lieu, sua_trang, fonts, anh_ky=None, giu_hinh=False):
+    """Ghi lai TOAN BO file (pypdf): xoa chu cu, them chu moi, bo toan bo o/chu ky so, khong con lich su sua.
+    giu_hinh=True: truoc khi go o chu ky so da ky, ve hinh hien thi (/AP /N) cua no thang len trang.
+    Tra (bytes, so chu ky so da go, so hinh: anh tay da bo | hinh chu ky so da ve len trang)."""
     import io
     from pypdf import PdfReader, PdfWriter
     from pypdf.generic import (ContentStream, DecodedStreamObject, DictionaryObject, NameObject, ArrayObject,
@@ -411,6 +420,42 @@ def _ghi_sach(du_lieu, sua_trang, fonts, anh_ky=None):
                 if isinstance(r_, IndirectObject): xoa_obj.add(r_.idnum)
                 del xo[t]
         res[NameObject('/XObject')] = xo; pg[NameObject('/Resources')] = res
+    phang = 0
+    if giu_hinh:                                                # ve hinh chu ky so (da ky) thang len trang
+        for so, pg in enumerate(w.pages):
+            an = pg.get('/Annots')
+            if an is None: continue
+            ve = []
+            for a in an.get_object():
+                o = a.get_object(); par = o.get('/Parent'); fld = par.get_object() if par is not None else o
+                if fld.get('/FT') != '/Sig' or fld.get('/V') is None: continue          # o ky trong: khong ve
+                if int(o.get('/F', 0)) & 2: continue                                    # an
+                ap = o.get('/AP'); n = ap.get_object().get('/N') if ap is not None else None
+                if n is None or '/Rect' not in o: continue
+                ns = n.get_object()
+                if not hasattr(ns, 'get_data'): continue
+                bb = [float(v) for v in ns.get('/BBox', [0, 0, 0, 0])]
+                mx = [float(v) for v in ns.get('/Matrix', [1, 0, 0, 1, 0, 0])]
+                pts = [(x * mx[0] + y * mx[2] + mx[4], x * mx[1] + y * mx[3] + mx[5]) for x in (bb[0], bb[2]) for y in (bb[1], bb[3])]
+                bx0, by0 = min(p[0] for p in pts), min(p[1] for p in pts); bx1, by1 = max(p[0] for p in pts), max(p[1] for p in pts)
+                rc = [float(v) for v in o['/Rect']]; rx0, ry0, rx1, ry1 = min(rc[0], rc[2]), min(rc[1], rc[3]), max(rc[0], rc[2]), max(rc[1], rc[3])
+                if bx1 - bx0 <= 0 or by1 - by0 <= 0: continue
+                sx, sy = (rx1 - rx0) / (bx1 - bx0), (ry1 - ry0) / (by1 - by0)
+                if '/Type' not in ns: ns[NameObject('/Type')] = NameObject('/XObject')
+                if '/Subtype' not in ns: ns[NameObject('/Subtype')] = NameObject('/Form')
+                ref = n if isinstance(n, IndirectObject) else w._add_object(ns)
+                ve.append(('/HCKy%d' % len(ve), ref, (sx, 0, 0, sy, rx0 - bx0 * sx, ry0 - by0 * sy)))
+            if not ve: continue
+            res = DictionaryObject(pg['/Resources'].get_object()) if '/Resources' in pg else DictionaryObject()
+            xo = res.get('/XObject'); xo = DictionaryObject(xo.get_object()) if xo is not None else DictionaryObject()
+            lenh = []
+            for ten, ref, m in ve:
+                xo[NameObject(ten)] = ref
+                lenh.append('q %.4f %.4f %.4f %.4f %.4f %.4f cm %s Do Q' % (m + (ten,)))
+            res[NameObject('/XObject')] = xo; pg[NameObject('/Resources')] = res
+            cs = ContentStream(pg.get_contents(), w)
+            pg[NameObject('/Contents')] = st({}, b'q\n' + cs.get_data() + b'\nQ\n' + '\n'.join(lenh).encode() + b'\n')
+            phang += len(ve)
     af = w._root_object.get('/AcroForm')
     if af is not None:
         af = af.get_object(); giu = ArrayObject()
@@ -423,7 +468,7 @@ def _ghi_sach(du_lieu, sua_trang, fonts, anh_ky=None):
                 if isinstance(fr_, IndirectObject): ref_bo.add(fr_.idnum); xoa_obj.add(fr_.idnum)
                 for k in f.get('/Kids', []): ref_bo.add(k.idnum); xoa_obj.add(k.idnum)
                 ap = f.get('/AP')                                               # hinh chu ky (appearance)
-                if ap is not None:
+                if ap is not None and not giu_hinh:
                     for vv in ap.get_object().values():
                         if isinstance(vv, IndirectObject): xoa_obj.add(vv.idnum)
             else: giu.append(fr_)
@@ -450,7 +495,7 @@ def _ghi_sach(du_lieu, sua_trang, fonts, anh_ky=None):
         try: pg.compress_content_streams()
         except Exception: pass
     b = io.BytesIO(); w.write(b)
-    return b.getvalue(), bo, anh
+    return b.getvalue(), bo, (phang if giu_hinh else anh)
 
 
 def xuat_nho(nho, out):

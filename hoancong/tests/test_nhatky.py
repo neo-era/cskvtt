@@ -46,9 +46,11 @@ T('xe thang làm tròn lên theo tổng ca (70×0,026 → 02)', k2['thiet_bi'].s
 k5 = N.tinh_nhan_luc([('Lắp đặt cáp nguồn nổi', 9.91, '100m'), ('Lắp kẹp đầu cáp', 122, 'cái')], dm)
 T('vượt năng lực (Q8 19/10): chặn ở 12 người, 03 xe thang và báo vượt', k5['cong_nhan'] == 12 and k5['thiet_bi'].startswith('03 xe thang') and k5['vuot'] and k5['cong_nhan_dm'] > 12 and k5['xe_dm'] > 3, k5)
 k6 = N.tinh_nhan_luc([('Cung cấp gói data 3G/4G kết nối tủ về trung tâm điều khiển', 1, 'tủ')], dm)
-T('ngày chỉ cung cấp vật tư/dịch vụ: để trống nhân lực, thiết bị', k6['chi_cung_cap'] and k6['cong_nhan'] == 0 and k6['thiet_bi'] == '', k6)
+T('ngày chỉ cung cấp vật tư/dịch vụ: ghi 04 người, để trống thiết bị', k6['chi_cung_cap'] and k6['cong_nhan'] == 4 and k6['thiet_bi'] == '', k6)
 k7 = N.tinh_nhan_luc([('Lắp đặt cáp nguồn nổi', 0.5, '100m'), ('Việc lạ', 1, 'cái')], dm, tran=(0, 0))
 T('không chặn khi trần = 0', not k7['vuot'] and k7['cong_nhan'] == 4, k7)
+T('danh sách xe/máy theo định mức để chọn (xe thang đầu tiên)', k5['may'][0] == ['xe thang', 3] and k5['thiet_bi'] == ', '.join('%02d %s' % (n_, t_) for t_, n_ in k5['may']), k5['may'])
+T('tên máy "Xe cẩu 6,5T" không bị cắt ở dấu phẩy', N._ten_may('Xe cẩu 6,5T') == 'xe cẩu 6,5T' and N._ten_may('Máy đầm bê tông, dầm dùi - công suất: 1,5 kW') == 'máy đầm bê tông', N._ten_may('Xe cẩu 6,5T'))
 k3 = N.tinh_nhan_luc([('Việc lạ chưa có định mức', 3, 'cái')], dm)
 T('việc chưa có định mức: báo thiếu, vẫn tối thiểu 1 tổ', k3['thieu'] == ['Việc lạ chưa có định mức'] and k3['cong_nhan'] == 4 and k3['thiet_bi'] == '01 xe thang', k3)
 k4 = N.tinh_nhan_luc([], dm)
@@ -57,12 +59,12 @@ T('ngày không có việc: vẫn 1 tổ', k4['cong_nhan'] == 4 and k4['thiet_bi
 print('4. Thời tiết theo giờ (Open-Meteo) → sáng 7–11h, chiều 13–17h')
 gio = ['2026-10-23T%02d:00' % h for h in range(24)]
 nd = [26 + (h - 6) * 0.5 if 6 <= h <= 14 else 30 for h in range(24)]
-mua = [0] * 24; mua[15] = 2.4
+mua = [0] * 24; mua[15] = 6.0; mua[9] = 2.0
 tt = N.thoi_tiet({'hourly': {'time': gio, 'temperature_2m': nd, 'precipitation': mua}})
 d = tt['2026-10-23']
 T('sáng: min–max 7..11h, làm tròn', d['sang'] == '27°C – 29°C', d)
 T('chiều: min–max 13..17h', d['chieu'] == '30°C – 30°C' or d['chieu'] == '30°C', d)
-T('mưa buổi chiều → "Có mưa", sáng vẫn bình thường', d['mua_chieu'] and not d['mua_sang'], d)
+T('mưa lớn buổi chiều (6 mm) → "Có mưa"; mưa nhỏ buổi sáng (2 mm) vẫn bình thường', d['mua_chieu'] and not d['mua_sang'], d)
 T('dữ liệu rỗng/lỗi → không có ngày nào, không sập', N.thoi_tiet({}) == {} and N.thoi_tiet({'hourly': {'time': gio, 'temperature_2m': [None] * 24, 'precipitation': [None] * 24}}) == {})
 
 print('5. Đọc file nhật ký (NKTC)')
@@ -91,7 +93,7 @@ d7 = [n_ for n_ in ngay if n_['ngay'] == '2026-10-07'][0]
 dv7 = {x['ten']: x['dv'] for x in d7['muc']}
 T('ngày 07/10: đủ 21 việc, có "Tháo dỡ trụ đèn thép" đơn vị "1 Trụ"', len(d7['muc']) == 21 and dv7.get('Tháo dỡ trụ đèn thép') == '1 Trụ', (len(d7['muc']), dv7.get('Tháo dỡ trụ đèn thép')))
 T('không ngày nào thiếu ô cần điền', not any(n_['thieu_o'] for n_ in ngay), [(n_['ngay'], n_['thieu_o']) for n_ in ngay if n_['thieu_o']][:3])
-T('ngày 30/10 chỉ cung cấp gói data → để trống nhân lực', [x for x in de_xuat if x['ngay'] == '2026-10-30'][0]['chi_cung_cap'])
+T('ngày 30/10 chỉ cung cấp gói data → 04 người, không xe', [x for x in de_xuat if x['ngay'] == '2026-10-30'][0]['chi_cung_cap'])
 
 print('5b. Ca giả: dòng • hỏng, tên việc xuống dòng, thiếu chỗ điền')
 from reportlab.pdfgen import canvas as _cv
@@ -195,6 +197,10 @@ try:
     N.doc_dinh_muc(b'PK\x03\x04 khong phai', 'x.xlsb'); T('file định mức hỏng → báo lỗi rõ', False)
 except ValueError as e: T('file định mức hỏng → báo lỗi rõ', 'định mức' in str(e).lower(), e)
 gt2 = {k_: dict(v, cong_nhan=0, thiet_bi='') for k_, v in gt.items()}
+gt3 = {k_: dict(v, thiet_bi='01 xe thang, 01 cần trục ô tô, 01 máy khoan bê tông cầm tay, 01 máy trộn bê tông, 01 máy đầm bê tông, 01 xe cẩu 6,5T') for k_, v in gt.items()}
+_p = pdfplumber.open(io.BytesIO(N.dien(goc, gt3, FONTS, log=lambda *a: None)['pdf'])).pages[0]
+_w = [w_ for w_ in _p.extract_words() if w_['top'] > 190 and w_['top'] < 240]
+T('thiết bị dài: xuống dòng chấm thứ hai, không tràn lề phải', max(w_['x1'] for w_ in _w) <= float(_p.width) - 20 and any(w_['text'] == '6,5T' for w_ in _w) and len({round(w_['top']) for w_ in _w if w_['x0'] < 140 and w_['top'] > 220}) >= 1, [(w_['text'], round(w_['x0']), round(w_['top'])) for w_ in _w][-6:])
 R2 = N.dien(goc, gt2, FONTS, log=lambda *a: None)
 T('anh xoá trắng công nhân/thiết bị → để trống, không ghi "00"', '00 ' not in pdfplumber.open(io.BytesIO(R2['pdf'])).pages[0].extract_text().split('Công nhân:')[1][:12])
 

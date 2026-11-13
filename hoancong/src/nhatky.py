@@ -89,7 +89,7 @@ def tra_dinh_muc(dm, ten):
 
 def _ten_may(t):
     t = re.sub(r'ôtô', 'ô tô', t, flags=re.I)
-    t = re.split(r'\s+-\s+|\s+sức nâng|,', t)[0].strip()
+    t = re.split(r'\s+-\s+|\s+sức nâng|,\s+(?=\D)', t)[0].strip()     # khong cat '6,5T'
     return t[:1].lower() + t[1:]
 
 
@@ -109,17 +109,17 @@ def tinh_nhan_luc(viec, dm, tran=None):
             else:
                 t = _ten_may(mt); khac[t] = khac.get(t, 0) + kl * ca
     if viec and not thieu and cong <= 1e-9 and nang <= 1e-9 and not any(v > 1e-9 for v in khac.values()):
-        return dict(cong_nhan=0, cong=0.0, thiet_bi='', thieu=[], cong_nhan_dm=0, xe_dm=0, vuot=False, chi_cung_cap=True)
+        return dict(cong_nhan=TO_NGUOI, cong=0.0, thiet_bi='', may=[], thieu=[], cong_nhan_dm=TO_NGUOI, xe_dm=0, vuot=False, chi_cung_cap=True)   # chi cung cap: ghi 1 to nguoi, khong ghi xe
     cn_dm = max(TO_NGUOI, math.ceil(cong - 1e-9)); xe_dm = max(TO_XE, math.ceil(nang - 1e-9))
     cn, xe = (min(cn_dm, tn) if tn else cn_dm), (min(xe_dm, tx) if tx else xe_dm)
-    tb = ['%02d xe thang' % xe]
-    tb += ['%02d %s' % (max(1, math.ceil(v - 1e-9)), t) for t, v in sorted(khac.items()) if v >= MAY_NHO - 1e-9]
-    return dict(cong_nhan=cn, cong=round(cong, 6), thiet_bi=', '.join(tb), thieu=thieu, cong_nhan_dm=cn_dm, xe_dm=xe_dm,
+    may = [['xe thang', xe]] + [[t, max(1, math.ceil(v - 1e-9))] for t, v in sorted(khac.items()) if v >= MAY_NHO - 1e-9]
+    tb = ['%02d %s' % (n, t) for t, n in may]
+    return dict(cong_nhan=cn, cong=round(cong, 6), thiet_bi=', '.join(tb), may=may, thieu=thieu, cong_nhan_dm=cn_dm, xe_dm=xe_dm,
                 ca_xe=round(nang, 4), vuot=cn < cn_dm or xe < xe_dm, chi_cung_cap=False)
 
 
 # ---------------- Thoi tiet (Open-Meteo, theo gio) ----------------
-def thoi_tiet(js, sang=(7, 11), chieu=(13, 17), nguong_mua=0.5):
+def thoi_tiet(js, sang=(7, 11), chieu=(13, 17), nguong_mua=5.0):     # chi mua lon (>= 5 mm/buoi) moi ghi "Có mưa" (anh Lam chot)
     """-> {'YYYY-MM-DD': {'sang','chieu' (vd '29°C – 31°C'), 'mua_sang','mua_chieu'}}"""
     h = (js or {}).get('hourly') or {}
     tg, nd, mu = h.get('time') or [], h.get('temperature_2m') or [], h.get('precipitation') or []
@@ -199,7 +199,9 @@ def doc_nhat_ky(du_lieu):
                 ng = _cum(l, 'người')
                 if w and ng: vt['cong_nhan'] = {'trang': so, 'y': _y(cs[0]), 'size': cs[0]['size'], 'x': (w[0]['x1'] + ng[0][0]) / 2}
             elif t.startswith('2.2. Thiết bị thi công') and 'thiet_bi' not in vt:
-                vt['thiet_bi'] = {'trang': so, 'y': _y(cs[0]), 'size': cs[0]['size'], 'x': l['x1'] + 6, 'x_max': float(pg.width) - 24}
+                y_ = _y(cs[0]); dc = [ln for ln in pg.lines if ln['x0'] < 40 and ln['x1'] > float(pg.width) - 60 and 8 < y_ - (float(pg.height) - ln['top']) < 26]
+                y2 = (float(pg.height) - dc[0]['top']) + 1 if dc else y_ - 17.6          # dong cham thu hai ben duoi
+                vt['thiet_bi'] = {'trang': so, 'y': y_, 'size': cs[0]['size'], 'x': l['x1'] + 6, 'x_max': float(pg.width) - 24, 'x2': l['x0'], 'y2': y2}
             elif re.fullmatch(r'Tốt\s+Bình thường\s+Kém', t):     # hang o tick (muc 4 roi muc 5; co the sang trang)
                 o = _o_tick(pg, l, so)
                 if len(o) == 3: cur['_tick'].append(o)
@@ -249,7 +251,7 @@ def de_xuat(ngay, dm, tran=None):
         k = tinh_nhan_luc([(x['ten'], x['kl'], x['dv']) for x in n['muc']], dm, tran)
         y, mth, d = n['ngay'].split('-')
         kq.append(dict(ngay=n['ngay'], ngay_vn='%s/%s/%s' % (d, mth, y), so_trang=len(n['trang']), so_viec=len(n['muc']),
-                       cong_nhan=k['cong_nhan'], cong=k['cong'], thiet_bi=k['thiet_bi'], thieu=k['thieu'],
+                       cong_nhan=k['cong_nhan'], cong=k['cong'], thiet_bi=k['thiet_bi'], may=k['may'], thieu=k['thieu'],
                        cong_nhan_dm=k['cong_nhan_dm'], xe_dm=k['xe_dm'], vuot=k['vuot'], chi_cung_cap=k['chi_cung_cap'],
                        doc_loi=n.get('doc_loi', []), thieu_o=n.get('thieu_o', []),
                        sang='', chieu='', mua_sang=False, mua_chieu=False, vsmt='binh_thuong', atld='binh_thuong'))
@@ -322,9 +324,15 @@ def dien(du_lieu, gia_tri, thu_muc_font, log=print, giu_ky=False, ngay=None, so_
         if cn and so_cn > 0: chu(cn['trang'], '%02d' % so_cn, cn['x'], cn['y'], cn['size'], True)
         tb = vt.get('thiet_bi'); s = re.sub(r'\s+', ' ', str(g.get('thiet_bi') or '')).strip()
         if tb and s:
-            sz = tb['size']; w = ttf.rong(s, sz); cho = tb['x_max'] - tb['x']
-            if w > cho: sz = max(7.0, sz * cho / w)
-            chu(tb['trang'], s, tb['x'], tb['y'], sz)
+            sz = tb['size']; cho = tb['x_max'] - tb['x']
+            if ttf.rong(s, sz) <= cho: chu(tb['trang'], s, tb['x'], tb['y'], sz)
+            else:                                                        # xuong dong cham thu hai
+                tu = s.split(' '); d1 = ''
+                while tu and ttf.rong((d1 + ' ' + tu[0]).strip(), sz) <= cho: d1 = (d1 + ' ' + tu.pop(0)).strip()
+                d2 = ' '.join(tu); cho2 = tb['x_max'] - tb.get('x2', tb['x'])
+                chu(tb['trang'], d1, tb['x'], tb['y'], sz)
+                sz2 = sz if ttf.rong(d2, sz) <= cho2 else max(7.0, sz * cho2 / ttf.rong(d2, sz))
+                chu(tb['trang'], d2, tb.get('x2', tb['x']), tb.get('y2', tb['y'] - 17.6), sz2)
         for k in ('vsmt', 'atld'):
             o = vt.get(k); ch = g.get(k)
             if not o or ch not in TICK: continue

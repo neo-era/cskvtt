@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>Hoàn công CSKVTT v2.8.1</title>
+<title>Hoàn công CSKVTT v2.8.2</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#14213d">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -155,6 +155,9 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
 .nj tr.thieu td{background:var(--bad-soft)}
 .nj .canh{color:var(--bad);font-size:.75rem;display:block;max-width:200px;white-space:normal}
 .nj input:focus-visible,.nj select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.nj .mayds{display:flex;flex-wrap:wrap;gap:2px 10px;margin-top:4px;font-size:.78rem;color:var(--muted);max-width:340px}
+.nj .mayds label{display:inline-flex;align-items:center;gap:4px;min-height:28px;white-space:nowrap}
+.nj .mayds input{width:18px;height:18px}
 .njtool{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0 2px}
 .kyopt .lbl{display:block;font-size:.85rem;font-weight:600;margin-bottom:6px}
 .kyopt .seg{margin-bottom:4px}
@@ -200,7 +203,7 @@ td .arr{color:var(--muted)}
 
 
 <header class="top"><div class="in">
-  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.8.1</small></h1>
+  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.8.2</small></h1>
   <p class="tsub"><b>Chiếu sáng khu vực Trung Tâm</b><br>Hồ sơ hoàn công các gói Duy tu chiếu sáng</p>
   <button class="who chua" id="whoBtn" type="button" aria-haspopup="dialog" aria-controls="dkDlg" title="Thông tin người dùng"><span class="av" id="whoAv" aria-hidden="true">?</span><span class="nm" id="whoNm">Chưa đăng ký</span></button>
   <button class="inst" id="instBtn" type="button" hidden aria-label="Cài ứng dụng Hoàn công lên máy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Cài ứng dụng</button>
@@ -518,7 +521,7 @@ function tuDienPhuong() {
 }
 document.getElementById('quan').addEventListener('input', tuDienPhuong);
 tuDienPhuong();
-const BUILD = '2.8.1-48547d';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
+const BUILD = '2.8.2-d1ced1';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
 const CHECKS_NEW = ['Quy đổi phường theo tủ','Khối lượng QLVH','Kế hoạch quý (biên bản số 5)','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu','Định dạng in'];
 const CHECKS_ADD = ['Phát sinh ngoài KH: chi tiết (BB13) khớp tổng hợp (BB12)','Phát sinh ngoài KH: phường theo tủ','Định dạng in'];
 const ST_PS = 'Ghi phát sinh ngoài KH (12, 13)', ST_IN = 'Định dạng in';
@@ -1041,6 +1044,7 @@ function njDone(m) {
     njRows = r.ngay.map(x => { const o = cu[x.ngay]; if (!o) return x;
       ['sang', 'chieu', 'mua_sang', 'mua_chieu', 'vsmt', 'atld', '_sua_tt'].forEach(k => { x[k] = o[k]; });
       if (o._sua_nl) ['cong_nhan', 'thiet_bi', '_sua_nl'].forEach(k => { x[k] = o[k]; });
+      if (o.may_chon && o.may && x.may && JSON.stringify(o.may.map(m => m[0])) === JSON.stringify(x.may.map(m => m[0]))) x.may_chon = o.may_chon;
       return x; });
     $('njXacNhan').checked = false; njRender();
   } else if (m.k === 'nk_doc') {
@@ -1049,7 +1053,7 @@ function njDone(m) {
   } else if (m.k === 'nk_tt') {
     let n = 0;
     njRows.forEach(x => { const t = r.tt[x.ngay]; if (!t) return; n++; if (!x._sua_tt) { x.sang = t.sang; x.chieu = t.chieu; x.mua_sang = t.mua_sang; x.mua_chieu = t.mua_chieu; } });
-    njTtNguon = n ? 'Thời tiết thật TP.HCM (Open-Meteo): có ' + n + '/' + njRows.length + ' ngày; sáng tính 7–11h, chiều 13–17h. Có mưa ≥ 0,5 mm thì ghi "Có mưa".' : 'Không có số liệu thời tiết cho các ngày này — anh nhập tay.';
+    njTtNguon = n ? 'Thời tiết thật TP.HCM (Open-Meteo): có ' + n + '/' + njRows.length + ' ngày; sáng tính 7–11h, chiều 13–17h. Mưa lớn (≥ 5 mm/buổi) mới ghi "Có mưa".' : 'Không có số liệu thời tiết cho các ngày này — anh nhập tay.';
     njRender();
   } else if (m.k === 'nk_dien') {
     const ten = njFile.name.replace(/\.pdf$/i, '') + '_DA_DIEN' + (r.che_do === 'giu_ky' ? '_GIU_KY' : '') + '.pdf';
@@ -1136,7 +1140,7 @@ function njRender() {
     if (x.vuot) canh('Định mức ' + x.cong_nhan_dm + ' người / ' + x.xe_dm + ' xe thang — vượt năng lực, đã chặn ở ' + njTran.n + '/' + String(njTran.x).padStart(2, '0'));
     if (x.thieu_o && x.thieu_o.length) canh('Không tìm thấy chỗ điền: ' + x.thieu_o.join(', '));
     if (x.doc_loi && x.doc_loi.length) canh('Không đọc được dòng: ' + x.doc_loi.join(' | '));
-    if (x.chi_cung_cap) canh('Chỉ cung cấp vật tư/dịch vụ — để trống nhân lực, thiết bị', 'hint');
+    if (x.chi_cung_cap) canh('Chỉ cung cấp vật tư/dịch vụ — ghi 1 tổ người, không ghi xe', 'hint');
     const o = (k, cls, typ, lab) => { const c = td(); const inp = document.createElement('input'); inp.type = typ; inp.className = cls; inp.value = x[k] == null ? '' : x[k]; inp.setAttribute('aria-label', lab + ' ngày ' + x.ngay_vn);
       if (typ === 'number') { inp.min = 0; inp.max = 99; inp.step = 1; inp.inputMode = 'numeric'; }
       inp.addEventListener('change', () => { x[k] = typ === 'number' ? (inp.value === '' ? 0 : Math.max(0, Math.min(99, Math.round(+inp.value || 0)))) : inp.value.trim(); if (k === 'sang' || k === 'chieu') x._sua_tt = true; if (k === 'cong_nhan' || k === 'thiet_bi') x._sua_nl = true; if (typ === 'number') inp.value = x[k] || ''; });
@@ -1146,7 +1150,18 @@ function njRender() {
     [['mua_sang', 'Sáng'], ['mua_chieu', 'Chiều']].forEach(([k, l]) => { const lb = document.createElement('label'); const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!x[k]; cb.setAttribute('aria-label', 'Có mưa buổi ' + l.toLowerCase() + ' ngày ' + x.ngay_vn); cb.addEventListener('change', () => { x[k] = cb.checked; x._sua_tt = true; }); lb.append(cb, document.createTextNode(l)); mw.append(lb); });
     cm.append(mw);
     const cn = o('cong_nhan', '', 'number', 'Số công nhân'); if (!x.cong_nhan) cn.value = '';
-    o('thiet_bi', 'tb', 'text', 'Thiết bị thi công');
+    const tbi = o('thiet_bi', 'tb', 'text', 'Thiết bị thi công');
+    if (x.may && x.may.length) {                         // tick chon xe/may theo dinh muc de ghi vao nhat ky
+      if (!x.may_chon || x.may_chon.length !== x.may.length) x.may_chon = x.may.map(() => true);
+      const mw = document.createElement('div'); mw.className = 'mayds';
+      x.may.forEach(([ten, so], j) => {
+        const lb = document.createElement('label'); const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!x.may_chon[j];
+        cb.setAttribute('aria-label', 'Ghi ' + ten + ' ngày ' + x.ngay_vn);
+        cb.addEventListener('change', () => { x.may_chon[j] = cb.checked; x.thiet_bi = x.may.filter((_, k) => x.may_chon[k]).map(([t, n]) => String(n).padStart(2, '0') + ' ' + t).join(', '); tbi.value = x.thiet_bi; x._sua_nl = true; });
+        lb.append(cb, document.createTextNode(String(so).padStart(2, '0') + ' ' + ten)); mw.append(lb);
+      });
+      tbi.parentNode.append(mw);
+    }
     ['vsmt', 'atld'].forEach(k => { const c = td(); const se = document.createElement('select'); se.className = 'sel'; se.setAttribute('aria-label', (k === 'vsmt' ? 'Vệ sinh môi trường' : 'An toàn lao động, giao thông') + ' ngày ' + x.ngay_vn);
       [['', '(để trống)']].concat(NJ_TICK).forEach(([v, t]) => { const op = document.createElement('option'); op.value = v; op.textContent = t; se.append(op); });
       se.value = x[k] || ''; se.addEventListener('change', () => { x[k] = se.value; }); c.append(se); });

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>Hoàn công CSKVTT v2.7.0</title>
+<title>Hoàn công CSKVTT v2.8.0</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#14213d">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -142,6 +142,20 @@ h3{font-size:.85rem;margin:18px 0 0;text-transform:uppercase;letter-spacing:.05e
 .tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 @media (prefers-reduced-motion:reduce){.tabs button{transition:none}}
 .kyopt{margin-bottom:14px}
+/* ---- Tab Nhật ký: bảng ngày sửa được ---- */
+.nj td{vertical-align:middle;padding:6px 6px}
+.nj input[type=text],.nj input[type=number],.nj select{min-height:40px;width:100%;min-width:0;font:inherit;font-size:.86rem;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+.nj input[type=number]{width:64px;text-align:right}
+.nj input.nd{min-width:112px} .nj input.tb{min-width:170px} .nj select.sel{min-width:122px}
+#vNK{grid-template-columns:minmax(0,1fr)}                 /* bang ngay can rong: 2 the xep doc */
+#vNK > section:first-child .step,#vNK > section:first-child .sub{max-width:760px}
+.nj .mua{display:flex;flex-direction:column;gap:2px;font-size:.78rem;white-space:nowrap}
+.nj .mua label{display:inline-flex;align-items:center;gap:4px;min-height:22px}
+.nj .ngay b{display:block;white-space:nowrap} .nj .ngay small{color:var(--muted);font-size:.75rem;white-space:nowrap}
+.nj tr.thieu td{background:var(--bad-soft)}
+.nj .canh{color:var(--bad);font-size:.75rem;display:block;max-width:200px;white-space:normal}
+.nj input:focus-visible,.nj select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.njtool{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0 2px}
 .kyopt .lbl{display:block;font-size:.85rem;font-weight:600;margin-bottom:6px}
 .kyopt .seg{margin-bottom:4px}
 .kyopt .hint{margin:0}
@@ -186,7 +200,7 @@ td .arr{color:var(--muted)}
 
 
 <header class="top"><div class="in">
-  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.7.0</small></h1>
+  <h1>Hoàn công <span>CSKVTT</span> <small class="appver" id="appver">v2.8.0</small></h1>
   <p class="tsub"><b>Chiếu sáng khu vực Trung Tâm</b><br>Hồ sơ hoàn công các gói Duy tu chiếu sáng</p>
   <button class="who chua" id="whoBtn" type="button" aria-haspopup="dialog" aria-controls="dkDlg" title="Thông tin người dùng"><span class="av" id="whoAv" aria-hidden="true">?</span><span class="nm" id="whoNm">Chưa đăng ký</span></button>
   <button class="inst" id="instBtn" type="button" hidden aria-label="Cài ứng dụng Hoàn công lên máy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Cài ứng dụng</button>
@@ -194,6 +208,7 @@ td .arr{color:var(--muted)}
 <nav class="tabs" role="tablist" aria-label="Chức năng">
   <button type="button" role="tab" id="tabHC" aria-controls="vHC" aria-selected="true">Hồ sơ hoàn công</button>
   <button type="button" role="tab" id="tabSC" aria-controls="vSC" aria-selected="false" tabindex="-1">Báo cáo sự cố</button>
+  <button type="button" role="tab" id="tabNK" aria-controls="vNK" aria-selected="false" tabindex="-1">Nhật ký</button>
 </nav></header>
 
 <main id="vHC" role="tabpanel" aria-labelledby="tabHC">
@@ -319,6 +334,73 @@ td .arr{color:var(--muted)}
   </section>
 </main>
 
+<main id="vNK" role="tabpanel" aria-labelledby="tabNK" hidden>
+  <section class="card" aria-labelledby="h-nk">
+    <h2 id="h-nk">Điền nhật ký thi công</h2>
+    <p class="sub">Điền các ô để trống của nhật ký từng ngày: nhiệt độ sáng/chiều theo thời tiết thật, số công nhân và thiết bị theo định mức (tối thiểu 1 tổ: 04 người, 01 xe thang), tick vệ sinh môi trường và an toàn lao động. Anh xem, sửa từng ngày rồi mới xuất PDF.</p>
+    <div class="step">
+      <div class="num">1</div>
+      <div>
+        <label class="lb" for="njPdf">File nhật ký thi công (PDF)</label>
+        <div class="drop" id="njDrop" tabindex="0" role="button" aria-controls="njPdf">
+          Kéo thả hoặc <b>chọn file PDF</b>
+          <small>Bản nhật ký xuất từ hệ thống (NKTC), đủ các ngày trong tháng.</small>
+        </div>
+        <input type="file" id="njPdf" accept=".pdf,application/pdf">
+        <ul class="files" id="njList"></ul>
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">2</div>
+      <div>
+        <div class="base" id="njDmBox">
+          <div><b>Định mức (file Mã công việc)</b> <span class="hint">(.xlsb/.xlsx, đọc bảng Phân tích đơn giá; lưu trên máy này)</span><br><span class="hint" id="njDmName">Chưa chọn</span></div>
+          <button class="btn ghost small" type="button" id="njDmBtn">Chọn file định mức</button>
+          <input type="file" id="njDm" accept=".xlsb,.xlsx,application/vnd.ms-excel.sheet.binary.macroEnabled.12,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">3</div>
+      <div>
+        <div class="go">
+          <button class="btn" id="njDoc" type="button" disabled>Đọc nhật ký</button>
+          <div class="engine"><span class="dot" id="njDot"></span><span id="njText">Chờ bộ xử lý…</span></div>
+        </div>
+        <div class="err" id="njErr" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-nk2">
+    <h2 id="h-nk2">Các ngày trong nhật ký</h2>
+    <p class="sub" id="njSub">Bấm "Đọc nhật ký" để xem đề xuất từng ngày. Ô nào cũng sửa được.</p>
+    <div id="njBox" hidden>
+      <div class="kpis">
+        <div class="kpi"><small>Số ngày</small><strong id="nk1">–</strong></div>
+        <div class="kpi"><small>Thời tiết</small><strong id="nk2">–</strong></div>
+        <div class="kpi"><small>Thiếu định mức</small><strong id="nk3">–</strong></div>
+      </div>
+      <p class="hint" id="njTt"></p>
+      <div class="njtool">
+        <button class="btn ghost small" type="button" id="njTtLai">Lấy lại thời tiết</button>
+      </div>
+      <div class="tbl"><table class="nj"><thead><tr><th scope="col">Ngày</th><th scope="col">Nhiệt độ sáng</th><th scope="col">Nhiệt độ chiều</th><th scope="col">Mưa</th><th scope="col">Công nhân</th><th scope="col">Thiết bị thi công</th><th scope="col">Vệ sinh MT</th><th scope="col">ATLĐ, ATGT</th></tr></thead><tbody id="njBody"></tbody></table></div>
+      <div class="kyopt" style="margin-top:16px">
+        <span class="lbl" id="njKyLbl">Chữ ký trong file xuất</span>
+        <div class="seg" role="radiogroup" aria-labelledby="njKyLbl">
+          <button type="button" role="radio" id="njKyBo" aria-checked="true">Bỏ chữ ký</button>
+          <button type="button" role="radio" id="njKyGiu" aria-checked="false" tabindex="-1">Giữ hình ký</button>
+        </div>
+      </div>
+      <div class="out">
+        <button class="btn" id="njXuat" type="button" disabled>Xuất PDF đã điền</button>
+        <span class="fn" id="njFn"></span>
+      </div>
+    </div>
+  </section>
+</main>
+
 <main id="vSC" role="tabpanel" aria-labelledby="tabSC" hidden>
   <section class="card" aria-labelledby="h-sc">
     <h2 id="h-sc">Chuyển báo cáo sự cố</h2>
@@ -428,7 +510,7 @@ function tuDienPhuong() {
 }
 document.getElementById('quan').addEventListener('input', tuDienPhuong);
 tuDienPhuong();
-const BUILD = '2.7.0-b94487';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
+const BUILD = '2.8.0-c7869e';   // doi moi lan cap nhat ma src/ (pylibs.zip?v=BUILD) -> trinh duyet buoc phai tai ban moi
 const CHECKS_NEW = ['Quy đổi phường theo tủ','Khối lượng QLVH','Kế hoạch quý (biên bản số 5)','Bảng hạng mục bảo dưỡng','Bảo dưỡng: chi tiết khớp tổng hợp','Căn cứ pháp lý giữ nguyên','Không còn nội dung của kỳ/quận mẫu','Định dạng in'];
 const CHECKS_ADD = ['Phát sinh ngoài KH: chi tiết (BB13) khớp tổng hợp (BB12)','Phát sinh ngoài KH: phường theo tủ','Định dạng in'];
 const ST_PS = 'Ghi phát sinh ngoài KH (12, 13)', ST_IN = 'Định dạng in';
@@ -714,6 +796,48 @@ bcsc_sua.xuat_nho(json.loads(NHO_JS), '/work/tu_nho.xlsx')
       post({type: 'nhodone', buf}, [buf]);
     } catch (e) { post({type: 'nhofail', msg: String(e && e.message || e)}); }
   }
+  if (m.type === 'nk_dm' || m.type === 'nk_doc' || m.type === 'nk_tt' || m.type === 'nk_dien') {    // Nhat ky thi cong
+    try {
+      py.FS.mkdirTree('/work/nk');
+      if (m.type === 'nk_dien' && !py.FS.analyzePath('/app/fonts/LiberationSerif-Regular.ttf').exists) {
+        py.FS.mkdirTree('/app/fonts'); post({type: 'njstage', label: 'Tải font chữ (lần đầu)'});
+        py.FS.writeFile('/app/fonts/LiberationSerif-Regular.ttf', await getBuf(BASE + 'fonts/LiberationSerif-Regular.ttf'));
+      }
+      if (m.buf) py.FS.writeFile('/work/nk/in.bin', new Uint8Array(m.buf));
+      py.globals.set('NJ_ARG', JSON.stringify(m.arg || {}));
+      post({type: 'njstage', label: {nk_dm: 'Đang đọc định mức…', nk_doc: 'Đang đọc nhật ký…', nk_tt: 'Đang tính thời tiết…', nk_dien: 'Đang điền và xuất PDF…'}[m.type]});
+      const js = py.runPython(\`
+import os, json, traceback
+os.chdir('/app')
+A = json.loads(NJ_ARG)
+try:
+    import nhatky as NJ
+    k = A['k']
+    if k == 'nk_dm':
+        D = NJ.doc_dinh_muc(open('/work/nk/in.bin', 'rb').read(), A['ten'])
+        out = {'ok': True, 'dm': D, 'n': len(D['muc'])}
+    elif k == 'nk_doc':
+        NJ_GOC = open('/work/nk/in.bin', 'rb').read(); NJ_NGAY = NJ.doc_nhat_ky(NJ_GOC)
+        out = {'ok': True, 'ngay': NJ.de_xuat(NJ_NGAY, A['dm'])}
+    elif k == 'nk_tt':
+        out = {'ok': True, 'tt': NJ.thoi_tiet(A['js'])}
+    else:
+        R = NJ.dien(NJ_GOC, A['gt'], '/app/fonts', log=lambda *a: None, giu_ky=bool(A.get('giu_ky')), ngay=NJ_NGAY)
+        open('/work/nk/out.pdf', 'wb').write(R.pop('pdf'))
+        out = dict(R, ok=True)
+    out = json.dumps(out, ensure_ascii=False)
+except Exception as e:
+    out = json.dumps({'ok': False, 'error': str(e) or e.__class__.__name__, 'trace': traceback.format_exc()[-1500:]}, ensure_ascii=False)
+out
+\`);
+      const res = JSON.parse(js);
+      if (!res.ok) { post({type: 'njfail', k: m.type, msg: res.error, trace: res.trace}); return; }
+      if (m.type === 'nk_dien') {
+        const x = py.FS.readFile('/work/nk/out.pdf'); const buf = x.buffer.slice(x.byteOffset, x.byteOffset + x.byteLength);
+        post({type: 'njdone', k: m.type, res, pdf: buf}, [buf]);
+      } else post({type: 'njdone', k: m.type, res});
+    } catch (e) { post({type: 'njfail', k: m.type, msg: String(e && e.message || e)}); }
+  }
   if (m.type === 'bcsc') {
     try {
       py.FS.mkdirTree('/app/fonts');
@@ -749,7 +873,7 @@ out
 const worker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], {type: 'text/javascript'})));
 worker.onmessage = (ev) => {
   const m = ev.data;
-  if (m.type === 'ready') { ready = true; engine('ok', 'Bộ xử lý sẵn sàng'); updateRun(); }
+  if (m.type === 'ready') { ready = true; engine('ok', 'Bộ xử lý sẵn sàng'); updateRun(); njUpd(); }
   else if (m.type === 'fatal') { engine('bad', 'Không khởi động được bộ xử lý'); showErr('Không khởi động được bộ xử lý trong trình duyệt: ' + m.msg + '. Thử tải lại trang bằng Chrome hoặc Edge bản mới.'); }
   else if (m.type === 'stage') { if ($('savePdf').disabled && $('savePdf').classList.contains('busy')) note(m.label.replace(/^PDF: /, 'Đang vẽ: '), false); else stage(m.label); }
   else if (m.type === 'done') onDone(m);
@@ -758,6 +882,9 @@ worker.onmessage = (ev) => {
   else if (m.type === 'scstage') scState('busy', m.label);
   else if (m.type === 'scdone') scDone(m);
   else if (m.type === 'scfail') scFail(m);
+  else if (m.type === 'njstage') njState('busy', m.label);
+  else if (m.type === 'njdone') njDone(m);
+  else if (m.type === 'njfail') njFail(m);
   else if (m.type === 'nhodone') { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([m.buf], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})); a.download = 'TU_BO_SUNG_BANG_TRA.xlsx'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000); $('nhoXuat').disabled = false; }
   else if (m.type === 'nhofail') { $('nhoXuat').disabled = false; scErr('Không xuất được Excel: ' + m.msg); }
   else if (m.type === 'fail') { busy = false; updateRun(); engine('ok', 'Bộ xử lý sẵn sàng'); showErr('Không lập được hồ sơ: ' + m.msg); window.__lastError = m; }
@@ -854,18 +981,145 @@ $('save').addEventListener('click', () => {
   $('fname').textContent = 'Đã tải: ' + result.fname;
 });
 // ---------------- Tab: Hồ sơ hoàn công | Báo cáo sự cố ----------------
+const TABS = ['hc', 'sc', 'nk'];
+let tabNay = 'hc';
 function chonTab(k, focus) {
-  const sc = k === 'sc';
-  $('tabHC').setAttribute('aria-selected', !sc); $('tabSC').setAttribute('aria-selected', sc);
-  $('tabHC').tabIndex = sc ? -1 : 0; $('tabSC').tabIndex = sc ? 0 : -1;
-  $('vHC').hidden = sc; $('vSC').hidden = !sc;
-  if (focus) (sc ? $('tabSC') : $('tabHC')).focus();
+  if (!TABS.includes(k)) k = 'hc'; tabNay = k;
+  TABS.forEach(t => { const T = t.toUpperCase(), on = t === k; $('tab' + T).setAttribute('aria-selected', on); $('tab' + T).tabIndex = on ? 0 : -1; $('v' + T).hidden = !on; });
+  if (focus) $('tab' + k.toUpperCase()).focus();
   try { localStorage.setItem('hc-tab', k); } catch (e) {}
 }
-$('tabHC').addEventListener('click', () => chonTab('hc'));
-$('tabSC').addEventListener('click', () => chonTab('sc'));
-document.querySelector('.tabs').addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); chonTab($('tabSC').getAttribute('aria-selected') === 'true' ? 'hc' : 'sc', true); } });
-try { if (localStorage.getItem('hc-tab') === 'sc' || location.hash === '#su-co') chonTab('sc'); } catch (e) {}
+TABS.forEach(t => $('tab' + t.toUpperCase()).addEventListener('click', () => chonTab(t)));
+document.querySelector('.tabs').addEventListener('keydown', (e) => {
+  const i = TABS.indexOf(tabNay), n = TABS.length;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); chonTab(TABS[(i + (e.key === 'ArrowRight' ? 1 : n - 1)) % n], true); }
+  else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); chonTab(TABS[e.key === 'Home' ? 0 : n - 1], true); }
+});
+try { const t = location.hash === '#su-co' ? 'sc' : location.hash === '#nhat-ky' ? 'nk' : localStorage.getItem('hc-tab'); if (t) chonTab(t); } catch (e) {}
+
+// ---------------- Nhật ký thi công: điền nhiệt độ, nhân lực, thiết bị, tick ----------------
+let njDmTen = '', njFile = null, njDm = null, njRows = [], njBusy = false, njGiuKy = false, njTtNguon = '';
+const NJ_TICK = [['tot', 'Tốt'], ['binh_thuong', 'Bình thường'], ['kem', 'Kém']];
+const NJ_TOADO = {lat: 10.7769, lon: 106.7009};          // TP.HCM (trung tam)
+window.__nj = () => ({njRows, njBusy, njDm: njDm && {n: njDm.n, ten: njDm.ten}, njGiuKy});
+function njState(st, t) { $('njDot').className = 'dot ' + st; $('njText').textContent = t; }
+function njErr(t) { $('njErr').hidden = !t; $('njErr').textContent = t || ''; }
+function njUpd() {
+  $('njDoc').disabled = !(ready && njFile && njDm && !njBusy);
+  $('njXuat').disabled = !(ready && njRows.length && !njBusy);
+  $('njKyBo').disabled = $('njKyGiu').disabled = njBusy; $('njTtLai').disabled = njBusy || !njRows.length;
+  if (!njBusy && ready) njState('ok', !njFile ? 'Chọn file nhật ký' : !njDm ? 'Chọn file định mức' : njRows.length ? 'Sẵn sàng xuất PDF' : 'Sẵn sàng đọc nhật ký');
+}
+function njGui(k, arg, buf) { njBusy = true; njErr(''); njUpd(); worker.postMessage(Object.assign({type: k, arg: Object.assign({k}, arg)}, buf ? {buf} : {}), buf ? [buf] : []); }
+function njFail(m) { njBusy = false; njState('bad', 'Có lỗi'); njErr((m.k === 'nk_dm' ? '' : '') + m.msg); window.__lastError = m; njUpd(); }
+function njDone(m) {
+  njBusy = false; const r = m.res;
+  if (m.k === 'nk_dm') {
+    njDm = {muc: r.dm.muc, nguon: r.dm.nguon, n: r.n, ten: njDmTen || 'định mức', ngay: new Date().toLocaleDateString('vi-VN')};
+    IDB.set('nk_dm', njDm); njDmHien(); NK.them('Nạp định mức nhật ký', njDm.ten, r.n + ' mục');
+  } else if (m.k === 'nk_doc') {
+    njRows = r.ngay; njRender(); njThoiTiet();
+    NK.them('Đọc nhật ký', njFile.name, njRows.length + ' ngày');
+  } else if (m.k === 'nk_tt') {
+    let n = 0;
+    njRows.forEach(x => { const t = r.tt[x.ngay]; if (!t) return; n++; if (!x._sua_tt) { x.sang = t.sang; x.chieu = t.chieu; x.mua_sang = t.mua_sang; x.mua_chieu = t.mua_chieu; } });
+    njTtNguon = n ? 'Thời tiết thật TP.HCM (Open-Meteo): có ' + n + '/' + njRows.length + ' ngày; sáng tính 7–11h, chiều 13–17h. Có mưa ≥ 0,5 mm thì ghi "Có mưa".' : 'Không có số liệu thời tiết cho các ngày này — anh nhập tay.';
+    njRender();
+  } else if (m.k === 'nk_dien') {
+    const ten = njFile.name.replace(/\.pdf$/i, '') + '_DA_DIEN' + (r.che_do === 'giu_ky' ? '_GIU_KY' : '') + '.pdf';
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([m.pdf], {type: 'application/pdf'})); a.download = ten;
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    $('njFn').textContent = 'Đã tải: ' + ten + ' · điền ' + r.ngay + ' ngày, tick ' + r.tick + ' ô' + (r.che_do === 'giu_ky' ? ', giữ ' + r.ky_giu + ' hình ký' : r.chu_ky_bo ? ', bỏ ' + r.chu_ky_bo + ' chữ ký số' : '');
+    NK.them('Xuất nhật ký', ten, r.ngay + ' ngày');
+  }
+  njUpd();
+}
+function njDmHien() { $('njDmName').textContent = njDm ? njDm.ten + ' · ' + njDm.n + ' mục định mức · lưu ' + njDm.ngay : 'Chưa chọn'; $('njDmBtn').textContent = njDm ? 'Thay' : 'Chọn file định mức'; $('njDmBox').classList.toggle('ok', !!njDm); }
+IDB.get('nk_dm').then(v => { if (v && v.muc) { njDm = v; njDmHien(); njUpd(); } });
+$('njDmBtn').addEventListener('click', () => $('njDm').click());
+$('njDm').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  if (!/\.(xlsb|xlsx)$/i.test(f.name)) { njErr('File định mức phải là .xlsb hoặc .xlsx (file Mã công việc).'); return; }
+  if (!ready) { njErr('Bộ xử lý chưa sẵn sàng, chờ một chút rồi chọn lại.'); return; }
+  njBusy = true; njUpd(); njState('busy', 'Đang đọc định mức…'); const buf = await f.arrayBuffer(); njDmTen = f.name; njGui('nk_dm', {ten: f.name}, buf);
+});
+function njChon(f) {
+  if (!f) return;
+  if (!/\.pdf$/i.test(f.name)) { njErr('Chọn file PDF nhật ký thi công.'); return; }
+  njFile = f; njRows = []; njErr(''); $('njFn').textContent = '';
+  const ul = $('njList'); ul.textContent = ''; const li = document.createElement('li'); const a = document.createElement('span'); a.textContent = f.name; const b = document.createElement('span'); b.textContent = kb(f.size); li.append(a, b); ul.append(li);
+  njRender(); njUpd();
+}
+$('njPdf').addEventListener('change', (e) => { njChon(e.target.files[0]); e.target.value = ''; });
+const njDrop = $('njDrop');
+njDrop.addEventListener('click', () => $('njPdf').click());
+njDrop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('njPdf').click(); } });
+['dragenter', 'dragover'].forEach(t => njDrop.addEventListener(t, (e) => { e.preventDefault(); njDrop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(t => njDrop.addEventListener(t, (e) => { e.preventDefault(); njDrop.classList.remove('over'); }));
+njDrop.addEventListener('drop', (e) => njChon(e.dataTransfer.files[0]));
+$('njDoc').addEventListener('click', async () => { if (!njFile || !njDm || njBusy) return; njRows = []; njTtNguon = ''; njRender(); njBusy = true; njUpd(); njGui('nk_doc', {dm: {muc: njDm.muc}}, await njFile.arrayBuffer()); });
+async function njLayTT(ngay0, ngay1) {           // Open-Meteo: du bao luu tru (toi hom nay) -> du phong ERA5
+  const q = 'latitude=' + NJ_TOADO.lat + '&longitude=' + NJ_TOADO.lon + '&start_date=' + ngay0 + '&end_date=' + ngay1 + '&hourly=temperature_2m,precipitation&timezone=Asia%2FHo_Chi_Minh';
+  for (const u of ['https://historical-forecast-api.open-meteo.com/v1/forecast?', 'https://archive-api.open-meteo.com/v1/archive?']) {
+    const ac = typeof AbortController === 'function' ? new AbortController() : null; const to = setTimeout(() => ac && ac.abort(), 15000);
+    try {
+      const r = await fetch(u + q, ac ? {signal: ac.signal} : {}); clearTimeout(to);
+      if (!r.ok) continue;
+      const js = await r.json(); if (js && js.hourly && (js.hourly.temperature_2m || []).some(v => v != null)) return js;
+    } catch (e) { clearTimeout(to); }
+  }
+  return null;
+}
+async function njThoiTiet() {
+  if (!njRows.length) return;
+  const ds = njRows.map(x => x.ngay).sort(); const hn = new Date().toISOString().slice(0, 10);
+  njTtNguon = 'Đang lấy thời tiết…'; njRender();
+  const js = await njLayTT(ds[0], ds[ds.length - 1] > hn ? hn : ds[ds.length - 1]);
+  if (!js) { njTtNguon = 'Không lấy được thời tiết (mất mạng hoặc máy chủ thời tiết không trả lời) — anh nhập tay, hoặc bấm "Lấy lại thời tiết".'; njRender(); njUpd(); return; }
+  njGui('nk_tt', {js});
+}
+$('njTtLai').addEventListener('click', () => { njRows.forEach(x => delete x._sua_tt); njThoiTiet(); });
+function njRender() {
+  $('njBox').hidden = !njRows.length;
+  $('njSub').textContent = njRows.length ? 'Đề xuất theo định mức và thời tiết thật; ô nào cũng sửa được. Xoá trắng ô nào thì ô đó để trống trên PDF.' : 'Bấm "Đọc nhật ký" để xem đề xuất từng ngày. Ô nào cũng sửa được.';
+  if (!njRows.length) return;
+  const coTT = njRows.filter(x => x.sang || x.chieu).length, thieu = njRows.filter(x => x.thieu && x.thieu.length).length;
+  $('nk1').textContent = njRows.length; $('nk2').textContent = coTT + '/' + njRows.length; $('nk3').textContent = thieu;
+  $('nk3').style.color = thieu ? 'var(--bad)' : 'var(--ok)'; $('njTt').textContent = njTtNguon;
+  const tb = $('njBody'); tb.textContent = '';
+  njRows.forEach((x, i) => {
+    const tr = document.createElement('tr'); if (x.thieu && x.thieu.length) tr.className = 'thieu';
+    const td = () => { const c = document.createElement('td'); tr.append(c); return c; };
+    const c0 = td(); c0.className = 'ngay'; const b = document.createElement('b'); b.textContent = x.ngay_vn; const sm = document.createElement('small'); sm.textContent = x.so_viec + ' việc · ' + fmt(x.cong) + ' công · ' + x.so_trang + ' tr.'; c0.append(b, sm);
+    if (x.thieu && x.thieu.length) { const w = document.createElement('span'); w.className = 'canh'; w.textContent = 'Chưa có định mức: ' + x.thieu.join('; '); c0.append(w); }
+    const o = (k, cls, typ, lab) => { const c = td(); const inp = document.createElement('input'); inp.type = typ; inp.className = cls; inp.value = x[k] == null ? '' : x[k]; inp.setAttribute('aria-label', lab + ' ngày ' + x.ngay_vn);
+      if (typ === 'number') { inp.min = 0; inp.max = 99; inp.step = 1; inp.inputMode = 'numeric'; }
+      inp.addEventListener('change', () => { x[k] = typ === 'number' ? (inp.value === '' ? 0 : Math.max(0, Math.min(99, Math.round(+inp.value || 0)))) : inp.value.trim(); if (k === 'sang' || k === 'chieu') x._sua_tt = true; if (typ === 'number') inp.value = x[k] || ''; });
+      c.append(inp); return inp; };
+    o('sang', 'nd', 'text', 'Nhiệt độ sáng'); o('chieu', 'nd', 'text', 'Nhiệt độ chiều');
+    const cm = td(); const mw = document.createElement('div'); mw.className = 'mua';
+    [['mua_sang', 'Sáng'], ['mua_chieu', 'Chiều']].forEach(([k, l]) => { const lb = document.createElement('label'); const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!x[k]; cb.setAttribute('aria-label', 'Có mưa buổi ' + l.toLowerCase() + ' ngày ' + x.ngay_vn); cb.addEventListener('change', () => { x[k] = cb.checked; x._sua_tt = true; }); lb.append(cb, document.createTextNode(l)); mw.append(lb); });
+    cm.append(mw);
+    const cn = o('cong_nhan', '', 'number', 'Số công nhân'); if (!x.cong_nhan) cn.value = '';
+    o('thiet_bi', 'tb', 'text', 'Thiết bị thi công');
+    ['vsmt', 'atld'].forEach(k => { const c = td(); const se = document.createElement('select'); se.className = 'sel'; se.setAttribute('aria-label', (k === 'vsmt' ? 'Vệ sinh môi trường' : 'An toàn lao động, giao thông') + ' ngày ' + x.ngay_vn);
+      [['', '(để trống)']].concat(NJ_TICK).forEach(([v, t]) => { const op = document.createElement('option'); op.value = v; op.textContent = t; se.append(op); });
+      se.value = x[k] || ''; se.addEventListener('change', () => { x[k] = se.value; }); c.append(se); });
+    tb.append(tr);
+  });
+}
+$('njXuat').addEventListener('click', () => {
+  if (!njRows.length) return;
+  const gt = {}; njRows.forEach(x => { gt[x.ngay] = {sang: x.sang || '', chieu: x.chieu || '', mua_sang: !!x.mua_sang, mua_chieu: !!x.mua_chieu, cong_nhan: x.cong_nhan || 0, thiet_bi: x.thiet_bi || '', vsmt: x.vsmt || '', atld: x.atld || ''}; });
+  njGui('nk_dien', {gt, giu_ky: njGiuKy});
+});
+function njSetKy(v, luu) {
+  njGiuKy = !!v; [['njKyBo', !njGiuKy], ['njKyGiu', njGiuKy]].forEach(([id, on]) => { const b = $(id); b.setAttribute('aria-checked', on); b.tabIndex = on ? 0 : -1; });
+  if (luu) IDB.set('nk_ky', njGiuKy ? 'giu' : 'bo');
+}
+$('njKyBo').addEventListener('click', () => njSetKy(false, true)); $('njKyGiu').addEventListener('click', () => njSetKy(true, true));
+[$('njKyBo'), $('njKyGiu')].forEach(b => b.addEventListener('keydown', (e) => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) { e.preventDefault(); njSetKy(!njGiuKy, true); $(njGiuKy ? 'njKyGiu' : 'njKyBo').focus(); } }));
+IDB.get('nk_ky').then(v => njSetKy(v === 'giu', false));
 
 // ---------------- Chuyển báo cáo sự cố (BCSC) ----------------
 function scState(st, t) { $('scDot').className = 'dot ' + st; $('scText').textContent = t; }

@@ -388,8 +388,8 @@ def _ghi_sach(du_lieu, sua_trang, fonts, anh_ky=None, giu_hinh=False):
     for so, (page, L, xoa) in sorted(sua_trang.items()):
         pg = w.pages[so]
         cs = ContentStream(pg.get_contents(), w)
-        ops, n = _loc_chu(cs.operations, xoa)
-        if min(n) == 0:
+        ops, n = _loc_chu(cs.operations, xoa) if xoa else (cs.operations, [])
+        if n and min(n) == 0:
             raise ValueError('trang %d: không tìm thấy dòng chữ cũ để xoá (%s)' % (so + 1, n))
         cs.operations = ops
         data = b'q\n' + cs.get_data() + b'\nQ\n' + '\n'.join(L).encode() + b'\n'
